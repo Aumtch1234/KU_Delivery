@@ -1,8 +1,8 @@
 // lib/screens/home_page.dart
+import 'package:delivery/pages/store/StoreMenuPage.dart';
 import 'package:flutter/material.dart';
 
 class ShopPage extends StatelessWidget {
-
   const ShopPage({super.key});
 
   @override
@@ -61,7 +61,13 @@ class ShopPage extends StatelessWidget {
                         ),
                         TextButton(
                           onPressed: () {},
-                          child: Text('เพิ่มเติม', style: TextStyle(color: Color(0xFF34C759), fontWeight: FontWeight.bold)),
+                          child: Text(
+                            'เพิ่มเติม',
+                            style: TextStyle(
+                              color: Color(0xFF34C759),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -135,7 +141,13 @@ class ShopPage extends StatelessWidget {
                         ),
                         TextButton(
                           onPressed: () {},
-                          child: const Text('เพิ่มเติม', style: TextStyle(color: Color(0xFF34C759), fontWeight: FontWeight.bold)),
+                          child: const Text(
+                            'เพิ่มเติม',
+                            style: TextStyle(
+                              color: Color(0xFF34C759),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -143,9 +155,9 @@ class ShopPage extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildStoreItem('ร้าน1'),
-                        _buildStoreItem('ร้าน2'),
-                        _buildStoreItem('ร้าน3'),
+                        _buildStoreItem(context, 'ร้านข้าวมันไก่'),
+                        _buildStoreItem(context, 'ร้านก๋วยเตี๋ยว'),
+                        _buildStoreItem(context, 'ร้านอาหารตามสั่ง'),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -163,7 +175,13 @@ class ShopPage extends StatelessWidget {
                         ),
                         TextButton(
                           onPressed: () {},
-                          child: const Text('เพิ่มเติม', style: TextStyle(color: Color(0xFF34C759), fontWeight: FontWeight.bold)),
+                          child: const Text(
+                            'เพิ่มเติม',
+                            style: TextStyle(
+                              color: Color(0xFF34C759),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -237,13 +255,37 @@ class ShopPage extends StatelessWidget {
     );
   }
 
-  Widget _buildStoreItem(String name) {
-    return Column(
-      children: [
-        Image.asset('assets/menus/main.png', width: 60),
-        const SizedBox(height: 4),
-        Text(name),
-      ],
+  Widget _buildStoreItem(BuildContext context, String name) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => StoreMenuPage(storeName: name),
+          ),
+        );
+      },
+      child: Column(
+        children: [
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(12),
+              image: const DecorationImage(
+                image: AssetImage('assets/menus/kai.png'),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            name,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
     );
   }
 
