@@ -1,10 +1,11 @@
 import 'package:delivery/SplashScreens/SplashScreen.dart';
-import 'package:delivery/auth/AuthGuard.dart';
-import 'package:delivery/auth/authService.dart';
+import 'package:delivery/middleware/AuthGuard.dart';
+import 'package:delivery/middleware/authService.dart';
 import 'package:delivery/pages/bottom/DashboardPage.dart';
 import 'package:delivery/pages/bottom/MainNavigation.dart';
 import 'package:delivery/pages/bottom/ShopPage.dart';
 import 'package:delivery/pages/WellcomePage.dart';
+import 'package:delivery/pages/myMarket/myMarketPage.dart';
 import 'package:flutter/material.dart';
 
 void main() async {
@@ -31,6 +32,7 @@ class MyApp extends StatelessWidget {
         '/dashboard': (_) => AuthGuard(child: DashboardPage()),
         '/shop': (_) => AuthGuard(child: ShopPage()),
         '/main': (_) => AuthGuard(child: MainNavigation()), // ✅ ตรงนี้
+        '/myMarket': (_) => AuthGuard(child: Mymarketpage(storeName: 'ร้านค้าของฉัน',)), // ร้านค้าของฉัน
 
       },
       debugShowCheckedModeBanner: false,   // optional: ซ่อน debug banner

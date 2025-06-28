@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:delivery/auth/authService.dart';
+import 'package:delivery/middleware/authService.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -94,6 +94,13 @@ class _DashboardPageState extends State<DashboardPage> {
                         AuthService().confirmLogout(context);
                       },
                       child: Text("Logout"),
+                    ),
+                    SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/myMarket');
+                      },
+                      child: Text("ร้านค้าของฉัน"),
                     ),
                   ],
                 ),

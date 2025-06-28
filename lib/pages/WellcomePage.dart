@@ -1,4 +1,4 @@
-import 'package:delivery/auth/authService.dart';
+import 'package:delivery/middleware/authService.dart';
 import 'package:delivery/pages/LoginPage.dart';
 import 'package:delivery/pages/RegisterPage.dart';
 import 'package:flutter/material.dart';
