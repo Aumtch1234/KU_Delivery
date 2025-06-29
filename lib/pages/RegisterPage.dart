@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:awesome_dialog/awesome_dialog.dart';
 
-
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
 
@@ -31,6 +30,37 @@ class _RegisterPageState extends State<RegisterPage> {
       initialDate: DateTime(2000, 1, 1),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF34C759), // header background & selected day
+              onPrimary: Colors.white, // header text & selected day text
+              onSurface: Colors.black, // default text color
+            ),
+            dialogBackgroundColor: Color(0xFFF7F7F7),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: Color(0xFF34C759), // button text color
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            datePickerTheme: const DatePickerThemeData(
+              backgroundColor: Color(0xFFF7F7F7),
+              headerBackgroundColor: Color(0xFF34C759),
+              headerForegroundColor: Colors.white,
+              dayBackgroundColor: MaterialStatePropertyAll(Colors.white),
+              dayForegroundColor: MaterialStatePropertyAll(Colors.black),
+              todayBackgroundColor: MaterialStatePropertyAll(Color(0x2234C759)),
+              todayForegroundColor: MaterialStatePropertyAll(Color(0xFF34C759)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(16)),
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
       setState(() {
@@ -39,21 +69,41 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-Future<void> _registerUser() async {
+  Future<void> _registerUser() async {
     if (_passwordController.text != _confirmPasswordController.text) {
-      showAwesomeDialog(context, 'ข้อผิดพลาด', 'รหัสผ่านไม่ตรงกัน', DialogType.warning);
+      showAwesomeDialog(
+        context,
+        'ข้อผิดพลาด',
+        'รหัสผ่านไม่ตรงกัน',
+        DialogType.warning,
+      );
       return;
     }
     if (_gender == null) {
-      showAwesomeDialog(context, 'ข้อผิดพลาด', 'กรุณาเลือกเพศ', DialogType.warning);
+      showAwesomeDialog(
+        context,
+        'ข้อผิดพลาด',
+        'กรุณาเลือกเพศ',
+        DialogType.warning,
+      );
       return;
     }
     if (_selectedDate == null) {
-      showAwesomeDialog(context, 'ข้อผิดพลาด', 'กรุณาเลือกวันเกิด', DialogType.warning);
+      showAwesomeDialog(
+        context,
+        'ข้อผิดพลาด',
+        'กรุณาเลือกวันเกิด',
+        DialogType.warning,
+      );
       return;
     }
     if (_selectedImage == null) {
-      showAwesomeDialog(context, 'ข้อผิดพลาด', 'กรุณาเลือกรูปโปรไฟล์', DialogType.warning);
+      showAwesomeDialog(
+        context,
+        'ข้อผิดพลาด',
+        'กรุณาเลือกรูปโปรไฟล์',
+        DialogType.warning,
+      );
       return;
     }
 
@@ -66,7 +116,9 @@ Future<void> _registerUser() async {
       'phone': _phoneController.text,
       'gender': _gender, // 0,1,2 ตามที่เลือก
       'birthdate': _selectedDate!.toIso8601String(),
-      'photo_url': _selectedImage != null ? _selectedImage!.split('/').last : null,
+      'photo_url': _selectedImage != null
+          ? _selectedImage!.split('/').last
+          : null,
     };
 
     try {
@@ -79,27 +131,31 @@ Future<void> _registerUser() async {
       if (response.statusCode == 200) {
         // สมมติ response body มี success message หรือ token
         showAwesomeDialog(
-        context,
-        'สำเร็จ',
-        'สมัครสมาชิกสำเร็จ',
-        DialogType.success,
-        onOk: () {
-          Navigator.pushReplacementNamed(context, '/login');
-        },
-      );
+          context,
+          'สำเร็จ',
+          'สมัครสมาชิกสำเร็จ',
+          DialogType.success,
+          onOk: () {
+            Navigator.pushReplacementNamed(context, '/login');
+          },
+        );
         // นำทางไปหน้าถัดไป หรือเคลียร์ฟอร์ม
       } else {
         // แสดง error จาก server
         final resBody = jsonDecode(response.body);
-        showAwesomeDialog(context, 'ไม่สำเร็จ', resBody['message'] ?? 'เกิดข้อผิดพลาด', DialogType.error);
-
+        showAwesomeDialog(
+          context,
+          'ไม่สำเร็จ',
+          resBody['message'] ?? 'เกิดข้อผิดพลาด',
+          DialogType.error,
+        );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('เกิดข้อผิดพลาด: $e')));
     }
-}
+  }
 
   // รูปที่ใช้ให้เลือก
   final List<String> _imageOptions = [
@@ -179,23 +235,21 @@ Future<void> _registerUser() async {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color:
-                                isSelected
-                                    ? const Color(0xFF34C759)
-                                    : Colors.grey.shade300,
+                            color: isSelected
+                                ? const Color(0xFF34C759)
+                                : Colors.grey.shade300,
                             width: isSelected ? 4 : 2,
                           ),
-                          boxShadow:
-                              isSelected
-                                  ? [
-                                    BoxShadow(
-                                      color: Colors.green.withOpacity(0.5),
-                                      blurRadius: 12,
-                                      spreadRadius: 2,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ]
-                                  : [],
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.green.withOpacity(0.5),
+                                    blurRadius: 12,
+                                    spreadRadius: 2,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ]
+                              : [],
                         ),
                         child: Stack(
                           alignment: Alignment.center,
@@ -262,10 +316,9 @@ Future<void> _registerUser() async {
                             ? 'วัน เดือน ปีเกิด'
                             : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
                         style: TextStyle(
-                          color:
-                              _selectedDate == null
-                                  ? Colors.grey
-                                  : Colors.black,
+                          color: _selectedDate == null
+                              ? Colors.grey
+                              : Colors.black,
                         ),
                       ),
                       const Icon(Icons.calendar_today, color: Colors.grey),
@@ -410,23 +463,22 @@ Future<void> _registerUser() async {
       ],
     );
   }
+
   void showAwesomeDialog(
-  BuildContext context,
-  String title,
-  String message,
-  DialogType type, {
-  VoidCallback? onOk,
-}) {
-  AwesomeDialog(
-    context: context,
-    dialogType: type,
-    animType: AnimType.scale,
-    title: title,
-    desc: message,
-    btnOkOnPress: onOk ?? () {},
-    btnOkColor: Colors.green,
-  ).show();
-}
-
-
+    BuildContext context,
+    String title,
+    String message,
+    DialogType type, {
+    VoidCallback? onOk,
+  }) {
+    AwesomeDialog(
+      context: context,
+      dialogType: type,
+      animType: AnimType.scale,
+      title: title,
+      desc: message,
+      btnOkOnPress: onOk ?? () {},
+      btnOkColor: Colors.green,
+    ).show();
+  }
 }
