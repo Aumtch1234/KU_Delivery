@@ -1,3 +1,4 @@
+import '../store/StoreDetailPage.dart';
 import 'package:flutter/material.dart';
 
 class StoreMenuPage extends StatelessWidget {
@@ -61,13 +62,36 @@ class StoreMenuPage extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            storeName,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      StoreDetailPage(storeName: storeName),
+                                ),
+                              );
+                            },
+                            child: Row(
+                              children: [
+                                Text(
+                                  storeName,
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 18,
+                                  color: Colors.grey,
+                                ),
+                              ],
                             ),
                           ),
+
+                          // เพิ่มด้านบนสุดของไฟล์
                           const SizedBox(height: 4),
                           Row(
                             children: [
