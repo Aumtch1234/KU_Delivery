@@ -186,47 +186,60 @@ class ShopPage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    GridView.count(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 0.75,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: [
-                        _buildRecommendedMenu(
-                          "ข้าวกระเพรา",
-                          "ร้านอร่อย",
-                          "15 นาที",
-                          45,
-                          'assets/menus/kai.png', // 👈 รูปไม่ซ้ำ
-                          5.0, // ⭐ เพิ่ม rating
-                        ),
-                        _buildRecommendedMenu(
-                          "ข้าวผัด",
-                          "ร้านเจ๊หมี",
-                          "20 นาที",
-                          50,
-                          'assets/menus/yam.png',
-                          4.0, // ⭐ เพิ่ม rating
-                        ),
-                        _buildRecommendedMenu(
-                          "ก๋วยเตี๋ยว",
-                          "ร้านเตี๋ยวเด็ด",
-                          "12 นาที",
-                          40,
-                          'assets/menus/yam.png',
-                          4.0, // ⭐ เพิ่ม rating
-                        ),
-                        _buildRecommendedMenu(
-                          "ข้าวหมูแดง",
-                          "ร้านหมูแดง",
-                          "10 นาที",
-                          55,
-                          'assets/menus/kai.png',
-                          4.3, // ⭐ เพิ่ม rating
-                        ),
-                      ],
+                    // Responsive GridView สำหรับเมนูแนะนำ
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        // กำหนดจำนวนคอลัมน์ตามความกว้างหน้าจอ
+                        int crossAxisCount = 2;
+                        double width = constraints.maxWidth;
+                        if (width > 900) {
+                          crossAxisCount = 4;
+                        } else if (width > 600) {
+                          crossAxisCount = 3;
+                        }
+                        return GridView.count(
+                          crossAxisCount: crossAxisCount,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: width > 600 ? 0.9 : 0.75,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: [
+                            _buildRecommendedMenu(
+                              "ข้าวกระเพรา",
+                              "ร้านอร่อย",
+                              "15 นาที",
+                              45,
+                              'assets/menus/kai.png',
+                              5.0,
+                            ),
+                            _buildRecommendedMenu(
+                              "ข้าวผัด",
+                              "ร้านเจ๊หมี",
+                              "20 นาที",
+                              50,
+                              'assets/menus/yam.png',
+                              4.0,
+                            ),
+                            _buildRecommendedMenu(
+                              "ก๋วยเตี๋ยว",
+                              "ร้านเตี๋ยวเด็ด",
+                              "12 นาที",
+                              40,
+                              'assets/menus/yam.png',
+                              4.0,
+                            ),
+                            _buildRecommendedMenu(
+                              "ข้าวหมูแดง",
+                              "ร้านหมูแดง",
+                              "10 นาที",
+                              55,
+                              'assets/menus/kai.png',
+                              4.3,
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),
