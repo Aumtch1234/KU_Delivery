@@ -5,6 +5,7 @@ import 'package:delivery/pages/bottom/DashboardPage.dart';
 import 'package:delivery/pages/bottom/MainNavigation.dart';
 import 'package:delivery/pages/bottom/ShopPage.dart';
 import 'package:delivery/pages/WellcomePage.dart';
+import 'package:delivery/pages/myMarket/RegisterShopPage.dart';
 import 'package:delivery/pages/myMarket/myMarketPage.dart';
 import 'package:flutter/material.dart';
 
@@ -19,6 +20,8 @@ void main() async {
 class MyApp extends StatelessWidget {
   Future<bool> isLoggedIn() async {
     final token = await AuthService().getToken();
+
+
     return token != null;
   }
 
@@ -32,7 +35,9 @@ class MyApp extends StatelessWidget {
         '/dashboard': (_) => AuthGuard(child: DashboardPage()),
         '/shop': (_) => AuthGuard(child: ShopPage()),
         '/main': (_) => AuthGuard(child: MainNavigation()), // ✅ ตรงนี้
-        '/myMarket': (_) => AuthGuard(child: Mymarketpage(storeName: 'ร้านค้าของฉัน',)), // ร้านค้าของฉัน
+        '/myMarket': (_) => AuthGuard(child: Mymarketpage()), // ร้านค้าของฉัน
+        '/add/market': (_) => AuthGuard(child: RegisterShopPage()), // ร้านค้าของฉัน
+
 
       },
       debugShowCheckedModeBanner: false,   // optional: ซ่อน debug banner

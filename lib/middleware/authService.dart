@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -11,25 +11,7 @@ class AuthService {
   Map<String, dynamic>? currentUser;
   final String baseUrl = 'http://10.0.2.2:4000/api';
 
-  Future<bool> loginWithGoogle(String idToken) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/google-login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'id_token': idToken}),
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', data['token']);
-      await prefs.setString('user', jsonEncode(data['user']));
-      currentUser = data['user'];
-      return true;
-    } else {
-      return false;
-    }
-  }
-
+  /// ✅ Login แบบ Manual (อีเมล + รหัสผ่าน)
   Future<bool> loginWithEmail(String email, String password) async {
     final response = await http.post(
       Uri.parse('$baseUrl/login'),
@@ -39,17 +21,53 @@ class AuthService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', data['token']);
-      await prefs.setString('user', jsonEncode(data['user']));
-      currentUser = data['user'];
+      await _saveAuthData(data);
       return true;
     } else {
-      print('Login failed: ${jsonDecode(response.body)['message']}');
+      print('Manual login failed: ${jsonDecode(response.body)['message']}');
       return false;
     }
   }
 
+  /// ✅ Login แบบ Google
+  Future<bool> loginWithGoogle(String idToken) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/google-login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'id_token': idToken}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      await _saveAuthData(data);
+      return true;
+    } else {
+      print('Google login failed: ${response.body}');
+      return false;
+    }
+  }
+
+  /// ✅ รีเฟรช Token
+  Future<void> refreshUserToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/refresh-token'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      await prefs.setString('token', data['token']);
+      await prefs.setString('user', jsonEncode(data['user']));
+      currentUser = data['user'];
+    } else {
+      print('Refresh token failed: ${response.body}');
+    }
+  }
+
+  /// ✅ โหลดผู้ใช้จาก local
   Future<void> loadUser() async {
     final prefs = await SharedPreferences.getInstance();
     final userStr = prefs.getString('user');
@@ -58,11 +76,7 @@ class AuthService {
     }
   }
 
-  Future<String?> getToken() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token');
-  }
-
+  /// ✅ ล็อกเอาท์
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
@@ -78,11 +92,11 @@ class AuthService {
         content: Text('คุณต้องการออกจากระบบหรือไม่?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.pop(context, false),
             child: Text('ยกเลิก'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.pop(context, true),
             child: Text('ตกลง'),
           ),
         ],
@@ -93,5 +107,19 @@ class AuthService {
       await logout();
       Navigator.pushReplacementNamed(context, '/login');
     }
+  }
+
+  /// ✅ เก็บ token/user ลง local และ set currentUser
+  Future<void> _saveAuthData(Map<String, dynamic> data) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('token', data['token']);
+    await prefs.setString('user', jsonEncode(data['user']));
+    currentUser = data['user'];
+  }
+
+  /// ✅ ดึง token จาก local storage
+  Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('token');
   }
 }

@@ -14,7 +14,14 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    _loadUser();
+    _refreshAndLoadUser();
+  }
+
+  Future<void> _refreshAndLoadUser() async {
+    await AuthService().refreshUserToken();
+    print('เรียก refresh token สำเร็จ');
+    await _loadUser();
+    print('โหลด user ใหม่: $user');
   }
 
   Future<void> _loadUser() async {
@@ -38,74 +45,130 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Dashboard")),
+      backgroundColor: const Color(0xFFF7F7F7),
+      appBar: AppBar(
+        title: const Text("แดชบอร์ด"),
+        backgroundColor: const Color(0xFF34C759),
+        centerTitle: true,
+      ),
       body: user == null
-          ? Center(
+          ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(), // ✅ ใส่ loading ระหว่างโหลด user
+                  CircularProgressIndicator(),
                   SizedBox(height: 16),
                   Text("กำลังโหลดข้อมูลผู้ใช้..."),
                 ],
               ),
             )
-          : Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Center(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CircleAvatar(
-                      radius: 40,
+                      radius: 50,
                       backgroundImage: _isNetworkUrl(user!['photo_url'])
                           ? NetworkImage(user!['photo_url'])
                           : AssetImage('assets/avatars/${user!['photo_url']}')
                                 as ImageProvider,
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Text(
                       user!['display_name'] ?? '',
-                      style: TextStyle(
-                        fontSize: 20,
+                      style: const TextStyle(
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       user!['email'] ?? '',
-                      style: TextStyle(color: Colors.grey[700]),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                     ),
-                    SizedBox(height: 24),
+                    const SizedBox(height: 8),
                     Text(
-                      user!['created_at'] ?? '',
-                      style: TextStyle(color: Colors.grey[700]),
+                      'ลงทะเบียนเมื่อ: ${user!['created_at'] ?? '-'}',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
-                    SizedBox(height: 24),
-                     Text(
-                      user!['google_id'] ?? '',
-                      style: TextStyle(color: Colors.grey[700]),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Google ID: ${user!['google_id'] ?? '-'}',
+                      style: TextStyle(fontSize: 13, color: Colors.grey[500]),
                     ),
-                    SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: () {
-                        // ยังคงใช้ AuthService ในส่วน logout ได้
-                        AuthService().confirmLogout(context);
-                      },
-                      child: Text("Logout"),
+                    Text(
+                      'Is_Seller: ${user!['is_seller'] ?? '-'}',
+                      style: TextStyle(fontSize: 13, color: Colors.red[500]),
                     ),
-                    SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/myMarket');
-                      },
-                      child: Text("ร้านค้าของฉัน"),
+                    const SizedBox(height: 32),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        if (user!['is_seller'] == true)
+                          _buildButton(
+                            text: 'ร้านค้าของฉัน',
+                            icon: Icons.store,
+                            color: Colors.green.shade600,
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/myMarket');
+                            },
+                          ),
+                        if (user!['is_seller'] == false ||
+                            user!['is_seller'] == null)
+                          _buildButton(
+                            text: 'สมัครร้านค้า',
+                            icon: Icons.add_business,
+                            color: Colors.orange.shade600,
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/add/market').then((
+                                _,
+                              ) async {
+                                await AuthService()
+                                    .refreshUserToken(); // รีเฟรช token ใหม่
+                                await _loadUser(); // โหลด user ใหม่เข้า state
+                              });
+                            },
+                          ),
+                        _buildButton(
+                          text: 'ออกจากระบบ',
+                          icon: Icons.logout,
+                          color: Colors.red.shade400,
+                          onPressed: () {
+                            AuthService().confirmLogout(context);
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
             ),
+    );
+  }
+
+  Widget _buildButton({
+    required String text,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: 160,
+      height: 48,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 20),
+        label: Text(text, style: const TextStyle(fontSize: 14)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          elevation: 2,
+        ),
+      ),
     );
   }
 }

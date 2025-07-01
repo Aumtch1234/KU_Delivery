@@ -1,9 +1,42 @@
+import 'dart:convert';
+import 'package:delivery/APIs/FetchMarket.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
-class Mymarketpage extends StatelessWidget {
-  final String storeName;
+class Mymarketpage extends StatefulWidget {
+  const Mymarketpage({Key? key}) : super(key: key);
 
-  const Mymarketpage({Key? key, required this.storeName}) : super(key: key);
+  @override
+  _MymarketpageState createState() => _MymarketpageState();
+}
+
+class _MymarketpageState extends State<Mymarketpage> {
+  String storeName = '';
+  String storeDescription = '';
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadMarket();
+  }
+
+  Future<void> loadMarket() async {
+    final market = await fetchMyMarket(); // market เป็น Map<String, dynamic>?
+    if (market != null) {
+      setState(() {
+        storeName = market['shop_name'] ?? 'ไม่มีชื่อร้าน';
+        storeDescription = market['shop_description'] ?? 'ไม่มีคำอธิบายร้าน';
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        storeName = 'ไม่พบข้อมูลร้านค้า';
+        storeDescription = '';
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,10 +50,8 @@ class Mymarketpage extends StatelessWidget {
           child: CircleAvatar(
             backgroundColor: Colors.white,
             child: IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.black),
-              onPressed: () {
-                Navigator.pop(context);
-              },
+              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              onPressed: () => Navigator.pop(context),
             ),
           ),
         ),
@@ -29,124 +60,135 @@ class Mymarketpage extends StatelessWidget {
             padding: const EdgeInsets.only(right: 16.0),
             child: CircleAvatar(
               backgroundColor: Colors.white,
-              child: Icon(Icons.add_business, color: Colors.black),
+              child: const Icon(Icons.add_business, color: Colors.black),
             ),
           ),
         ],
       ),
       extendBodyBehindAppBar: true,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Top image
-            Stack(
-              children: [
-                Image.asset(
-                  'assets/menus/kai.png',
-                  height: 220,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ],
-            ),
-            // Store Info
-            Padding(
-              padding: const EdgeInsets.all(16.0),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  // Top image (แก้ตามข้อมูลจริงถ้ามี)
+                  Stack(
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            storeName,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.star,
-                                color: Colors.amber,
-                                size: 20,
-                              ),
-                              const Text(
-                                '4.5',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const Text(' • ', style: TextStyle(fontSize: 16)),
-                              const Text(
-                                '15-20 นาที',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade100,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text(
-                          'เปิดอยู่',
-                          style: TextStyle(
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                      Image.asset(
+                        'assets/menus/kai.png',
+                        height: 220,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  const SizedBox(height: 16),
-                  // Menu Categories
-                  const Text(
-                    'เมนูทั้งหมด',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
-                  // Menu Items
-                  // แทนที่ ListView.builder ด้วย GridView.count ตรงนี้
-                  GridView.count(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    childAspectRatio: 0.75,
-                    children: List.generate(6, (index) {
-                      return _buildMenuCard(
-                        name: 'เมนูที่ ${index + 1}',
-                        description: 'อธิบายเมนู ${index + 1}',
-                        price: (40 + index * 5).toDouble(),
-                        imagePath: 'assets/menus/kai.png',
-                      );
-                    }),
+                  // Store Info
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  storeName,
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  storeDescription,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: const [
+                                    Icon(
+                                      Icons.star,
+                                      color: Colors.amber,
+                                      size: 20,
+                                    ),
+                                    Text(
+                                      '4.5',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Text(' • ', style: TextStyle(fontSize: 16)),
+                                    Text(
+                                      '15-20 นาที',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade100,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Text(
+                                'เปิดอยู่',
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        const Divider(),
+                        const SizedBox(height: 16),
+                        // เมนูทั้งหมด (ยังใช้เมนูเดิม)
+                        const Text(
+                          'เมนูทั้งหมด',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        GridView.count(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          childAspectRatio: 0.75,
+                          children: List.generate(6, (index) {
+                            return _buildMenuCard(
+                              name: 'เมนูที่ ${index + 1}',
+                              description: 'อธิบายเมนู ${index + 1}',
+                              price: (40 + index * 5).toDouble(),
+                              imagePath: 'assets/menus/kai.png',
+                            );
+                          }),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -164,7 +206,7 @@ class Mymarketpage extends StatelessWidget {
           BoxShadow(
             color: Colors.grey.shade300,
             blurRadius: 6,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
