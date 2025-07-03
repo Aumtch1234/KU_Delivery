@@ -1,7 +1,5 @@
-import 'dart:convert';
 import 'package:delivery/APIs/FetchMarket.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 
 class Mymarketpage extends StatefulWidget {
   const Mymarketpage({Key? key}) : super(key: key);

@@ -17,6 +17,10 @@ class wellcomePage extends StatelessWidget {
   Future<void> _handleLogin(BuildContext context) async {
     try {
       print("Start Google SignIn");
+
+      // ✅ บังคับให้แสดงตัวเลือกบัญชีทุกครั้ง
+      await _googleSignIn.signOut();
+
       final account = await _googleSignIn.signIn();
       print("Google SignIn done");
 
@@ -48,7 +52,6 @@ class wellcomePage extends StatelessWidget {
         ).show();
         Navigator.pushReplacementNamed(context, '/main');
       } else {
-        // ❌ แสดง Alert เมื่อ login ไม่สำเร็จ
         AwesomeDialog(
           context: context,
           dialogType: DialogType.error,
@@ -62,7 +65,6 @@ class wellcomePage extends StatelessWidget {
       print("Login error: $e");
       print(st);
 
-      // ❌ แสดง Alert เมื่อเกิด Exception
       AwesomeDialog(
         context: context,
         dialogType: DialogType.error,

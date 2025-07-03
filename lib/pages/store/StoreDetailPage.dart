@@ -39,9 +39,9 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
     final scrollBox = context.findRenderObject() as RenderBox?;
     if (scrollBox == null) return;
 
-    final infoOffset = infoBox
-        .localToGlobal(Offset.zero, ancestor: scrollBox)
-        .dy;
+    // final infoOffset = infoBox
+    //     .localToGlobal(Offset.zero, ancestor: scrollBox)
+    //     .dy;
     final reviewOffset = reviewBox
         .localToGlobal(Offset.zero, ancestor: scrollBox)
         .dy;

@@ -194,7 +194,7 @@ class ShopPage extends StatelessWidget {
                     _buildRecommendedMenu(
                       size,
                       isTablet,
-                      "ข้าวกระเพรา",
+                      "ข้าวกระเพรา หมูสับ ผัดพริกแกง ต้มเป็ด",
                       "ร้านอร่อย",
                       "15 นาที",
                       45,
