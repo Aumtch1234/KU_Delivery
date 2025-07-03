@@ -7,268 +7,268 @@ class ShopPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isTablet = size.width >= 600;
+
     return Scaffold(
       backgroundColor: Colors.green.shade100,
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          child: Padding(
+            padding: EdgeInsets.all(isTablet ? 24 : 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'CSC HD Food',
+                  style: TextStyle(
+                    fontSize: isTablet ? 28 : size.width * 0.06,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: isTablet ? 20 : size.height * 0.015),
+                TextField(
+                  decoration: InputDecoration(
+                    prefixIcon: Icon(Icons.search, size: isTablet ? 26 : 20),
+                    suffixIcon: Icon(Icons.tune, size: isTablet ? 26 : 20),
+                    hintText: 'Search',
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  style: TextStyle(
+                    fontSize: isTablet ? 18 : size.width * 0.045,
+                  ),
+                ),
+                SizedBox(height: isTablet ? 24 : size.height * 0.02),
+                Text(
+                  "Food That's\nGood For You",
+                  style: TextStyle(
+                    fontSize: isTablet ? 24 : size.width * 0.05,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  softWrap: true,
+                  overflow: TextOverflow.visible,
+                ),
+                SizedBox(height: isTablet ? 24 : size.height * 0.02),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'CSC HD Food',
+                    Text(
+                      'หมวดหมู่อาหาร',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: isTablet ? 20 : size.width * 0.045,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      decoration: InputDecoration(
-                        prefixIcon: Icon(Icons.search),
-                        suffixIcon: Icon(Icons.tune),
-                        hintText: 'Search',
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
+                    TextButton(
+                      onPressed: () {},
+                      child: Text(
+                        'เพิ่มเติม',
+                        style: TextStyle(
+                          color: Color(0xFF34C759),
+                          fontWeight: FontWeight.bold,
+                          fontSize: isTablet ? 18 : size.width * 0.04,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      "Food That's\nGood For You",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'หมวดหมู่อาหาร',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {},
-                          child: Text(
-                            'เพิ่มเติม',
-                            style: TextStyle(
-                              color: Color(0xFF34C759),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            height: 80,
-                            child: ListView(
-                              scrollDirection: Axis.horizontal,
-                              shrinkWrap: true,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 5.0,
-                                  ),
-                                  child: _buildCategory(
-                                    'assets/menus/main.png',
-                                    'มื้อหลัก',
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 5.0,
-                                  ),
-                                  child: _buildCategory(
-                                    'assets/menus/main.png',
-                                    'ก๋วยเตี๋ยว',
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 5.0,
-                                  ),
-                                  child: _buildCategory(
-                                    'assets/menus/main.png',
-                                    'เครื่องดื่ม',
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 5.0,
-                                  ),
-                                  child: _buildCategory(
-                                    'assets/menus/main.png',
-                                    'ของหวาน',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Divider(color: Colors.grey),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'ร้านค้าที่เข้าร่วม',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {},
-                          child: const Text(
-                            'เพิ่มเติม',
-                            style: TextStyle(
-                              color: Color(0xFF34C759),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildStoreItem(context, 'ร้านข้าวมันไก่'),
-                        _buildStoreItem(context, 'ร้านก๋วยเตี๋ยว'),
-                        _buildStoreItem(context, 'ร้านอาหารตามสั่ง'),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const Divider(color: Colors.grey),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'เมนูแนะนำ',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {},
-                          child: const Text(
-                            'เพิ่มเติม',
-                            style: TextStyle(
-                              color: Color(0xFF34C759),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    // Responsive GridView สำหรับเมนูแนะนำ
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        // กำหนดจำนวนคอลัมน์ตามความกว้างหน้าจอ
-                        int crossAxisCount = 2;
-                        double width = constraints.maxWidth;
-                        if (width > 900) {
-                          crossAxisCount = 4;
-                        } else if (width > 600) {
-                          crossAxisCount = 3;
-                        }
-                        return GridView.count(
-                          crossAxisCount: crossAxisCount,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: width > 600 ? 0.9 : 0.75,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          children: [
-                            _buildRecommendedMenu(
-                              "ข้าวกระเพรา",
-                              "ร้านอร่อย",
-                              "15 นาที",
-                              45,
-                              'assets/menus/kai.png',
-                              5.0,
-                            ),
-                            _buildRecommendedMenu(
-                              "ข้าวผัด",
-                              "ร้านเจ๊หมี",
-                              "20 นาที",
-                              50,
-                              'assets/menus/yam.png',
-                              4.0,
-                            ),
-                            _buildRecommendedMenu(
-                              "ก๋วยเตี๋ยว",
-                              "ร้านเตี๋ยวเด็ด",
-                              "12 นาที",
-                              40,
-                              'assets/menus/yam.png',
-                              4.0,
-                            ),
-                            _buildRecommendedMenu(
-                              "ข้าวหมูแดง",
-                              "ร้านหมูแดง",
-                              "10 นาที",
-                              55,
-                              'assets/menus/kai.png',
-                              4.3,
-                            ),
-                          ],
-                        );
-                      },
                     ),
                   ],
                 ),
-              ),
-            ],
+                SizedBox(height: isTablet ? 12 : size.height * 0.01),
+                // Responsive หมวดหมู่
+                SizedBox(
+                  height: isTablet ? 120 : size.width * 0.22,
+                  child: Center(
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      shrinkWrap: true,
+                      physics: BouncingScrollPhysics(),
+                      children: [
+                        _buildCategory(
+                          size,
+                          isTablet,
+                          'assets/menus/main.png',
+                          'มื้อหลัก',
+                        ),
+                        _buildCategory(
+                          size,
+                          isTablet,
+                          'assets/menus/main.png',
+                          'ก๋วยเตี๋ยว',
+                        ),
+                        _buildCategory(
+                          size,
+                          isTablet,
+                          'assets/menus/main.png',
+                          'เครื่องดื่ม',
+                        ),
+                        _buildCategory(
+                          size,
+                          isTablet,
+                          'assets/menus/main.png',
+                          'ของหวาน',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: isTablet ? 24 : size.height * 0.02),
+                Divider(color: Colors.grey),
+                SizedBox(height: isTablet ? 24 : size.height * 0.02),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'ร้านค้าที่เข้าร่วม',
+                      style: TextStyle(
+                        fontSize: isTablet ? 20 : size.width * 0.045,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {},
+                      child: Text(
+                        'เพิ่มเติม',
+                        style: TextStyle(
+                          color: Color(0xFF34C759),
+                          fontWeight: FontWeight.bold,
+                          fontSize: isTablet ? 18 : size.width * 0.04,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: isTablet ? 12 : size.height * 0.01),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildStoreItem(context, size, isTablet, 'ร้านข้าวมันไก่'),
+                    _buildStoreItem(context, size, isTablet, 'ร้านก๋วยเตี๋ยว'),
+                    _buildStoreItem(
+                      context,
+                      size,
+                      isTablet,
+                      'ร้านอาหารตามสั่ง',
+                    ),
+                  ],
+                ),
+                SizedBox(height: isTablet ? 24 : size.height * 0.02),
+                Divider(color: Colors.grey),
+                SizedBox(height: isTablet ? 24 : size.height * 0.02),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'เมนูแนะนำ',
+                      style: TextStyle(
+                        fontSize: isTablet ? 20 : size.width * 0.045,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {},
+                      child: Text(
+                        'เพิ่มเติม',
+                        style: TextStyle(
+                          color: Color(0xFF34C759),
+                          fontWeight: FontWeight.bold,
+                          fontSize: isTablet ? 18 : size.width * 0.04,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: isTablet ? 12 : size.height * 0.01),
+                // Responsive GridView สำหรับเมนูแนะนำ
+                GridView.count(
+                  crossAxisCount: isTablet ? 3 : 2,
+                  crossAxisSpacing: isTablet ? 24 : 16,
+                  mainAxisSpacing: isTablet ? 24 : 16,
+                  childAspectRatio: isTablet ? 0.9 : 0.75,
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  children: [
+                    _buildRecommendedMenu(
+                      size,
+                      isTablet,
+                      "ข้าวกระเพรา",
+                      "ร้านอร่อย",
+                      "15 นาที",
+                      45,
+                      'assets/menus/kai.png',
+                      5.0,
+                    ),
+                    _buildRecommendedMenu(
+                      size,
+                      isTablet,
+                      "ข้าวผัด",
+                      "ร้านเจ๊หมี",
+                      "20 นาที",
+                      50,
+                      'assets/menus/yam.png',
+                      4.0,
+                    ),
+                    _buildRecommendedMenu(
+                      size,
+                      isTablet,
+                      "ก๋วยเตี๋ยว",
+                      "ร้านเตี๋ยวเด็ด",
+                      "12 นาที",
+                      40,
+                      'assets/menus/yam.png',
+                      4.0,
+                    ),
+                    _buildRecommendedMenu(
+                      size,
+                      isTablet,
+                      "ข้าวหมูแดง",
+                      "ร้านหมูแดง",
+                      "10 นาที",
+                      55,
+                      'assets/menus/kai.png',
+                      4.3,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildCategory(String icon, String label) {
+  Widget _buildCategory(Size size, bool isTablet, String icon, String label) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 16 : size.width * 0.015,
+      ),
       child: Column(
         children: [
           CircleAvatar(
             backgroundColor: Colors.white,
-            radius: 28,
-            child: Image.asset(icon, height: 30),
+            radius: isTablet ? 44 : size.width * 0.08,
+            child: Image.asset(icon, height: isTablet ? 32 : size.width * 0.06),
           ),
-          const SizedBox(height: 4),
-          Text(label, style: const TextStyle(fontSize: 12)),
+          SizedBox(height: isTablet ? 8 : size.height * 0.005),
+          Text(
+            label,
+            style: TextStyle(fontSize: isTablet ? 16 : size.width * 0.03),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStoreItem(BuildContext context, String name) {
+  Widget _buildStoreItem(
+    BuildContext context,
+    Size size,
+    bool isTablet,
+    String name,
+  ) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -281,21 +281,26 @@ class ShopPage extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 100,
-            height: 100,
+            width: isTablet ? 120 : size.width * 0.22,
+            height: isTablet ? 120 : size.width * 0.22,
             decoration: BoxDecoration(
               color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(
+                isTablet ? 20 : size.width * 0.04,
+              ),
               image: const DecorationImage(
                 image: AssetImage('assets/menus/kai.png'),
                 fit: BoxFit.cover,
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: isTablet ? 8 : size.height * 0.01),
           Text(
             name,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: isTablet ? 16 : size.width * 0.035,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -303,53 +308,62 @@ class ShopPage extends StatelessWidget {
   }
 
   Widget _buildRecommendedMenu(
+    Size size,
+    bool isTablet,
     String title,
     String shop,
     String time,
     double price,
     String imagePath,
-    double rating, // ⭐ เพิ่มตัวแปร rating
+    double rating,
   ) {
     return Container(
-      width: 150,
-      padding: const EdgeInsets.all(8),
+      width: double.infinity,
+      padding: EdgeInsets.all(isTablet ? 18 : size.width * 0.02),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(isTablet ? 18 : size.width * 0.03),
       ),
       child: Column(
         children: [
-          // 🔼 รูปภาพ + ดาว
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(
+              isTablet ? 12 : size.width * 0.02,
+            ),
             child: Stack(
               children: [
                 Image.asset(
                   imagePath,
-                  height: 150,
+                  height: isTablet ? 120 : size.width * 0.25,
                   width: double.infinity,
                   fit: BoxFit.cover,
                 ),
                 Positioned(
-                  top: 8,
-                  right: 8,
+                  top: isTablet ? 12 : size.width * 0.02,
+                  right: isTablet ? 12 : size.width * 0.02,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isTablet ? 10 : size.width * 0.015,
+                      vertical: isTablet ? 4 : size.width * 0.005,
                     ),
                     decoration: BoxDecoration(
                       color: Color(0xFF34C759).withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(
+                        isTablet ? 8 : size.width * 0.015,
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.star, color: Colors.yellow, size: 14),
-                        const SizedBox(width: 2),
+                        Icon(
+                          Icons.star,
+                          color: Colors.yellow,
+                          size: isTablet ? 20 : size.width * 0.035,
+                        ),
+                        SizedBox(width: isTablet ? 6 : size.width * 0.01),
                         Text(
-                          rating.toStringAsFixed(1), // ⭐ ใช้ตัวแปรแทน
-                          style: const TextStyle(
-                            fontSize: 12,
+                          rating.toStringAsFixed(1),
+                          style: TextStyle(
+                            fontSize: isTablet ? 14 : size.width * 0.03,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -360,41 +374,44 @@ class ShopPage extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 6),
-
-          // 🔽 ชื่อเมนูอยู่กลาง
+          SizedBox(height: isTablet ? 12 : size.height * 0.01),
           Text(
             title,
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: isTablet ? 18 : size.width * 0.04,
+            ),
           ),
-
-          const SizedBox(height: 4),
-
-          // 🔽 ชื่อร้านเป็นบรรทัดปกติ
+          SizedBox(height: isTablet ? 6 : size.height * 0.005),
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
               shop,
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              style: TextStyle(
+                fontSize: isTablet ? 14 : size.width * 0.03,
+                color: Colors.grey,
+              ),
             ),
           ),
-
-          const Spacer(), // ดันข้อมูลให้อยู่ล่าง
-          // ⏱️ เวลากับราคา
+          const Spacer(),
           Row(
             children: [
-              const Icon(Icons.timer, size: 14),
-              const SizedBox(width: 4),
-              Text(time, style: const TextStyle(fontSize: 12)),
+              Icon(Icons.timer, size: isTablet ? 18 : size.width * 0.035),
+              SizedBox(width: isTablet ? 6 : size.width * 0.01),
+              Text(
+                time,
+                style: TextStyle(fontSize: isTablet ? 14 : size.width * 0.03),
+              ),
               const Spacer(),
               Text(
                 '\$ $price.-',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.green,
+                  fontSize: isTablet ? 16 : size.width * 0.035,
                 ),
               ),
             ],

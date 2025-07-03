@@ -18,7 +18,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
 
   String? _selectedImage;
@@ -76,19 +77,39 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> _handleRegisterUser() async {
     if (_passwordController.text != _confirmPasswordController.text) {
-      showAwesomeDialog(context, 'ข้อผิดพลาด', 'รหัสผ่านไม่ตรงกัน', DialogType.warning);
+      showAwesomeDialog(
+        context,
+        'ข้อผิดพลาด',
+        'รหัสผ่านไม่ตรงกัน',
+        DialogType.warning,
+      );
       return;
     }
     if (_gender == null) {
-      showAwesomeDialog(context, 'ข้อผิดพลาด', 'กรุณาเลือกเพศ', DialogType.warning);
+      showAwesomeDialog(
+        context,
+        'ข้อผิดพลาด',
+        'กรุณาเลือกเพศ',
+        DialogType.warning,
+      );
       return;
     }
     if (_selectedDate == null) {
-      showAwesomeDialog(context, 'ข้อผิดพลาด', 'กรุณาเลือกวันเกิด', DialogType.warning);
+      showAwesomeDialog(
+        context,
+        'ข้อผิดพลาด',
+        'กรุณาเลือกวันเกิด',
+        DialogType.warning,
+      );
       return;
     }
     if (_selectedImage == null) {
-      showAwesomeDialog(context, 'ข้อผิดพลาด', 'กรุณาเลือกรูปโปรไฟล์', DialogType.warning);
+      showAwesomeDialog(
+        context,
+        'ข้อผิดพลาด',
+        'กรุณาเลือกรูปโปรไฟล์',
+        DialogType.warning,
+      );
       return;
     }
 
@@ -122,7 +143,9 @@ class _RegisterPageState extends State<RegisterPage> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('เกิดข้อผิดพลาด: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('เกิดข้อผิดพลาด: $e')));
     }
   }
 
@@ -155,9 +178,17 @@ class _RegisterPageState extends State<RegisterPage> {
               _buildLabel("อีเมลของคุณ *"),
               _buildTextField(_emailController, 'อีเมลของคุณ'),
               _buildLabel("รหัสผ่านของคุณ"),
-              _buildTextField(_passwordController, 'รหัสผ่าน', obscureText: true),
+              _buildTextField(
+                _passwordController,
+                'รหัสผ่าน',
+                obscureText: true,
+              ),
               _buildLabel("ยืนยันรหัสผ่านของคุณ"),
-              _buildTextField(_confirmPasswordController, 'ยืนยันรหัสผ่าน', obscureText: true),
+              _buildTextField(
+                _confirmPasswordController,
+                'ยืนยันรหัสผ่าน',
+                obscureText: true,
+              ),
               _buildLabel('วัน เดือน ปีเกิด'),
               _buildDateSelector(),
               _buildLabel('เพศ'),
@@ -169,7 +200,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 ],
               ),
               _buildLabel("เบอร์โทรศัพท์มือถือ *"),
-              _buildTextField(_phoneController, 'เบอร์โทรศัพท์', keyboardType: TextInputType.phone),
+              _buildTextField(
+                _phoneController,
+                'เบอร์โทรศัพท์',
+                keyboardType: TextInputType.phone,
+              ),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -181,7 +216,9 @@ class _RegisterPageState extends State<RegisterPage> {
                   const Expanded(
                     child: Padding(
                       padding: EdgeInsets.only(top: 12.0),
-                      child: Text('ยินยอมให้เข้าถึงข้อมูลและเข้าใช้บริการบางส่วน'),
+                      child: Text(
+                        'ยินยอมให้เข้าถึงข้อมูลและเข้าใช้บริการบางส่วน',
+                      ),
                     ),
                   ),
                 ],
@@ -190,7 +227,9 @@ class _RegisterPageState extends State<RegisterPage> {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF34C759),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
                   minimumSize: const Size.fromHeight(48),
                 ),
                 onPressed: () {
@@ -202,7 +241,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     );
                   }
                 },
-                child: const Text('สมัครสมาชิก', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'สมัครสมาชิก',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
@@ -232,17 +274,28 @@ class _RegisterPageState extends State<RegisterPage> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isSelected ? const Color(0xFF34C759) : Colors.grey.shade300,
+                      color: isSelected
+                          ? const Color(0xFF34C759)
+                          : Colors.grey.shade300,
                       width: isSelected ? 4 : 2,
                     ),
                     boxShadow: isSelected
-                        ? [BoxShadow(color: Colors.green.withOpacity(0.5), blurRadius: 12, spreadRadius: 2)]
+                        ? [
+                            BoxShadow(
+                              color: Colors.green.withOpacity(0.5),
+                              blurRadius: 12,
+                              spreadRadius: 2,
+                            ),
+                          ]
                         : [],
                   ),
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      CircleAvatar(backgroundImage: AssetImage(imagePath), radius: 40),
+                      CircleAvatar(
+                        backgroundImage: AssetImage(imagePath),
+                        radius: 40,
+                      ),
                       if (isSelected)
                         const Positioned(
                           bottom: 0,
@@ -250,7 +303,11 @@ class _RegisterPageState extends State<RegisterPage> {
                           child: CircleAvatar(
                             radius: 12,
                             backgroundColor: Colors.white,
-                            child: Icon(Icons.check_circle, color: Color(0xFF34C759), size: 20),
+                            child: Icon(
+                              Icons.check_circle,
+                              color: Color(0xFF34C759),
+                              size: 20,
+                            ),
                           ),
                         ),
                     ],
@@ -283,7 +340,9 @@ class _RegisterPageState extends State<RegisterPage> {
               _selectedDate == null
                   ? 'วัน เดือน ปีเกิด'
                   : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
-              style: TextStyle(color: _selectedDate == null ? Colors.grey : Colors.black),
+              style: TextStyle(
+                color: _selectedDate == null ? Colors.grey : Colors.black,
+              ),
             ),
             const Icon(Icons.calendar_today, color: Colors.grey),
           ],
@@ -293,12 +352,19 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildLabel(String text) => Padding(
-        padding: const EdgeInsets.only(top: 12, bottom: 8),
-        child: Text(text, style: const TextStyle(fontSize: 14)),
-      );
+    padding: const EdgeInsets.only(top: 12, bottom: 8),
+    child: Align(
+      alignment: Alignment(-0.95, 0.0),
+      child: Text(text, style: const TextStyle(fontSize: 14)),
+    ),
+  );
 
-  Widget _buildTextField(TextEditingController controller, String label,
-      {bool obscureText = false, TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label, {
+    bool obscureText = false,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: TextFormField(
@@ -343,8 +409,13 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  void showAwesomeDialog(BuildContext context, String title, String message, DialogType type,
-      {VoidCallback? onOk}) {
+  void showAwesomeDialog(
+    BuildContext context,
+    String title,
+    String message,
+    DialogType type, {
+    VoidCallback? onOk,
+  }) {
     AwesomeDialog(
       context: context,
       dialogType: type,

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:delivery/middleware/authService.dart';
+import 'package:delivery/pages/RegisterPage.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,7 +15,6 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  
 
   Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
@@ -28,7 +28,6 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     final success = await AuthService().loginWithEmail(email, password);
-
 
     if (success) {
       final prefs = await SharedPreferences.getInstance();
@@ -100,8 +99,14 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 const Text('ยังไม่มีบัญชี?'),
                 TextButton(
-                  onPressed: () =>
-                      Navigator.pushReplacementNamed(context, '/register'),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const RegisterPage(),
+                      ),
+                    );
+                  },
                   child: const Text(
                     'สมัครสมาชิก',
                     style: TextStyle(color: Color(0xFF34C759)),
@@ -118,7 +123,10 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 8),
-      child: Text(text, style: const TextStyle(fontSize: 14)),
+      child: Align(
+        alignment: Alignment(-0.95, 0.0),
+        child: Text(text, style: const TextStyle(fontSize: 14)),
+      ),
     );
   }
 
