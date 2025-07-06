@@ -1,3 +1,4 @@
+import 'package:delivery/APIs/FetchFoodsForMarket.dart';
 import 'package:delivery/APIs/FetchMarket.dart';
 import 'package:flutter/material.dart';
 
@@ -9,9 +10,11 @@ class Mymarketpage extends StatefulWidget {
 }
 
 class _MymarketpageState extends State<Mymarketpage> {
+  List<dynamic> foodList = [];
   String storeName = '';
   String storeDescription = '';
   bool isLoading = true;
+  bool isOpen = true;
 
   @override
   void initState() {
@@ -20,11 +23,14 @@ class _MymarketpageState extends State<Mymarketpage> {
   }
 
   Future<void> loadMarket() async {
-    final market = await fetchMyMarket(); // market เป็น Map<String, dynamic>?
-    if (market != null) {
+    final market = await fetchMyMarket(); // Map<String, dynamic>?
+    final foods = await FetchFoodsForMarket(); // ดึงเมนูของร้านเจ้าของ
+
+    if (market != null && foods != null) {
       setState(() {
         storeName = market['shop_name'] ?? 'ไม่มีชื่อร้าน';
         storeDescription = market['shop_description'] ?? 'ไม่มีคำอธิบายร้าน';
+        foodList = foods;
         isLoading = false;
       });
     } else {
@@ -38,54 +44,47 @@ class _MymarketpageState extends State<Mymarketpage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isTablet = size.width > 600;
+
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFF34C759),
         elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16.0),
-          child: CircleAvatar(
-            backgroundColor: Colors.white,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: const Icon(Icons.add_business, color: Colors.black),
-            ),
+          IconButton(
+            icon: const Icon(Icons.add, color: Colors.black),
+            onPressed: () {
+              Navigator.pushNamed(context, '/addFood');
+            },
           ),
         ],
       ),
-      extendBodyBehindAppBar: true,
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               child: Column(
                 children: [
-                  // Top image (แก้ตามข้อมูลจริงถ้ามี)
                   Stack(
                     children: [
                       Image.asset(
-                        'assets/menus/kai.png',
+                        'assets/menus/kai.png', // อาจเปลี่ยนเป็น market['shop_logo_url']
                         height: 220,
                         width: double.infinity,
                         fit: BoxFit.cover,
                       ),
                     ],
                   ),
-                  // Store Info
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // ข้อมูลร้าน
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -134,29 +133,40 @@ class _MymarketpageState extends State<Mymarketpage> {
                                 ),
                               ],
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade100,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Text(
-                                'เปิดอยู่',
-                                style: TextStyle(
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.bold,
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  isOpen = !isOpen;
+                                });
+                                // TODO: ส่ง API เปลี่ยนสถานะร้าน
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isOpen
+                                      ? Colors.green.shade100
+                                      : Colors.red.shade100,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  isOpen ? 'เปิดอยู่' : 'ปิดอยู่',
+                                  style: TextStyle(
+                                    color: isOpen ? Colors.green : Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ),
                           ],
                         ),
+
                         const SizedBox(height: 16),
                         const Divider(),
                         const SizedBox(height: 16),
-                        // เมนูทั้งหมด (ยังใช้เมนูเดิม)
+
                         const Text(
                           'เมนูทั้งหมด',
                           style: TextStyle(
@@ -164,22 +174,22 @@ class _MymarketpageState extends State<Mymarketpage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 8),
+
                         GridView.count(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
+                          crossAxisCount: isTablet ? 3 : 2,
+                          crossAxisSpacing: isTablet ? 24 : 16,
+                          mainAxisSpacing: isTablet ? 24 : 16,
+                          childAspectRatio: isTablet ? 0.9 : 0.75,
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          childAspectRatio: 0.75,
-                          children: List.generate(6, (index) {
-                            return _buildMenuCard(
-                              name: 'เมนูที่ ${index + 1}',
-                              description: 'อธิบายเมนู ${index + 1}',
-                              price: (40 + index * 5).toDouble(),
-                              imagePath: 'assets/menus/kai.png',
+                          children: foodList.map((food) {
+                            return _buildFoodCard(
+                              context,
+                              foodData: food,
+                              storeName: storeName,
                             );
-                          }),
+                          }).toList(),
                         ),
                       ],
                     ),
@@ -190,69 +200,112 @@ class _MymarketpageState extends State<Mymarketpage> {
     );
   }
 
-  Widget _buildMenuCard({
-    required String name,
-    required String description,
-    required double price,
-    required String imagePath,
+  Widget _buildFoodCard(
+    BuildContext context, {
+    required Map<String, dynamic> foodData,
+    required String storeName,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade300,
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+    final size = MediaQuery.of(context).size;
+    final isTablet = size.width > 600;
+
+    final price = double.tryParse(foodData['price'].toString()) ?? 0;
+
+    return GestureDetector(
+      onTap: () async {
+        await Navigator.pushNamed(
+          context,
+          '/editFood',
+          arguments: {
+            'id': foodData['food_id'],
+            'name': foodData['food_name'],
+            'price': foodData['price'],
+            'imagePath': foodData['image_url'],
+            'options': foodData['options'],
+          },
+        );
+        // 🔁 ดึงข้อมูลเมนูใหม่หลังจากกลับมาจากหน้าแก้ไข
+        await loadMarket();
+      },
+
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(isTablet ? 18 : size.width * 0.02),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(
+            isTablet ? 18 : size.width * 0.03,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            child: Image.asset(
-              imagePath,
-              width: double.infinity,
-              height: 120,
-              fit: BoxFit.cover,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 5,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(
+                isTablet ? 12 : size.width * 0.02,
+              ),
+              child: Image.network(
+                foodData['image_url'] ?? 'https://via.placeholder.com/150',
+                height: isTablet ? 120 : size.width * 0.25,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.error),
+              ),
+            ),
+            SizedBox(height: isTablet ? 12 : size.height * 0.01),
+            Text(
+              foodData['food_name'] ?? '',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: isTablet ? 18 : size.width * 0.04,
+              ),
+            ),
+            SizedBox(height: isTablet ? 6 : size.height * 0.005),
+            Text(
+              storeName,
+              style: TextStyle(
+                fontSize: isTablet ? 14 : size.width * 0.03,
+                color: Colors.grey,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: isTablet ? 12 : size.height * 0.008),
+            Row(
               children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Icon(
+                  Icons.timer,
+                  size: isTablet ? 16 : size.width * 0.035,
+                  color: Colors.grey,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                const SizedBox(width: 4),
+                const Text(
+                  '20 นาที',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
                 ),
-                const SizedBox(height: 8),
+                const Spacer(),
                 Text(
                   '฿${price.toStringAsFixed(0)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.green,
+                    fontSize: isTablet ? 16 : size.width * 0.035,
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
