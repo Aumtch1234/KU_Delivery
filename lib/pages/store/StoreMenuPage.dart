@@ -28,9 +28,17 @@ class StoreMenuPage extends StatelessWidget {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Icon(Icons.shopping_cart, color: Colors.black),
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/market/add');
+              },
+              style: ElevatedButton.styleFrom(
+                shape: const CircleBorder(),
+                padding: const EdgeInsets.all(8),
+                backgroundColor: Colors.white,
+                elevation: 2,
+              ),
+              child: const Icon(Icons.shopping_cart, color: Colors.black),
             ),
           ),
         ],
