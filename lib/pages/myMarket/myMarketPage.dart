@@ -58,8 +58,11 @@ class _MymarketpageState extends State<Mymarketpage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add, color: Colors.black),
-            onPressed: () {
-              Navigator.pushNamed(context, '/addFood');
+            onPressed: () async {
+              final result = await Navigator.pushNamed(context, '/addFood');
+              if (result == true) {
+                await loadMarket(); // โหลดข้อมูลเมนูใหม่หลังเพิ่มเมนูเสร็จ
+              }
             },
           ),
         ],
