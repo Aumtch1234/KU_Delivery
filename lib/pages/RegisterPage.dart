@@ -243,7 +243,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 },
                 child: const Text(
                   'สมัครสมาชิก',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],
