@@ -13,20 +13,30 @@ class AuthService {
   // C75 192.168.159.44
 
   /// ✅ Login แบบ Manual (อีเมล + รหัสผ่าน)
-  Future<bool> loginWithEmail(String email, String password) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'password': password}),
-    );
+  Future<Map<String, dynamic>> loginWithEmail(
+    String email,
+    String password,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
 
-    if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      await _saveAuthData(data);
-      return true;
-    } else {
-      print('Manual login failed: ${jsonDecode(response.body)['message']}');
-      return false;
+
+      if (response.statusCode == 200) {
+        await _saveAuthData(data);
+        return {'success': true};
+      } else {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'เข้าสู่ระบบไม่สำเร็จ',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'เกิดข้อผิดพลาด: ${e.toString()}'};
     }
   }
 

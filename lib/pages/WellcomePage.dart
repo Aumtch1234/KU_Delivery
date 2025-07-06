@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:delivery/middleware/authService.dart';
 import 'package:delivery/pages/LoginPage.dart';
 import 'package:delivery/pages/RegisterPage.dart';
@@ -38,6 +40,9 @@ class wellcomePage extends StatelessWidget {
       }
 
       final success = await AuthService().loginWithGoogle(auth.idToken!);
+      final prefs = await SharedPreferences.getInstance();
+      final userStr = prefs.getString('user');
+      final user = jsonDecode(userStr!); // ✅ ปลอดภัยเพราะเราเก็บ json แล้ว
       print("loginWithGoogle result: $success");
 
       if (success) {
@@ -46,7 +51,7 @@ class wellcomePage extends StatelessWidget {
           dialogType: DialogType.success,
           animType: AnimType.scale,
           title: 'เข้าสู่ระบบสำเร็จ',
-          desc: 'ยินดีต้อนรับ เลือกอาหารได้เลย ลุย!!',
+          desc: 'ยินดีต้อนรับ ${user['display_name']}',
           btnOkOnPress: () {},
           btnOkColor: Colors.green,
         ).show();

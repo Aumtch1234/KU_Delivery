@@ -4,6 +4,7 @@ import 'package:delivery/middleware/authService.dart';
 import 'package:delivery/pages/RegisterPage.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:awesome_dialog/awesome_dialog.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -21,27 +22,46 @@ class _LoginPageState extends State<LoginPage> {
     final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกอีเมลและรหัสผ่าน')),
-      );
+      {
+        AwesomeDialog(
+          context: context,
+          dialogType: DialogType.warning,
+          animType: AnimType.rightSlide,
+          title: 'เข้าสู่ระบบไม่สำเร็จ',
+          desc: 'กรุณากรอกอีเมลและรหัสผ่าน',
+          btnOkOnPress: () {},
+        ).show();
+      }
       return;
     }
 
-    final success = await AuthService().loginWithEmail(email, password);
+    final result = await AuthService().loginWithEmail(email, password);
 
-    if (success) {
+    if (result['success']) {
       final prefs = await SharedPreferences.getInstance();
       final userStr = prefs.getString('user');
-      final user = jsonDecode(userStr!); // ✅ ปลอดภัยเพราะเราเก็บ json แล้ว
+      final user = jsonDecode(userStr!);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('ยินดีต้อนรับ ${user['display_name']}')),
-      );
+      AwesomeDialog(
+        context: context,
+        dialogType: DialogType.success,
+        animType: AnimType.scale,
+        title: 'เข้าสู่ระบบสำเร็จ',
+        desc: 'ยินดีต้อนรับ ${user['display_name']}',
+        btnOkOnPress: () {},
+        btnOkColor: Colors.green,
+      ).show();
+
       Navigator.pushReplacementNamed(context, '/main');
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('เข้าสู่ระบบไม่สำเร็จ')));
+      AwesomeDialog(
+        context: context,
+        dialogType: DialogType.error,
+        animType: AnimType.rightSlide,
+        title: 'เข้าสู่ระบบไม่สำเร็จ',
+        desc: result['message'],
+        btnOkOnPress: () {},
+      ).show();
     }
   }
 

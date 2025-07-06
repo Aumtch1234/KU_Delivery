@@ -1,6 +1,5 @@
 import 'package:delivery/pages/store/foods/OrderFoodPage.dart';
-import 'package:provider/provider.dart';
-import '../../providers/basket_provider.dart';
+
 
 import '../store/StoreDetailPage.dart';
 
