@@ -8,6 +8,8 @@ Future<Map<String, dynamic>> AddMarketApiMultipart({
   required String shopName,
   required String shopDesc,
   required File imageFile,
+  String? openTime,      // เพิ่มนี้
+  String? closeTime,     // เพิ่มนี้
 }) async {
   final uri = Uri.parse('http://10.0.2.2:4000/api/market/add');
 
@@ -15,8 +17,10 @@ Future<Map<String, dynamic>> AddMarketApiMultipart({
 
   final request = http.MultipartRequest('POST', uri)
     ..headers['Authorization'] = 'Bearer $token' // ✅ ใส่ token
-    ..fields['shop_name'] = shopName
+     ..fields['shop_name'] = shopName
     ..fields['shop_description'] = shopDesc
+    ..fields['open_time'] = openTime ?? ''
+    ..fields['close_time'] = closeTime ?? ''
     ..files.add(await http.MultipartFile.fromPath('shop_logo', imageFile.path));
 
   final streamedResponse = await request.send();

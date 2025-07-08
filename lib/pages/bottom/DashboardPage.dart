@@ -42,6 +42,51 @@ class _DashboardPageState extends State<DashboardPage> {
         (uri.scheme == 'http' || uri.scheme == 'https');
   }
 
+  Widget _buildUserInfoCard() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _infoRow("ลงทะเบียนเมื่อ", user!['created_at'] ?? '-'),
+          _infoRow("Google ID", user!['google_id'] ?? '-'),
+          _infoRow(
+            "สถานะร้านค้า",
+            user!['is_seller'] == true ? 'เป็นเจ้าของร้าน' : 'ยังไม่ได้สมัคร',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Text(
+            "$label: ",
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 14),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,86 +108,72 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Center(
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundImage: _isNetworkUrl(user!['photo_url'])
-                          ? NetworkImage(user!['photo_url'])
-                          : AssetImage('assets/avatars/${user!['photo_url']}')
-                                as ImageProvider,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundImage: _isNetworkUrl(user!['photo_url'])
+                        ? NetworkImage(user!['photo_url'])
+                        : AssetImage('assets/avatars/${user!['photo_url']}')
+                              as ImageProvider,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    user!['display_name'] ?? '',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      user!['display_name'] ?? '',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      user!['email'] ?? '',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'ลงทะเบียนเมื่อ: ${user!['created_at'] ?? '-'}',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Google ID: ${user!['google_id'] ?? '-'}',
-                      style: TextStyle(fontSize: 13, color: Colors.grey[500]),
-                    ),
-                    Text(
-                      'Is_Seller: ${user!['is_seller'] ?? '-'}',
-                      style: TextStyle(fontSize: 13, color: Colors.red[500]),
-                    ),
-                    const SizedBox(height: 32),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: [
-                        if (user!['is_seller'] == true)
-                          _buildButton(
-                            text: 'ร้านค้าของฉัน',
-                            icon: Icons.store,
-                            color: Colors.green.shade600,
-                            onPressed: () {
-                              Navigator.pushNamed(context, '/myMarket');
-                            },
-                          ),
-                        if (user!['is_seller'] == false ||
-                            user!['is_seller'] == null)
-                          _buildButton(
-                            text: 'สมัครร้านค้า',
-                            icon: Icons.add_business,
-                            color: Colors.orange.shade600,
-                            onPressed: () {
-                              Navigator.pushNamed(context, '/add/market').then((
-                                _,
-                              ) async {
-                                await AuthService()
-                                    .refreshUserToken(); // รีเฟรช token ใหม่
-                                await _loadUser(); // โหลด user ใหม่เข้า state
-                              });
-                            },
-                          ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    user!['email'] ?? '',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildUserInfoCard(),
+                  const SizedBox(height: 32),
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      if (user!['is_seller'] == true)
                         _buildButton(
-                          text: 'ออกจากระบบ',
-                          icon: Icons.logout,
-                          color: Colors.red.shade400,
+                          text: 'ร้านค้าของฉัน',
+                          icon: Icons.storefront_rounded,
+                          color: const Color(0xFF34C759),
                           onPressed: () {
-                            AuthService().confirmLogout(context);
+                            Navigator.pushNamed(context, '/myMarket');
                           },
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                      if (user!['is_seller'] == false ||
+                          user!['is_seller'] == null)
+                        _buildButton(
+                          text: 'สมัครร้านค้า',
+                          icon: Icons.add_business_rounded,
+                          color: Colors.orange.shade600,
+                          onPressed: () async {
+                            Navigator.pushNamed(context, '/add/market').then((
+                              _,
+                            ) async {
+                              await AuthService().refreshUserToken();
+                              await _loadUser();
+                            });
+                          },
+                        ),
+                      _buildButton(
+                        text: 'ออกจากระบบ',
+                        icon: Icons.logout_rounded,
+                        color: Colors.redAccent,
+                        onPressed: () {
+                          AuthService().confirmLogout(context);
+                        },
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
     );

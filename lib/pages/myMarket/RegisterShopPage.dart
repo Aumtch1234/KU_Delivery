@@ -1,9 +1,10 @@
-import 'package:delivery/APIs/AddMarketAPI.dart';
-import 'package:delivery/middleware/authService.dart';
+import 'dart:io';
+import 'package:delivery/LoadingOverlay/LoadingOverlay.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
-import 'dart:io';
+import 'package:delivery/APIs/AddMarketAPI.dart';
+import 'package:delivery/middleware/authService.dart';
 
 class RegisterShopPage extends StatefulWidget {
   @override
@@ -11,61 +12,83 @@ class RegisterShopPage extends StatefulWidget {
 }
 
 class _RegisterShopPageState extends State<RegisterShopPage> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _descController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _descController = TextEditingController();
+  TimeOfDay? openTime;
+  TimeOfDay? closeTime;
   File? _image;
+  bool _isLoading = false;
 
   Future<void> _pickImage() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked != null) setState(() => _image = File(picked.path));
   }
 
+  Future<void> _pickTime(bool isOpening) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        if (isOpening)
+          openTime = picked;
+        else
+          closeTime = picked;
+      });
+    }
+  }
+
+  String formatTime(TimeOfDay? time) =>
+      time == null ? 'เลือกเวลา' : time.format(context);
+
   void _submit() async {
-    if (_nameController.text.isEmpty || _image == null) {
+    if (_nameController.text.isEmpty ||
+        _image == null ||
+        openTime == null ||
+        closeTime == null) {
       AwesomeDialog(
         context: context,
         dialogType: DialogType.warning,
-        title: 'กรุณากรอกข้อมูลให้ครบถ้วน',
+        title: 'กรอกข้อมูลไม่ครบ',
+        desc: 'โปรดกรอกข้อมูลให้ครบถ้วน',
         btnOkOnPress: () {},
       ).show();
       return;
     }
-
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.info,
-      title: 'กำลังอัปโหลด...',
-      desc: 'กรุณารอสักครู่',
-      autoHide: const Duration(seconds: 2),
-    ).show();
 
     final user = AuthService().currentUser;
     if (user == null || user['user_id'] == null) {
       AwesomeDialog(
         context: context,
         dialogType: DialogType.error,
-        title: 'ไม่พบข้อมูลผู้ใช้',
+        title: 'ไม่พบผู้ใช้',
         desc: 'กรุณาเข้าสู่ระบบใหม่',
         btnOkOnPress: () {},
       ).show();
       return;
     }
+
+    setState(() => _isLoading = true); // ✅ เริ่มโหลด
+
     final result = await AddMarketApiMultipart(
-      ownerId: user['user_id'], // ✅ รองรับได้ทั้งแบบ manual หรือ google
+      ownerId: user['user_id'],
       shopName: _nameController.text,
       shopDesc: _descController.text,
       imageFile: _image!,
+      openTime: openTime!.format(context),
+      closeTime: closeTime!.format(context),
     );
 
-    if (result['statusCode'] == 200) {
-      // ✅ รีเฟรช token ก่อนโชว์ success
-      await AuthService().refreshUserToken();
+    setState(() => _isLoading = false); // ✅ หยุดโหลด
 
+    if (result['statusCode'] == 200) {
+      await AuthService().refreshUserToken();
       AwesomeDialog(
         context: context,
         dialogType: DialogType.success,
         title: 'สมัครร้านค้าสำเร็จ',
-        desc: 'ระบบจะพาคุณกลับสู่หน้าหลัก',
+        desc: 'ระบบจะพาคุณกลับหน้าหลัก',
         btnOkOnPress: () => Navigator.pop(context),
       ).show();
     } else {
@@ -81,41 +104,57 @@ class _RegisterShopPageState extends State<RegisterShopPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('สมัครเป็นร้านค้า')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            GestureDetector(
-              onTap: _pickImage,
-              child: CircleAvatar(
-                radius: 50,
-                backgroundColor: Colors.grey[300],
-                backgroundImage: _image != null ? FileImage(_image!) : null,
-                child: _image == null
-                    ? const Icon(Icons.camera_alt, size: 32)
-                    : null,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildLabel('ชื่อร้านค้า'),
-            _buildTextField(_nameController, 'ระบุชื่อร้าน'),
-            _buildLabel('คำอธิบายร้าน'),
-            _buildTextField(_descController, 'ระบุคำอธิบาย', maxLines: 3),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF34C759),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
+    const primaryColor = Color(0xFF34C759);
+
+    return LoadingOverlay(
+      isLoading: _isLoading,
+
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: primaryColor,
+          title: const Text('สมัครเป็นร้านค้า'),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              GestureDetector(
+                onTap: _pickImage,
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.grey[300],
+                  backgroundImage: _image != null ? FileImage(_image!) : null,
+                  child: _image == null ? const Icon(Icons.camera_alt) : null,
                 ),
-                minimumSize: const Size.fromHeight(50),
               ),
-              child: const Text('ยืนยัน', style: TextStyle(fontSize: 16)),
-            ),
-          ],
+              const SizedBox(height: 16),
+              _buildLabel('ชื่อร้านค้า'),
+              _buildTextField(_nameController, 'ระบุชื่อร้าน'),
+              _buildLabel('คำอธิบายร้าน'),
+              _buildTextField(_descController, 'ระบุคำอธิบาย', maxLines: 3),
+              const SizedBox(height: 12),
+              _buildLabel('เวลาเปิดร้าน'),
+              _buildTimePickerButton(true),
+              const SizedBox(height: 8),
+              _buildLabel('เวลาปิดร้าน'),
+              _buildTimePickerButton(false),
+              const SizedBox(height: 12),
+              _buildLabel('เลือกตำแหน่งร้านบนแผนที่'),
+              const SizedBox(height: 8),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  minimumSize: const Size.fromHeight(50),
+                ),
+                child: const Text('ยืนยัน', style: TextStyle(fontSize: 16)),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -136,10 +175,19 @@ class _RegisterShopPageState extends State<RegisterShopPage> {
       maxLines: maxLines,
       decoration: InputDecoration(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: Colors.grey[100],
         hintText: hint,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
+    );
+  }
+
+  Widget _buildTimePickerButton(bool isOpen) {
+    final time = isOpen ? openTime : closeTime;
+    return OutlinedButton.icon(
+      icon: const Icon(Icons.access_time),
+      label: Text(formatTime(time)),
+      onPressed: () => _pickTime(isOpen),
     );
   }
 }

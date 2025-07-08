@@ -1,4 +1,5 @@
 import 'package:delivery/APIs/RegisterAPI.dart';
+import 'package:delivery/LoadingOverlay/LoadingOverlay.dart';
 import 'package:flutter/material.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 
@@ -14,6 +15,7 @@ class _RegisterPageState extends State<RegisterPage> {
   int? _gender;
   bool _agree = false;
   DateTime? _selectedDate;
+  bool _isLoading = false;
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -76,181 +78,169 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _handleRegisterUser() async {
-    if (_passwordController.text != _confirmPasswordController.text) {
-      showAwesomeDialog(
-        context,
-        'ข้อผิดพลาด',
-        'รหัสผ่านไม่ตรงกัน',
-        DialogType.warning,
-      );
-      return;
-    }
-    if (_gender == null) {
-      showAwesomeDialog(
-        context,
-        'ข้อผิดพลาด',
-        'กรุณาเลือกเพศ',
-        DialogType.warning,
-      );
-      return;
-    }
-    if (_selectedDate == null) {
-      showAwesomeDialog(
-        context,
-        'ข้อผิดพลาด',
-        'กรุณาเลือกวันเกิด',
-        DialogType.warning,
-      );
-      return;
-    }
-    if (_selectedImage == null) {
-      showAwesomeDialog(
-        context,
-        'ข้อผิดพลาด',
-        'กรุณาเลือกรูปโปรไฟล์',
-        DialogType.warning,
-      );
-      return;
-    }
-
-    try {
-      final result = await registerUserAPI(
-        name: _nameController.text,
-        email: _emailController.text,
-        password: _passwordController.text,
-        phone: _phoneController.text,
-        gender: _gender!,
-        birthdate: _selectedDate!.toIso8601String(),
-        photoUrl: _selectedImage!.split('/').last,
-      );
-
-      if (result['statusCode'] == 200) {
-        showAwesomeDialog(
-          context,
-          'สำเร็จ',
-          'สมัครสมาชิกสำเร็จ',
-          DialogType.success,
-          onOk: () {
-            Navigator.pushReplacementNamed(context, '/login');
-          },
-        );
-      } else {
-        showAwesomeDialog(
-          context,
-          'ไม่สำเร็จ',
-          result['body']['message'] ?? 'เกิดข้อผิดพลาด',
-          DialogType.error,
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('เกิดข้อผิดพลาด: $e')));
-    }
+  if (_passwordController.text != _confirmPasswordController.text) {
+    showAwesomeDialog(context, 'ข้อผิดพลาด', 'รหัสผ่านไม่ตรงกัน', DialogType.warning);
+    return;
   }
+  if (_gender == null) {
+    showAwesomeDialog(context, 'ข้อผิดพลาด', 'กรุณาเลือกเพศ', DialogType.warning);
+    return;
+  }
+  if (_selectedDate == null) {
+    showAwesomeDialog(context, 'ข้อผิดพลาด', 'กรุณาเลือกวันเกิด', DialogType.warning);
+    return;
+  }
+  if (_selectedImage == null) {
+    showAwesomeDialog(context, 'ข้อผิดพลาด', 'กรุณาเลือกรูปโปรไฟล์', DialogType.warning);
+    return;
+  }
+
+  setState(() => _isLoading = true); // ✅ เริ่มโหลด
+
+  try {
+    final result = await registerUserAPI(
+      name: _nameController.text,
+      email: _emailController.text,
+      password: _passwordController.text,
+      phone: _phoneController.text,
+      gender: _gender!,
+      birthdate: _selectedDate!.toIso8601String(),
+      photoUrl: _selectedImage!.split('/').last,
+    );
+
+    setState(() => _isLoading = false); // ✅ หยุดโหลด
+
+    if (result['statusCode'] == 200) {
+      showAwesomeDialog(
+        context,
+        'สำเร็จ',
+        'สมัครสมาชิกสำเร็จ',
+        DialogType.success,
+        onOk: () {
+          Navigator.pushReplacementNamed(context, '/login');
+        },
+      );
+    } else {
+      showAwesomeDialog(
+        context,
+        'ไม่สำเร็จ',
+        result['body']['message'] ?? 'เกิดข้อผิดพลาด',
+        DialogType.error,
+      );
+    }
+  } catch (e) {
+    setState(() => _isLoading = false); // ✅ หยุดโหลดแม้เกิด error
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
+    );
+  }
+}
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F7),
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+    return LoadingOverlay(
+      isLoading: _isLoading,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF7F7F7),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          backgroundColor: const Color(0xFF34C759),
+          elevation: 0,
         ),
-        backgroundColor: const Color(0xFF34C759),
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              const Text(
-                'โปรดกรอกข้อมูลส่วนตัว',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 24),
-              _buildAvatarSelector(),
-              _buildLabel("ชื่อ - นามสกุล *"),
-              _buildTextField(_nameController, 'ชื่อ - นามสกุล'),
-              _buildLabel("อีเมลของคุณ *"),
-              _buildTextField(_emailController, 'อีเมลของคุณ'),
-              _buildLabel("รหัสผ่านของคุณ"),
-              _buildTextField(
-                _passwordController,
-                'รหัสผ่าน',
-                obscureText: true,
-              ),
-              _buildLabel("ยืนยันรหัสผ่านของคุณ"),
-              _buildTextField(
-                _confirmPasswordController,
-                'ยืนยันรหัสผ่าน',
-                obscureText: true,
-              ),
-              _buildLabel('วัน เดือน ปีเกิด'),
-              _buildDateSelector(),
-              _buildLabel('เพศ'),
-              Row(
-                children: [
-                  _buildGenderRadio(0, 'ชาย'),
-                  _buildGenderRadio(1, 'หญิง'),
-                  _buildGenderRadio(2, 'ไม่ระบุ'),
-                ],
-              ),
-              _buildLabel("เบอร์โทรศัพท์มือถือ *"),
-              _buildTextField(
-                _phoneController,
-                'เบอร์โทรศัพท์',
-                keyboardType: TextInputType.phone,
-              ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Checkbox(
-                    value: _agree,
-                    activeColor: const Color(0xFF34C759),
-                    onChanged: (val) => setState(() => _agree = val ?? false),
-                  ),
-                  const Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(top: 12.0),
-                      child: Text(
-                        'ยินยอมให้เข้าถึงข้อมูลและเข้าใช้บริการบางส่วน',
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                const Text(
+                  'โปรดกรอกข้อมูลส่วนตัว',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 24),
+                _buildAvatarSelector(),
+                _buildLabel("ชื่อ - นามสกุล *"),
+                _buildTextField(_nameController, 'ชื่อ - นามสกุล'),
+                _buildLabel("อีเมลของคุณ *"),
+                _buildTextField(_emailController, 'อีเมลของคุณ'),
+                _buildLabel("รหัสผ่านของคุณ"),
+                _buildTextField(
+                  _passwordController,
+                  'รหัสผ่าน',
+                  obscureText: true,
+                ),
+                _buildLabel("ยืนยันรหัสผ่านของคุณ"),
+                _buildTextField(
+                  _confirmPasswordController,
+                  'ยืนยันรหัสผ่าน',
+                  obscureText: true,
+                ),
+                _buildLabel('วัน เดือน ปีเกิด'),
+                _buildDateSelector(),
+                _buildLabel('เพศ'),
+                Row(
+                  children: [
+                    _buildGenderRadio(0, 'ชาย'),
+                    _buildGenderRadio(1, 'หญิง'),
+                    _buildGenderRadio(2, 'ไม่ระบุ'),
+                  ],
+                ),
+                _buildLabel("เบอร์โทรศัพท์มือถือ *"),
+                _buildTextField(
+                  _phoneController,
+                  'เบอร์โทรศัพท์',
+                  keyboardType: TextInputType.phone,
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Checkbox(
+                      value: _agree,
+                      activeColor: const Color(0xFF34C759),
+                      onChanged: (val) => setState(() => _agree = val ?? false),
+                    ),
+                    const Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 12.0),
+                        child: Text(
+                          'ยินยอมให้เข้าถึงข้อมูลและเข้าใช้บริการบางส่วน',
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF34C759),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  minimumSize: const Size.fromHeight(48),
+                  ],
                 ),
-                onPressed: () {
-                  if (_formKey.currentState!.validate() && _agree) {
-                    _handleRegisterUser();
-                  } else if (!_agree) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('กรุณายินยอมเงื่อนไข')),
-                    );
-                  }
-                },
-                child: const Text(
-                  'สมัครสมาชิก',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF34C759),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  onPressed: () {
+                    if (_formKey.currentState!.validate() && _agree) {
+                      _handleRegisterUser();
+                    } else if (!_agree) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('กรุณายินยอมเงื่อนไข')),
+                      );
+                    }
+                  },
+                  child: const Text(
+                    'สมัครสมาชิก',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
