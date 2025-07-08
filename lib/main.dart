@@ -10,6 +10,7 @@ import 'package:delivery/pages/myMarket/AddFoodPage.dart';
 import 'package:delivery/pages/myMarket/EditFoodPage.dart';
 import 'package:delivery/pages/myMarket/RegisterShopPage.dart';
 import 'package:delivery/pages/myMarket/myMarketPage.dart';
+import 'package:delivery/pages/order/OrderNowPage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/basket_provider.dart';
@@ -40,14 +41,13 @@ class MyApp extends StatelessWidget {
         '/dashboard': (_) => AuthGuard(child: DashboardPage()),
         '/shop': (_) => AuthGuard(child: ShopPage()),
         '/main': (_) => AuthGuard(child: MainNavigation()), // ✅ ตรงนี้
-
         '/add/market': (_) =>
             AuthGuard(child: RegisterShopPage()), // ร้านค้าของฉัน
         '/myMarket': (_) => AuthGuard(child: Mymarketpage()), // ร้านค้าของฉัน
         '/addFood': (_) => AuthGuard(child: AddFoodPage()), // ร้านค้าของฉัน
         '/editFood': (_) => AuthGuard(child: EditFoodPage()),
-
         '/basket': (context) => MyBasketPage(),
+        '/order-now': (context) => const OrderNowPage(),
       },
       debugShowCheckedModeBanner: false, // optional: ซ่อน debug banner
     );

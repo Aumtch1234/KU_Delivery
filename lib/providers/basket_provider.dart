@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import '../models/basket_item.dart';
 
 class BasketProvider extends ChangeNotifier {
+  void clear() {
+    _items.clear();
+    notifyListeners();
+  }
+
   final List<BasketItem> _items = [];
   bool isEditMode = false;
 

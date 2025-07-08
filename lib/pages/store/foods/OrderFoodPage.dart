@@ -39,6 +39,24 @@ class _OrderFoodPageState extends State<OrderFoodPage> {
   double get totalPrice =>
       ((spicyLevels[selectedSpicy]['price'] as int) * quantity).toDouble();
 
+  void _orderNow(BuildContext context) {
+    final basket = Provider.of<BasketProvider>(context, listen: false);
+    basket.clear();
+    basket.addItem(
+      BasketItem(
+        storeName: widget.storeName,
+        foodName: widget.foodName,
+        imagePath: widget.imagePath,
+        spicyLevel: spicyLevels[selectedSpicy]['label'] as String,
+        note: noteController.text,
+        price: (spicyLevels[selectedSpicy]['price'] as int).toDouble(),
+        quantity: quantity,
+        selected: true,
+      ),
+    );
+    Navigator.pushNamed(context, '/order-now');
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -247,6 +265,7 @@ class _OrderFoodPageState extends State<OrderFoodPage> {
                       return RadioListTile<int>(
                         value: i,
                         groupValue: selectedSpicy,
+                        activeColor: Colors.green,
                         onChanged: (val) =>
                             setState(() => selectedSpicy = val!),
                         title: Text(
@@ -299,7 +318,7 @@ class _OrderFoodPageState extends State<OrderFoodPage> {
                       children: [
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: () {},
+                            onPressed: () => _orderNow(context),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.grey[700],
                               padding: const EdgeInsets.symmetric(vertical: 16),

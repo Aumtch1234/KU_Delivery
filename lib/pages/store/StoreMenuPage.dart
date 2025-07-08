@@ -1,6 +1,7 @@
 import 'package:delivery/pages/store/foods/OrderFoodPage.dart';
+import 'package:delivery/providers/basket_provider.dart';
 
-
+import 'package:provider/provider.dart';
 import '../store/StoreDetailPage.dart';
 
 import 'package:flutter/material.dart';
@@ -29,12 +30,57 @@ class StoreMenuPage extends StatelessWidget {
             ),
           ),
         ),
+        centerTitle: false,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Icon(Icons.shopping_cart, color: Colors.black),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.pushNamed(context, '/basket');
+              },
+              child: Consumer<BasketProvider>(
+                builder: (context, basket, _) {
+                  int count = basket.items.fold(
+                    0,
+                    (sum, e) => sum + e.quantity,
+                  );
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: Colors.white,
+                        child: Icon(Icons.shopping_cart, color: Colors.black),
+                      ),
+                      if (count > 0)
+                        Positioned(
+                          right: -7,
+                          top: -10,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 22,
+                              minHeight: 22,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '$count',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ],

@@ -1,0 +1,308 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/basket_provider.dart';
+
+class OrderNowPage extends StatefulWidget {
+  static const routeName = '/order-now';
+  const OrderNowPage({super.key});
+
+  @override
+  State<OrderNowPage> createState() => _OrderNowPageState();
+}
+
+class _OrderNowPageState extends State<OrderNowPage> {
+  String deliveryType = 'แบบ/วางไว้จุดที่ระบุ';
+  String paymentMethod = 'เงินสด';
+  TextEditingController noteController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    final basket = Provider.of<BasketProvider>(context);
+    final items = basket.items.where((e) => e.selected).toList();
+    final total = basket.totalSelectedPrice;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('ร้านที่ 1', style: TextStyle(color: Colors.black)),
+        centerTitle: false,
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on, color: Color(0xFF34C759)),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            'หอ HD',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            'ฮองเชา - 099 999 9999',
+                            style: TextStyle(fontSize: 13, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  TextButton(
+                    onPressed: () {},
+                    child: const Text(
+                      'แก้ไข',
+                      style: TextStyle(color: Color(0xFF34C759)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'รูปแบบการจัดส่ง',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _deliveryTypeButton(
+                    'แนะนำ',
+                    'แบบ/วางไว้จุดที่ระบุ',
+                    deliveryType == 'แบบ/วางไว้จุดที่ระบุ',
+                  ),
+                  _deliveryTypeButton(
+                    '',
+                    'ส่งถึงมือ/ออกมารับเอง',
+                    deliveryType == 'ส่งถึงมือ/ออกมารับเอง',
+                  ),
+                  _deliveryTypeButton(
+                    '',
+                    'ฝากไว้กับคนที่ระบุ',
+                    deliveryType == 'ฝากไว้กับคนที่ระบุ',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: noteController,
+                decoration: const InputDecoration(
+                  hintText:
+                      'รายละเอียดเพิ่มเติม... (เช่น ห้องเลขที่ หรือชื่อผู้รับ)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFF34C759)),
+                ),
+                child: const Text(
+                  'ส่งปกติ เวลา 35 นาที',
+                  style: TextStyle(color: Color(0xFF34C759)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'รายการอาหารที่สั่ง',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              ...items.map((item) => _orderItem(item)).toList(),
+              const SizedBox(height: 16),
+              const Text(
+                'ชำระเงินโดย',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              RadioListTile(
+                title: const Text('เงินสด'),
+                value: 'เงินสด',
+                groupValue: paymentMethod,
+                onChanged: (value) {
+                  setState(() {
+                    paymentMethod = value.toString();
+                  });
+                },
+              ),
+              RadioListTile(
+                title: const Text('โอน'),
+                value: 'โอน',
+                groupValue: paymentMethod,
+                onChanged: (value) {
+                  setState(() {
+                    paymentMethod = value.toString();
+                  });
+                },
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF34C759),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${items.length}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'สั่งเลย',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '\$${total.toStringAsFixed(0)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _orderItem(item) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${item.quantity}',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.foodName,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                if (item.spicyLevel != null && item.spicyLevel != '')
+                  Text(
+                    item.spicyLevel,
+                    style: const TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+                if (item.note != null && item.note != '')
+                  Text(
+                    item.note,
+                    style: const TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '\$${item.price.toStringAsFixed(0)}',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _deliveryTypeButton(String tag, String label, bool selected) {
+    return GestureDetector(
+      onTap: () => setState(() => deliveryType = label),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF34C759) : Colors.grey[200],
+          borderRadius: BorderRadius.circular(10),
+          border: selected
+              ? Border.all(color: const Color(0xFF34C759), width: 2)
+              : null,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (tag.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.orange,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  tag,
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: selected ? Colors.white : Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
