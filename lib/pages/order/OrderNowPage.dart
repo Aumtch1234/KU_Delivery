@@ -70,33 +70,44 @@ class _OrderNowPageState extends State<OrderNowPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+              const Divider(),
+              const SizedBox(height: 8),
               const Text(
                 'รูปแบบการจัดส่ง',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _deliveryTypeButton(
-                    'แนะนำ',
-                    'แบบ/วางไว้จุดที่ระบุ',
-                    deliveryType == 'แบบ/วางไว้จุดที่ระบุ',
-                  ),
-                  _deliveryTypeButton(
-                    '',
-                    'ส่งถึงมือ/ออกมารับเอง',
-                    deliveryType == 'ส่งถึงมือ/ออกมารับเอง',
-                  ),
-                  _deliveryTypeButton(
-                    '',
-                    'ฝากไว้กับคนที่ระบุ',
-                    deliveryType == 'ฝากไว้กับคนที่ระบุ',
-                  ),
-                ],
+              IntrinsicHeight(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _deliveryTypeButton(
+                        'แนะนำ',
+                        'แบบ/วางไว้จุดที่ระบุ',
+                        deliveryType == 'แบบ/วางไว้จุดที่ระบุ',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _deliveryTypeButton(
+                        '',
+                        'ส่งถึงมือ/ออกมารับเอง',
+                        deliveryType == 'ส่งถึงมือ/ออกมารับเอง',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _deliveryTypeButton(
+                        '',
+                        'ฝากไว้กับคนที่ระบุ',
+                        deliveryType == 'ฝากไว้กับคนที่ระบุ',
+                      ),
+                    ),
+                  ],
+                ),
               ),
+
               const SizedBox(height: 8),
               TextField(
                 controller: noteController,
@@ -120,38 +131,70 @@ class _OrderNowPageState extends State<OrderNowPage> {
                   style: TextStyle(color: Color(0xFF34C759)),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+              const Divider(),
+              const SizedBox(height: 8),
               const Text(
                 'รายการอาหารที่สั่ง',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               ...items.map((item) => _orderItem(item)).toList(),
-              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
               const Text(
                 'ชำระเงินโดย',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              RadioListTile(
-                title: const Text('เงินสด'),
-                value: 'เงินสด',
-                groupValue: paymentMethod,
-                onChanged: (value) {
-                  setState(() {
-                    paymentMethod = value.toString();
-                  });
-                },
-              ),
-              RadioListTile(
-                title: const Text('โอน'),
-                value: 'โอน',
-                groupValue: paymentMethod,
-                onChanged: (value) {
-                  setState(() {
-                    paymentMethod = value.toString();
-                  });
-                },
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: paymentMethod,
+                    borderRadius: BorderRadius.circular(10),
+                    icon: const Icon(Icons.arrow_forward_ios, size: 18),
+                    isExpanded: true,
+                    items: [
+                      DropdownMenuItem(
+                        value: 'เงินสด',
+                        child: Row(
+                          children: [
+                            Icon(Icons.attach_money, color: Color(0xFF34C759)),
+                            const SizedBox(width: 8),
+                            Text('เงินสด'),
+                          ],
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'โอน',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.account_balance_wallet,
+                              color: Color(0xFF34C759),
+                            ),
+                            const SizedBox(width: 8),
+                            Text('โอน'),
+                          ],
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        paymentMethod = value!;
+                      });
+                    },
+                  ),
+                ),
               ),
               const SizedBox(height: 32),
             ],
@@ -264,43 +307,68 @@ class _OrderNowPageState extends State<OrderNowPage> {
   }
 
   Widget _deliveryTypeButton(String tag, String label, bool selected) {
+    IconData? icon;
+    if (label.contains('วางไว้')) {
+      icon = Icons.table_restaurant_sharp;
+    } else if (label.contains('ถึงมือ') || label.contains('รับเอง')) {
+      icon = Icons.person;
+    } else if (label.contains('ฝากไว้')) {
+      icon = Icons.group;
+    }
+
     return GestureDetector(
       onTap: () => setState(() => deliveryType = label),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFF34C759) : Colors.grey[200],
-          borderRadius: BorderRadius.circular(10),
-          border: selected
-              ? Border.all(color: const Color(0xFF34C759), width: 2)
-              : null,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (tag.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.only(bottom: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.orange,
-                  borderRadius: BorderRadius.circular(8),
+      child: SizedBox.expand(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFF34C759) : Colors.grey[200],
+            borderRadius: BorderRadius.circular(10),
+            border: selected
+                ? Border.all(color: const Color(0xFF34C759), width: 2)
+                : null,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center, // จัดกลางแนวตั้ง
+            crossAxisAlignment: CrossAxisAlignment.center, // จัดกลางแนวนอน
+            mainAxisSize: MainAxisSize.max, // ให้ขยายเต็ม container
+            children: [
+              if (tag.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.orange,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    tag,
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
                 ),
-                child: Text(
-                  tag,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+              if (icon != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Icon(
+                    icon,
+                    color: selected ? Colors.white : Colors.black54,
+                    size: 20,
+                  ),
+                ),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: selected ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
                 ),
               ),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: selected ? Colors.white : Colors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
