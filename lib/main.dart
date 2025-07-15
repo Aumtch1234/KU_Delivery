@@ -11,6 +11,7 @@ import 'package:delivery/pages/myMarket/EditFoodPage.dart';
 import 'package:delivery/pages/myMarket/RegisterShopPage.dart';
 import 'package:delivery/pages/myMarket/myMarketPage.dart';
 import 'package:delivery/pages/order/OrderNowPage.dart';
+import 'package:delivery/pages/order/RecipientAddress.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/basket_provider.dart';
@@ -48,6 +49,7 @@ class MyApp extends StatelessWidget {
         '/editFood': (_) => AuthGuard(child: EditFoodPage()),
         '/basket': (context) => MyBasketPage(),
         '/order-now': (context) => const OrderNowPage(),
+        '/recipient-address': (context) => const RecipientAddressPage(),
       },
       debugShowCheckedModeBanner: false, // optional: ซ่อน debug banner
     );

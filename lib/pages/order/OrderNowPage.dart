@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/basket_provider.dart';
+import 'RecipientAddress.dart';
 
 class OrderNowPage extends StatefulWidget {
   static const routeName = '/order-now';
@@ -14,6 +15,8 @@ class _OrderNowPageState extends State<OrderNowPage> {
   String deliveryType = 'แบบ/วางไว้จุดที่ระบุ';
   String paymentMethod = 'เงินสด';
   TextEditingController noteController = TextEditingController();
+
+  Map<String, dynamic>? addressInfo;
 
   @override
   Widget build(BuildContext context) {
@@ -48,21 +51,60 @@ class _OrderNowPageState extends State<OrderNowPage> {
                       const SizedBox(width: 8),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Text(
-                            'หอ HD',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            addressInfo != null && addressInfo!['place'] != ''
+                                ? addressInfo!['place']
+                                : 'หอ HD',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           Text(
-                            'ฮองเชา - 099 999 9999',
-                            style: TextStyle(fontSize: 13, color: Colors.grey),
+                            addressInfo != null &&
+                                    addressInfo!['name'] != '' &&
+                                    addressInfo!['phone'] != ''
+                                ? '${addressInfo!['name']} - ${addressInfo!['phone']}'
+                                : 'ฮองเชา - 099 999 9999',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey,
+                            ),
                           ),
+                          if (addressInfo != null &&
+                              addressInfo!['address'] != '')
+                            Text(
+                              addressInfo!['address'],
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          if (addressInfo != null &&
+                              addressInfo!['mapLocation'] != null)
+                            Text(
+                              'ตำแหน่ง: ${addressInfo!['mapLocation']}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Colors.green,
+                              ),
+                            ),
                         ],
                       ),
                     ],
                   ),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RecipientAddressPage(initialAddress: addressInfo),
+                        ),
+                      );
+                      if (result != null && result is Map) {
+                        setState(() {
+                          addressInfo = Map<String, dynamic>.from(result);
+                        });
+                      }
+                    },
                     child: const Text(
                       'แก้ไข',
                       style: TextStyle(color: Color(0xFF34C759)),
