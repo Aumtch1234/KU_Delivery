@@ -1,6 +1,8 @@
 import 'package:delivery/SplashScreens/SplashScreen.dart';
 import 'package:delivery/middleware/AuthGuard.dart';
 import 'package:delivery/middleware/authService.dart';
+import 'package:delivery/pages/Verify-OTP-Page.dart';
+import 'package:delivery/pages/VerifyPage.dart';
 import 'package:delivery/pages/basket/MyBasket.dart';
 import 'package:delivery/pages/bottom/DashboardPage.dart';
 import 'package:delivery/pages/bottom/MainNavigation.dart';
@@ -39,6 +41,9 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (_) => SplashScreen(), // ตรวจสอบ token ที่นี่
         '/login': (_) => wellcomePage(),
+        '/verify': (_) => AuthGuard(child: VerifyPage()),
+        '/verify-otp': (_) => AuthGuard(child: OtpVerifyPage()),
+
         '/dashboard': (_) => AuthGuard(child: DashboardPage()),
         '/shop': (_) => AuthGuard(child: ShopPage()),
         '/main': (_) => AuthGuard(child: MainNavigation()), // ✅ ตรงนี้

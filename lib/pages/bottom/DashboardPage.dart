@@ -115,8 +115,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     radius: 50,
                     backgroundImage: _isNetworkUrl(user!['photo_url'])
                         ? NetworkImage(user!['photo_url'])
-                        : AssetImage('assets/avatars/${user!['photo_url']}')
-                              as ImageProvider,
+                        : AssetImage('${user!['photo_url']}') as ImageProvider,
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -139,7 +138,8 @@ class _DashboardPageState extends State<DashboardPage> {
                     runSpacing: 16,
                     alignment: WrapAlignment.center,
                     children: [
-                      if (user!['is_seller'] == true)
+                      if (user!['is_seller'] == true ||
+                          user!['is_seller'] == 'true')
                         _buildButton(
                           text: 'ร้านค้าของฉัน',
                           icon: Icons.storefront_rounded,
@@ -149,18 +149,39 @@ class _DashboardPageState extends State<DashboardPage> {
                           },
                         ),
                       if (user!['is_seller'] == false ||
+                          user!['is_seller'] == 'false' ||
                           user!['is_seller'] == null)
                         _buildButton(
                           text: 'สมัครร้านค้า',
                           icon: Icons.add_business_rounded,
                           color: Colors.orange.shade600,
                           onPressed: () async {
-                            Navigator.pushNamed(context, '/add/market').then((
-                              _,
-                            ) async {
-                              await AuthService().refreshUserToken();
-                              await _loadUser();
-                            });
+                            final isVerified = user!['is_verified'];
+                            // เช็คทั้ง Boolean และ String "false"
+                            if (isVerified == false ||
+                                isVerified == 'false' ||
+                                isVerified == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'กรุณายืนยันตัวตนก่อนสมัครร้านค้า',
+                                  ),
+                                ),
+                              );
+                              Navigator.pushNamed(context, '/verify').then((
+                                _,
+                              ) async {
+                                await AuthService().refreshUserToken();
+                                await _loadUser();
+                              });
+                            } else {
+                              Navigator.pushNamed(context, '/add/market').then((
+                                _,
+                              ) async {
+                                await AuthService().refreshUserToken();
+                                await _loadUser();
+                              });
+                            }
                           },
                         ),
                       _buildButton(
@@ -169,6 +190,14 @@ class _DashboardPageState extends State<DashboardPage> {
                         color: Colors.redAccent,
                         onPressed: () {
                           AuthService().confirmLogout(context);
+                        },
+                      ),
+                      _buildButton(
+                        text: 'OTP PAGE',
+                        icon: Icons.logout_rounded,
+                        color: Colors.redAccent,
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/verify-otp');
                         },
                       ),
                     ],
