@@ -54,9 +54,11 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+
         children: [
           _infoRow("ลงทะเบียนเมื่อ", user!['created_at'] ?? '-'),
           _infoRow("Google ID", user!['google_id'] ?? '-'),
+
           _infoRow(
             "สถานะร้านค้า",
             user!['is_seller'] == true ? 'เป็นเจ้าของร้าน' : 'ยังไม่ได้สมัคร',
@@ -130,6 +132,55 @@ class _DashboardPageState extends State<DashboardPage> {
                     user!['email'] ?? '',
                     style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                   ),
+                  const SizedBox(height: 16),
+                  if (user!['is_verified'] == true ||
+                      user!['is_verified'] == 'true')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(
+                            Icons.verified,
+                            color: Color(0xFF34C759),
+                            size: 20,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'ยืนยันตัวตนแล้ว',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF34C759),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(
+                            Icons.error_outline,
+                            color: Colors.redAccent,
+                            size: 20,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'ยังไม่ยืนยันตัวตน',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.redAccent,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
                   const SizedBox(height: 24),
                   _buildUserInfoCard(),
                   const SizedBox(height: 32),
@@ -190,14 +241,6 @@ class _DashboardPageState extends State<DashboardPage> {
                         color: Colors.redAccent,
                         onPressed: () {
                           AuthService().confirmLogout(context);
-                        },
-                      ),
-                      _buildButton(
-                        text: 'OTP PAGE',
-                        icon: Icons.logout_rounded,
-                        color: Colors.redAccent,
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/verify-otp');
                         },
                       ),
                     ],

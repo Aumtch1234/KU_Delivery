@@ -14,11 +14,12 @@ class VerifyPage extends StatefulWidget {
 
 class _VerifyPageState extends State<VerifyPage> {
   final _formKey = GlobalKey<FormState>();
+  final Color primaryGreen = const Color(0xFF34C759);
+
   int? _gender;
   DateTime? _selectedDate;
-  String?
-  _selectedImage; // URL string (for prebuilt avatars or existing user photo)
-  File? _image; // File object (for new selected image)
+  String? _selectedImage;
+  File? _image;
   bool _isLoading = false;
 
   final TextEditingController _nameController = TextEditingController();
@@ -48,7 +49,7 @@ class _VerifyPageState extends State<VerifyPage> {
         _nameController.text = user['display_name'] ?? '';
         _phoneController.text = user['phone'] ?? '';
         _emailController.text = user['email'] ?? '';
-        _provider = user['providers']; // <- เพิ่มบรรทัดนี้
+        _provider = user['providers'];
         _gender = user['gender'];
         _selectedDate = user['birthdate'] != null
             ? DateTime.tryParse(user['birthdate'])
@@ -61,25 +62,55 @@ class _VerifyPageState extends State<VerifyPage> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    final picked = await showDatePicker(
+    final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime(2000),
+      initialDate: DateTime(2000, 1, 1),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: Color(0xFF34C759),
+            onPrimary: Colors.white,
+            onSurface: Colors.black,
+          ),
+          dialogBackgroundColor: Color(0xFFF7F7F7),
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(
+              foregroundColor: Color(0xFF34C759),
+              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          datePickerTheme: const DatePickerThemeData(
+            backgroundColor: Color(0xFFF7F7F7),
+            headerBackgroundColor: Color(0xFF34C759),
+            headerForegroundColor: Colors.white,
+            dayBackgroundColor: MaterialStatePropertyAll(Colors.white),
+            dayForegroundColor: MaterialStatePropertyAll(Colors.black),
+            todayBackgroundColor: MaterialStatePropertyAll(Color(0x2234C759)),
+            todayForegroundColor: MaterialStatePropertyAll(Color(0xFF34C759)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(16)),
+            ),
+          ),
+        ),
+        child: child!,
+      ),
     );
     if (picked != null) {
-      setState(() => _selectedDate = picked);
+      setState(() {
+        _selectedDate = picked;
+      });
     }
   }
 
   Future<void> _handleSubmit() async {
-    print("📦 sending imageFile = ${_image?.path}");
-
     if (!_formKey.currentState!.validate()) return;
     if (_gender == null) return _showDialog('กรุณาเลือกเพศ');
     if (_selectedDate == null) return _showDialog('กรุณาเลือกวันเกิด');
-    if (_selectedImage == null && _image == null)
+    if (_selectedImage == null && _image == null) {
       return _showDialog('กรุณาเลือกรูปโปรไฟล์');
+    }
 
     AwesomeDialog(
       context: context,
@@ -91,22 +122,35 @@ class _VerifyPageState extends State<VerifyPage> {
       btnOkOnPress: () async {
         setState(() => _isLoading = true);
         try {
-          String? imageUrl = _selectedImage;
-
-          // final token = AuthService().getToken();
+          // ✅ 1. อัปเดตข้อมูลส่วนตัว
           final result = await UpdateInfoUser.updateVerify(
             displayName: _nameController.text,
             phone: _phoneController.text,
             gender: _gender!,
             birthdate: _selectedDate!.toIso8601String(),
-            imageFile: _image, // ✅ เพิ่มบรรทัดนี้
-            photoUrl: imageUrl ?? '',
+            email: _emailController.text,
+            imageFile: _image,
+            photoUrl: _selectedImage ?? '',
           );
 
           if (result['success'] == true) {
-            _showDialog('อัปเดตข้อมูลสำเร็จ', DialogType.success, () {
-              Navigator.pop(context);
-            });
+            // ✅ 2. เรียก API ส่ง OTP ไปที่อีเมล
+            final otpResult = await UpdateInfoUser.sendOtp(
+              _emailController.text,
+            );
+
+            if (otpResult['success'] == true) {
+              _showDialog(
+                'อัปเดตข้อมูลสำเร็จ กรุณายืนยัน OTP ที่อีเมลของคุณ',
+                DialogType.success,
+                () => Navigator.pushReplacementNamed(context, '/verify-otp'),
+              );
+            } else {
+              _showDialog(
+                otpResult['message'] ?? 'ส่ง OTP ไม่สำเร็จ',
+                DialogType.error,
+              );
+            }
           } else {
             _showDialog(
               result['message'] ?? 'เกิดข้อผิดพลาด',
@@ -134,7 +178,7 @@ class _VerifyPageState extends State<VerifyPage> {
       title: 'แจ้งเตือน',
       desc: msg,
       btnOkOnPress: onOk ?? () {},
-      btnOkColor: Colors.green,
+      btnOkColor: primaryGreen,
     ).show();
   }
 
@@ -143,7 +187,7 @@ class _VerifyPageState extends State<VerifyPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("ยืนยันข้อมูลส่วนตัว"),
-        backgroundColor: const Color(0xFF34C759),
+        backgroundColor: primaryGreen,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -158,9 +202,15 @@ class _VerifyPageState extends State<VerifyPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              "โปรดตรวจสอบหรือกรอกข้อมูลให้ครบ",
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                            Center(
+                              child: Text(
+                                "โปรดตรวจสอบหรือกรอกข้อมูลให้ครบ",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 20),
                             _buildAvatarSelector(),
@@ -171,15 +221,12 @@ class _VerifyPageState extends State<VerifyPage> {
                               _emailController,
                               'อีเมล',
                               keyboardType: TextInputType.emailAddress,
-                              enabled:
-                                  _provider !=
-                                  'google', // ✅ ถ้าไม่ใช่ google แก้ไขได้
+                              enabled: _provider == 'manual',
                             ),
-
-                            _buildLabel("เบอร์โทรศัพท์"),
+                            _buildLabel("เบอร์โทรศัพท์มือถือ *"),
                             _buildTextField(
                               _phoneController,
-                              'เบอร์โทรศัพท์',
+                              '** ใส่เบอร์ติดต่อจริง **',
                               keyboardType: TextInputType.phone,
                             ),
                             _buildLabel("วันเกิด"),
@@ -202,15 +249,20 @@ class _VerifyPageState extends State<VerifyPage> {
                     child: ElevatedButton(
                       onPressed: _handleSubmit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF34C759),
+                        backgroundColor: primaryGreen,
                         minimumSize: const Size.fromHeight(48),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),
+                        elevation: 4,
                       ),
                       child: const Text(
                         'ยืนยันข้อมูล',
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ),
@@ -222,7 +274,7 @@ class _VerifyPageState extends State<VerifyPage> {
 
   Widget _buildLabel(String text) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Text(text),
+    child: Text(text, style: const TextStyle(fontWeight: FontWeight.w500)),
   );
 
   Widget _buildTextField(
@@ -234,15 +286,27 @@ class _VerifyPageState extends State<VerifyPage> {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-          enabled: enabled, // ✅ เพิ่มตรงนี้
-
+      enabled: enabled,
       validator: (val) =>
           val == null || val.isEmpty ? 'กรุณากรอก $label' : null,
       decoration: InputDecoration(
         filled: true,
         fillColor: Colors.white,
         labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        labelStyle: TextStyle(color: Colors.grey[700]),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: primaryGreen, width: 2),
+        ),
       ),
     );
   }
@@ -253,6 +317,7 @@ class _VerifyPageState extends State<VerifyPage> {
         Radio<int>(
           value: value,
           groupValue: _gender,
+          activeColor: primaryGreen,
           onChanged: (val) => setState(() => _gender = val),
         ),
         Text(label),
@@ -266,7 +331,7 @@ class _VerifyPageState extends State<VerifyPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFFE5E5EA)),
+          border: Border.all(color: Colors.grey.shade300),
           borderRadius: BorderRadius.circular(10),
           color: Colors.white,
         ),
@@ -281,7 +346,7 @@ class _VerifyPageState extends State<VerifyPage> {
                 color: _selectedDate == null ? Colors.grey : Colors.black,
               ),
             ),
-            const Icon(Icons.calendar_today, color: Colors.grey),
+            Icon(Icons.calendar_today, color: primaryGreen),
           ],
         ),
       ),
@@ -289,60 +354,186 @@ class _VerifyPageState extends State<VerifyPage> {
   }
 
   Widget _buildAvatarSelector() {
-    return SizedBox(
-      height: 110,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          // 🟢 รูปจาก _imageOptions (avatar ที่เลือกไว้)
-          ..._imageOptions.map((img) {
-            final isSelected = _selectedImage == img;
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedImage = img;
-                  _image = null;
-                });
-              },
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isSelected ? const Color(0xFF34C759) : Colors.grey,
-                    width: isSelected ? 4 : 2,
+    // ตรวจสอบว่ารูปที่เลือกเป็น URL หรือ preset asset
+    final bool isUrlSelected =
+        _selectedImage != null && _selectedImage!.startsWith('http');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel("เลือกรูปโปรไฟล์ของคุณ"),
+        SizedBox(
+          height: 100,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              // รูป URL รูปเก่า
+              if (_selectedImage != null && _selectedImage!.startsWith('http'))
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      // เลือกรูป URL นี้
+                      _selectedImage = _selectedImage;
+                      _image = null;
+                    });
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isUrlSelected
+                            ? primaryGreen
+                            : Colors.grey.shade300,
+                        width: isUrlSelected ? 4 : 2,
+                      ),
+                      boxShadow: isUrlSelected
+                          ? [
+                              BoxShadow(
+                                color: primaryGreen.withOpacity(0.5),
+                                blurRadius: 12,
+                                spreadRadius: 2,
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        ClipOval(
+                          child: Image.network(
+                            _selectedImage!,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(Icons.error, size: 40),
+                          ),
+                        ),
+                        if (isUrlSelected)
+                          const Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: CircleAvatar(
+                              radius: 12,
+                              backgroundColor: Colors.white,
+                              child: Icon(
+                                Icons.check_circle,
+                                color: Color(0xFF34C759),
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-                child: CircleAvatar(
-                  backgroundImage: AssetImage(img),
-                  radius: 40,
-                ),
-              ),
-            );
-          }).toList(),
 
-          // 🟢 รูปจาก gallery (_image)
-          GestureDetector(
-            onTap: _pickImage,
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: _image != null ? const Color(0xFF34C759) : Colors.grey,
-                  width: _image != null ? 4 : 2,
-                ),
-              ),
-              child: CircleAvatar(
-                backgroundColor: Colors.grey[300],
-                backgroundImage: _image != null ? FileImage(_image!) : null,
-                radius: 40,
-                child: _image == null ? const Icon(Icons.add_a_photo) : null,
+              // รูป preset avatar
+              ..._imageOptions.map((imagePath) {
+                final isSelected = _selectedImage == imagePath;
+
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedImage = imagePath;
+                      _image = null;
+                    });
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isSelected ? primaryGreen : Colors.grey.shade300,
+                        width: isSelected ? 4 : 2,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: primaryGreen.withOpacity(0.5),
+                                blurRadius: 12,
+                                spreadRadius: 2,
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        ClipOval(
+                          child: Image.asset(
+                            imagePath,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        if (isSelected)
+                          const Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: CircleAvatar(
+                              radius: 12,
+                              backgroundColor: Colors.white,
+                              child: Icon(
+                                Icons.check_circle,
+                                color: Color(0xFF34C759),
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // ปุ่มอัปโหลดรูปจากเครื่อง
+        Center(
+          child: OutlinedButton.icon(
+            onPressed: _pickImage,
+            icon: const Icon(Icons.upload_file),
+            label: const Text("อัปโหลดรูปจากเครื่อง"),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: primaryGreen,
+              side: BorderSide(color: primaryGreen),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // แสดงรูปที่อัปโหลดจากเครื่อง ถ้ามี
+        if (_image != null)
+          Center(
+            child: Column(
+              children: [
+                const Text("รูปที่เลือก"),
+                const SizedBox(height: 8),
+                CircleAvatar(
+                  radius: 50,
+                  child: ClipOval(
+                    child: Image.file(
+                      _image!,
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 

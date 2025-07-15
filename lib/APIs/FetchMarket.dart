@@ -13,7 +13,11 @@ Future<Map<String, dynamic>?> fetchMyMarket() async {
   );
 
   if (response.statusCode == 200) {
-    return jsonDecode(response.body)['market'];
+    final Map<String, dynamic> data = jsonDecode(response.body);
+    final market = data['market'];
+
+    print("🔄 รีโหลดตลาด: is_open = ${market['is_open']}");
+    return market;
   } else {
     print('ไม่สามารถโหลดร้านได้: ${response.body}');
     return null;

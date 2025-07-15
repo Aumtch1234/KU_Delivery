@@ -1,6 +1,8 @@
+import 'package:delivery/APIs/updateManualOverride.dart';
+import 'package:flutter/material.dart';
 import 'package:delivery/APIs/FetchFoodsForMarket.dart';
 import 'package:delivery/APIs/FetchMarket.dart';
-import 'package:flutter/material.dart';
+import 'package:delivery/APIs/MarketStatusToggleAPI.dart';
 
 class Mymarketpage extends StatefulWidget {
   const Mymarketpage({Key? key}) : super(key: key);
@@ -11,12 +13,14 @@ class Mymarketpage extends StatefulWidget {
 
 class _MymarketpageState extends State<Mymarketpage> {
   List<dynamic> foodList = [];
+  String marketId = '';
   String storeName = '';
   String imageStoreURL = '';
   String storeDescription = '';
   String opened = '';
   String closed = '';
   bool isLoading = true;
+  bool isManualOverride = false;
   bool isOpen = true;
 
   @override
@@ -26,23 +30,37 @@ class _MymarketpageState extends State<Mymarketpage> {
   }
 
   Future<void> loadMarket() async {
-    final market = await fetchMyMarket();
-    final foods = await FetchFoodsForMarket();
+    try {
+      print('⏳ เรียก fetchMyMarket...');
+      final market = await fetchMyMarket();
+      print('✅ market: $market');
+      final fetchedFoods = await FetchFoodsForMarket();
+      print('✅ foods: $fetchedFoods');
 
-    if (market != null && foods != null) {
       setState(() {
-        storeName = market['shop_name'] ?? 'ไม่มีชื่อร้าน';
-        imageStoreURL = market['shop_logo_url'] ?? '';
-        storeDescription = market['shop_description'] ?? '';
-        opened = market['open_time'] ?? 'ไม่ได้ตั้งเวลาเปิดร้าน';
-        closed = market['close_time'] ?? 'ไม่ได้ตั้งเวลาปิดร้าน';
-        foodList = foods;
+        if (market != null && fetchedFoods != null) {
+          marketId = market['market_id'].toString();
+          storeName = market['shop_name'] ?? 'ไม่มีชื่อร้าน';
+          imageStoreURL = market['shop_logo_url'] ?? '';
+          storeDescription = market['shop_description'] ?? '';
+          opened = market['open_time'] ?? 'ไม่ได้ตั้งเวลาเปิดร้าน';
+          closed = market['close_time'] ?? 'ไม่ได้ตั้งเวลาปิดร้าน';
+          isOpen = market['is_open'] ?? true;
+          isManualOverride = market['is_manual_override'] ?? false; // ✅
+          foodList = fetchedFoods;
+        } else {
+          storeName = 'ไม่พบข้อมูลร้านค้า';
+          storeDescription = '';
+          foodList = [];
+        }
         isLoading = false;
       });
-    } else {
+    } catch (e) {
+      print('❌ Error in loadMarket: $e');
       setState(() {
-        storeName = 'ไม่พบข้อมูลร้านค้า';
+        storeName = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
         storeDescription = '';
+        foodList = [];
         isLoading = false;
       });
     }
@@ -88,7 +106,7 @@ class _MymarketpageState extends State<Mymarketpage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ข้อมูลร้าน
+                        // ข้อมูลร้าน + ปุ่มเปิดปิด
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -96,8 +114,8 @@ class _MymarketpageState extends State<Mymarketpage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
-                                    children: const [
+                                  const Row(
+                                    children: [
                                       Icon(
                                         Icons.star,
                                         color: Colors.amber,
@@ -113,25 +131,23 @@ class _MymarketpageState extends State<Mymarketpage> {
                                       ),
                                     ],
                                   ),
-                                  SizedBox(height: 8),
+                                  const SizedBox(height: 8),
                                   Text(
                                     storeName,
                                     style: const TextStyle(
                                       fontSize: 24,
                                       fontWeight: FontWeight.bold,
                                     ),
-                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  SizedBox(height: 8),
+                                  const SizedBox(height: 8),
                                   Text(
                                     storeDescription,
                                     style: const TextStyle(
                                       fontSize: 14,
                                       color: Colors.grey,
                                     ),
-                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  SizedBox(height: 8),
+                                  const SizedBox(height: 8),
                                   Text(
                                     "ร้านเปิด $opened - $closed",
                                     style: const TextStyle(
@@ -144,38 +160,89 @@ class _MymarketpageState extends State<Mymarketpage> {
                             ),
                             const SizedBox(width: 8),
                             GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  isOpen = !isOpen;
-                                });
-                              },
+                              onTap: isManualOverride
+                                  ? () async {
+                                      if (marketId.isEmpty) return;
+                                      setState(() => isLoading = true);
+                                      bool newStatus = !isOpen;
+                                      try {
+                                        bool success = await toggleMarketStatus(
+                                          newStatus,
+                                          marketId,
+                                        );
+                                        if (success) {
+                                          await loadMarket();
+                                        } else {
+                                          setState(() => isLoading = false);
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'ไม่สามารถอัปเดตสถานะร้านได้',
+                                              ),
+                                              backgroundColor: Colors.red,
+                                              behavior:
+                                                  SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        print('Error during toggle: $e');
+                                        setState(() => isLoading = false);
+                                      }
+                                    }
+                                  : null, // ถ้าไม่ใช่ manual override กดไม่ได้
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                  horizontal: 16,
+                                  vertical: 10,
                                 ),
                                 decoration: BoxDecoration(
                                   color: isOpen
                                       ? Colors.green.shade100
                                       : Colors.red.shade100,
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(25),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: isOpen
+                                          ? Colors.green.withOpacity(0.4)
+                                          : Colors.red.withOpacity(0.4),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
                                 ),
-                                child: Text(
-                                  isOpen ? 'เปิดอยู่' : 'ปิดอยู่',
-                                  style: TextStyle(
-                                    color: isOpen ? Colors.green : Colors.red,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      isOpen
+                                          ? Icons.storefront
+                                          : Icons.store_mall_directory,
+                                      color: isOpen
+                                          ? Colors.green.shade700
+                                          : Colors.red.shade700,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      isOpen ? 'เปิดอยู่' : 'ปิดอยู่',
+                                      style: TextStyle(
+                                        color: isOpen
+                                            ? Colors.green.shade700
+                                            : Colors.red.shade700,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 16),
                         const Divider(),
                         const SizedBox(height: 16),
-
                         const Text(
                           'เมนูทั้งหมด',
                           style: TextStyle(
@@ -184,12 +251,11 @@ class _MymarketpageState extends State<Mymarketpage> {
                           ),
                         ),
                         const SizedBox(height: 8),
-
                         GridView.count(
                           crossAxisCount: isTablet ? 3 : 2,
-                          crossAxisSpacing: isTablet ? 24 : 16,
-                          mainAxisSpacing: isTablet ? 24 : 16,
-                          childAspectRatio: isTablet ? 0.9 : 0.75,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 0.75,
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           children: foodList.map((food) {
@@ -253,6 +319,38 @@ class _MymarketpageState extends State<Mymarketpage> {
                   Navigator.pop(context);
                 },
               ),
+              SwitchListTile(
+                title: const Text(
+                  'ควบคุมร้านด้วยตนเอง',
+                  style: TextStyle(color: Colors.white),
+                ),
+                value: isManualOverride,
+                activeColor: Colors.white,
+                onChanged: (bool value) async {
+                  setState(() => isLoading = true); // แสดง loading ขณะอัปเดต
+                  bool success = await updateManualOverrideAPI(
+                    marketId,
+                    value,
+                    isOpen,
+                  );
+
+                  if (success) {
+                    setState(() {
+                      isManualOverride = value;
+                    });
+                    await loadMarket(); // โหลดข้อมูลร้านใหม่ให้ล่าสุด
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('ไม่สามารถอัปเดต Manual Override ได้'),
+                        backgroundColor: Colors.red,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                  setState(() => isLoading = false);
+                },
+              ),
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.white),
                 title: const Text(
@@ -262,7 +360,7 @@ class _MymarketpageState extends State<Mymarketpage> {
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.pushNamed(context, '/dashboard');
-                }
+                },
               ),
               const Spacer(),
               const Padding(
@@ -322,12 +420,10 @@ class _MymarketpageState extends State<Mymarketpage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(
-                isTablet ? 12 : size.width * 0.02,
-              ),
+              borderRadius: BorderRadius.circular(12),
               child: Image.network(
                 foodData['image_url'] ?? 'https://via.placeholder.com/150',
-                height: isTablet ? 120 : size.width * 0.25,
+                height: 120,
                 width: double.infinity,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) =>
@@ -350,8 +446,6 @@ class _MymarketpageState extends State<Mymarketpage> {
                 fontSize: isTablet ? 14 : size.width * 0.03,
                 color: Colors.grey,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
             const Spacer(),
             Row(

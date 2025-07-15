@@ -11,24 +11,26 @@ class UpdateInfoUser {
     required String phone,
     required int gender,
     required String birthdate,
+    required String email, // ✅ เพิ่ม email
     File? imageFile,
     String? photoUrl,
   }) async {
     final token = await AuthService().getToken();
     final url = Uri.parse('$baseUrl/update-verify');
 
-    final request = http.MultipartRequest('POST', url); // ✅ เปลี่ยนเป็น POST
+    final request = http.MultipartRequest('POST', url);
     request.headers['Authorization'] = 'Bearer $token';
 
-    // ✅ ข้อมูลฟิลด์
     request.fields['display_name'] = displayName;
     request.fields['phone'] = phone;
     request.fields['gender'] = gender.toString();
     request.fields['birthdate'] = birthdate;
+    request.fields['email'] = email; // ✅ ส่ง email ไปด้วยเสมอ
 
-    // ✅ ส่งรูปภาพ
     if (imageFile != null) {
-      request.files.add(await http.MultipartFile.fromPath('Profile', imageFile.path));
+      request.files.add(
+        await http.MultipartFile.fromPath('Profile', imageFile.path),
+      );
     } else if (photoUrl != null) {
       request.fields['photo_url'] = photoUrl;
     }
@@ -45,4 +47,20 @@ class UpdateInfoUser {
       };
     }
   }
+  static Future<Map<String, dynamic>> sendOtp(String email) async {
+  final response = await http.post(
+    Uri.parse('$baseUrl/send-otp'),
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({'email': email}),
+  );
+
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  } else {
+    return {'success': false, 'message': 'ส่ง OTP ไม่สำเร็จ'};
+  }
 }
+
+}
+
+
