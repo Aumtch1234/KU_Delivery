@@ -151,7 +151,7 @@ class _OtpVerifyPageState extends State<OtpVerifyPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: List.generate(6, (index) {
                 return SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.12,
+                  width: 50,
                   height: 60,
                   child: TextField(
                     controller: _otpControllers[index],
@@ -159,24 +159,27 @@ class _OtpVerifyPageState extends State<OtpVerifyPage> {
                     autofocus: index == 0,
                     keyboardType: TextInputType.number,
                     textAlign: TextAlign.center,
-                    cursorColor: primaryColor, // ✅ สีของ cursor
-                    cursorWidth: 2.5, // ✅ ความหนา
-                    cursorRadius: const Radius.circular(5), // ✅ ปลายมน
-                    // showCursor: false,                   // ❌ ถ้าไม่อยากแสดง cursor
-                    style: TextStyle(
-                      fontSize: 24,
+                    cursorColor: primaryColor,
+                    cursorWidth: 2.5,
+                    cursorRadius: const Radius.circular(4),
+                    style: const TextStyle(
+                      fontSize: 24, // ✅ ปรับให้พอดีกับความสูง
                       fontWeight: FontWeight.bold,
-                      color: primaryColor,
                     ),
                     maxLength: 1,
                     decoration: InputDecoration(
                       counterText: '',
                       filled: true,
                       fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 10,
+                      ), // ✅ จัดให้ตรงกลาง
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: primaryColor, width: 2),
+                        borderSide: BorderSide(
+                          color: primaryColor.withOpacity(0.3),
+                          width: 2,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
