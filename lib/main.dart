@@ -10,6 +10,7 @@ import 'package:delivery/pages/bottom/ShopPage.dart';
 import 'package:delivery/pages/WellcomePage.dart';
 import 'package:delivery/pages/myMarket/AddFoodPage.dart';
 import 'package:delivery/pages/myMarket/EditFoodPage.dart';
+import 'package:delivery/pages/myMarket/EditMarket.dart';
 import 'package:delivery/pages/myMarket/RegisterShopPage.dart';
 import 'package:delivery/pages/myMarket/myMarketPage.dart';
 import 'package:delivery/pages/order/OrderNowPage.dart';
@@ -46,17 +47,18 @@ class MyApp extends StatelessWidget {
 
         '/dashboard': (_) => AuthGuard(child: DashboardPage()),
         '/shop': (_) => AuthGuard(child: ShopPage()),
-        '/main': (_) => AuthGuard(child: MainNavigation()), // ✅ ตรงนี้
+        '/main': (_) => AuthGuard(child: MainNavigation()),
         '/add/market': (_) =>
-            AuthGuard(child: RegisterShopPage()), // ร้านค้าของฉัน
-        '/myMarket': (_) => AuthGuard(child: Mymarketpage()), // ร้านค้าของฉัน
-        '/addFood': (_) => AuthGuard(child: AddFoodPage()), // ร้านค้าของฉัน
+            AuthGuard(child: RegisterShopPage()), 
+        '/myMarket': (_) => AuthGuard(child: Mymarketpage()), 
+        '/myMarket/edit': (_) => AuthGuard(child: EditShopPage()), 
+        '/addFood': (_) => AuthGuard(child: AddFoodPage()), 
         '/editFood': (_) => AuthGuard(child: EditFoodPage()),
         '/basket': (context) => MyBasketPage(),
         '/order-now': (context) => const OrderNowPage(),
         '/recipient-address': (context) => const RecipientAddressPage(),
       },
-      debugShowCheckedModeBanner: false, // optional: ซ่อน debug banner
+      debugShowCheckedModeBanner: false,
     );
   }
 }

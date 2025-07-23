@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:delivery/APIs/FetchFoodsForMarket.dart';
 import 'package:delivery/APIs/FetchMarket.dart';
 import 'package:delivery/APIs/MarketStatusToggleAPI.dart';
+import 'package:awesome_dialog/awesome_dialog.dart';
 
 class Mymarketpage extends StatefulWidget {
   const Mymarketpage({Key? key}) : super(key: key);
@@ -22,6 +23,7 @@ class _MymarketpageState extends State<Mymarketpage> {
   bool isLoading = true;
   bool isManualOverride = false;
   bool isOpen = true;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -72,6 +74,7 @@ class _MymarketpageState extends State<Mymarketpage> {
     final isTablet = size.width > 600;
 
     return Scaffold(
+      key: _scaffoldKey,
       drawer: _buildDrawer(context),
       appBar: AppBar(
         title: const Text("ร้านค้าของฉัน"),
@@ -149,7 +152,7 @@ class _MymarketpageState extends State<Mymarketpage> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    "ร้านเปิด $opened - $closed",
+                                    "ร้านเปิด $opened - $closed น.",
                                     style: const TextStyle(
                                       fontSize: 14,
                                       color: Colors.grey,
@@ -160,39 +163,64 @@ class _MymarketpageState extends State<Mymarketpage> {
                             ),
                             const SizedBox(width: 8),
                             GestureDetector(
-                              onTap: isManualOverride
-                                  ? () async {
-                                      if (marketId.isEmpty) return;
-                                      setState(() => isLoading = true);
-                                      bool newStatus = !isOpen;
-                                      try {
-                                        bool success = await toggleMarketStatus(
-                                          newStatus,
-                                          marketId,
-                                        );
-                                        if (success) {
-                                          await loadMarket();
-                                        } else {
-                                          setState(() => isLoading = false);
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'ไม่สามารถอัปเดตสถานะร้านได้',
-                                              ),
-                                              backgroundColor: Colors.red,
-                                              behavior:
-                                                  SnackBarBehavior.floating,
-                                            ),
-                                          );
-                                        }
-                                      } catch (e) {
-                                        print('Error during toggle: $e');
-                                        setState(() => isLoading = false);
-                                      }
+                              onTap: () async {
+                                if (!isManualOverride) {
+                                  AwesomeDialog(
+                                    context: context,
+                                    dialogType: DialogType.warning,
+                                    animType: AnimType.bottomSlide,
+                                    title: 'ไม่ได้เปิดโหมดควบคุมร้านเอง',
+                                    desc:
+                                        'กรุณาเปิด "ควบคุมร้านด้วยตนเอง" ก่อนจึงจะสามารถสั่งเปิด/ปิดร้านได้',
+                                    btnOkText: 'เปิดเมนู',
+                                    btnOkOnPress: () {
+                                      _scaffoldKey.currentState?.openDrawer();
+                                    },
+                                    btnCancelOnPress: () {},
+                                  ).show();
+                                  return;
+                                }
+
+                                if (marketId.isEmpty) return;
+                                setState(() => isLoading = true);
+                                bool newStatus = !isOpen;
+
+                                try {
+                                  bool success = await toggleMarketStatus(
+                                    newStatus,
+                                    marketId,
+                                  );
+                                  if (success) {
+                                    await loadMarket();
+
+                                    if (isManualOverride) {
+                                      AwesomeDialog(
+                                        context: context,
+                                        dialogType: DialogType.success,
+                                        animType: AnimType.bottomSlide,
+                                        title: 'สำเร็จ',
+                                        desc:
+                                            'เปลี่ยนสถานะร้านเรียบร้อยแล้ว\n\nอย่าลืมปิด "ควบคุมร้านด้วยตนเอง" เมื่อจะปิดร้าน ^^',
+                                        btnOkOnPress: () {},
+                                      ).show();
                                     }
-                                  : null, // ถ้าไม่ใช่ manual override กดไม่ได้
+                                  } else {
+                                    setState(() => isLoading = false);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'ไม่สามารถอัปเดตสถานะร้านได้',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  print('Error during toggle: $e');
+                                  setState(() => isLoading = false);
+                                }
+                              },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
@@ -214,6 +242,7 @@ class _MymarketpageState extends State<Mymarketpage> {
                                   ],
                                 ),
                                 child: Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
                                       isOpen
@@ -315,8 +344,15 @@ class _MymarketpageState extends State<Mymarketpage> {
                   'แก้ไขข้อมูลร้านค้า',
                   style: TextStyle(color: Colors.white),
                 ),
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(context);
+                  final result = await Navigator.pushNamed(
+                    context,
+                    '/myMarket/edit',
+                  );
+                  if (result == true) {
+                    await loadMarket(); // รีโหลดข้อมูลหลังกลับมาหน้านี้
+                  }
                 },
               ),
               SwitchListTile(
@@ -388,19 +424,53 @@ class _MymarketpageState extends State<Mymarketpage> {
 
     return GestureDetector(
       onTap: () async {
-        await Navigator.pushNamed(
-          context,
-          '/editFood',
-          arguments: {
-            'id': foodData['food_id'],
-            'name': foodData['food_name'],
-            'price': foodData['price'],
-            'imagePath': foodData['image_url'],
-            'options': foodData['options'],
-          },
-        );
-        await loadMarket();
+        if (marketId.isEmpty) return;
+
+        final now = TimeOfDay.now();
+
+        // แปลงเวลา
+        TimeOfDay parseTime(String timeStr) {
+          final parts = timeStr.split(':');
+          return TimeOfDay(
+            hour: int.parse(parts[0]),
+            minute: int.parse(parts[1]),
+          );
+        }
+
+        final open = parseTime(opened);
+        final close = parseTime(closed);
+
+        bool isInTimeRange(TimeOfDay now, TimeOfDay start, TimeOfDay end) {
+          final nowMins = now.hour * 60 + now.minute;
+          final startMins = start.hour * 60 + start.minute;
+          final endMins = end.hour * 60 + end.minute;
+
+          if (endMins <= startMins) {
+            return nowMins >= startMins || nowMins <= endMins;
+          } else {
+            return nowMins >= startMins && nowMins <= endMins;
+          }
+        }
+
+        final _ = isInTimeRange(now, open, close);
+
+        if (!isManualOverride) {
+          AwesomeDialog(
+            context: context,
+            dialogType: DialogType.warning,
+            animType: AnimType.bottomSlide,
+            title: 'ไม่ได้เปิดโหมดควบคุมร้านเอง',
+            desc:
+                'กรุณาเปิด "ควบคุมร้านด้วยตนเอง" ก่อนจึงจะสามารถสั่งเปิด/ปิดร้านได้',
+            btnOkText: 'เปิดเมนู',
+            btnOkOnPress: () {
+              _scaffoldKey.currentState?.openDrawer();
+            },
+            btnCancelOnPress: () {},
+          ).show();
+        }
       },
+
       child: Container(
         padding: EdgeInsets.all(isTablet ? 18 : size.width * 0.02),
         decoration: BoxDecoration(

@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:delivery/LoadingOverlay/LoadingOverlay.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart'
+    as picker;
 import 'package:image_picker/image_picker.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:delivery/APIs/AddMarketAPI.dart';
@@ -24,19 +26,30 @@ class _RegisterShopPageState extends State<RegisterShopPage> {
     if (picked != null) setState(() => _image = File(picked.path));
   }
 
-  Future<void> _pickTime(bool isOpening) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
+  void _pickTime(bool isOpening) {
+    picker.DatePicker.showTimePicker(
+      context,
+      showSecondsColumn: false,
+      currentTime: DateTime.now(),
+      theme: picker.DatePickerTheme(
+        backgroundColor: Colors.white,
+        itemStyle: const TextStyle(color: Colors.black, fontSize: 18),
+        doneStyle: const TextStyle(
+          color: Color(0xFF34C759),
+          fontWeight: FontWeight.bold,
+        ),
+        cancelStyle: const TextStyle(color: Colors.grey),
+      ),
+      onConfirm: (DateTime time) {
+        setState(() {
+          if (isOpening) {
+            openTime = TimeOfDay(hour: time.hour, minute: time.minute);
+          } else {
+            closeTime = TimeOfDay(hour: time.hour, minute: time.minute);
+          }
+        });
+      },
     );
-    if (picked != null) {
-      setState(() {
-        if (isOpening)
-          openTime = picked;
-        else
-          closeTime = picked;
-      });
-    }
   }
 
   String formatTime(TimeOfDay? time) =>
@@ -76,8 +89,10 @@ class _RegisterShopPageState extends State<RegisterShopPage> {
       shopName: _nameController.text,
       shopDesc: _descController.text,
       imageFile: _image!,
-      openTime: openTime!.format(context),
-      closeTime: closeTime!.format(context),
+      openTime:
+          '${openTime!.hour.toString().padLeft(2, '0')}:${openTime!.minute.toString().padLeft(2, '0')}',
+      closeTime:
+          '${closeTime!.hour.toString().padLeft(2, '0')}:${closeTime!.minute.toString().padLeft(2, '0')}',
     );
 
     setState(() => _isLoading = false); // ✅ หยุดโหลด
