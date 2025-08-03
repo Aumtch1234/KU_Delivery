@@ -88,36 +88,13 @@ class AuthService {
   }
 
   /// ✅ ล็อกเอาท์
-  Future<void> logout() async {
+  Future<void> logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
     await prefs.remove('user');
     currentUser = null;
-  }
-
-  Future<void> confirmLogout(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('ออกจากระบบ'),
-        content: Text('คุณต้องการออกจากระบบหรือไม่?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('ยกเลิก'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text('ตกลง'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await logout();
-      Navigator.pushReplacementNamed(context, '/login');
-    }
+    // นำผู้ใช้กลับไปหน้า Login และล้างทุกหน้าก่อนหน้า
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
   /// ✅ เก็บ token/user ลง local และ set currentUser
