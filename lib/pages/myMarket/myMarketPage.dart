@@ -423,54 +423,9 @@ class _MymarketpageState extends State<Mymarketpage> {
     final price = double.tryParse(foodData['price'].toString()) ?? 0;
 
     return GestureDetector(
-      onTap: () async {
-        if (marketId.isEmpty) return;
-
-        final now = TimeOfDay.now();
-
-        // แปลงเวลา
-        TimeOfDay parseTime(String timeStr) {
-          final parts = timeStr.split(':');
-          return TimeOfDay(
-            hour: int.parse(parts[0]),
-            minute: int.parse(parts[1]),
-          );
-        }
-
-        final open = parseTime(opened);
-        final close = parseTime(closed);
-
-        bool isInTimeRange(TimeOfDay now, TimeOfDay start, TimeOfDay end) {
-          final nowMins = now.hour * 60 + now.minute;
-          final startMins = start.hour * 60 + start.minute;
-          final endMins = end.hour * 60 + end.minute;
-
-          if (endMins <= startMins) {
-            return nowMins >= startMins || nowMins <= endMins;
-          } else {
-            return nowMins >= startMins && nowMins <= endMins;
-          }
-        }
-
-        final _ = isInTimeRange(now, open, close);
-
-        if (!isManualOverride) {
-          AwesomeDialog(
-            context: context,
-            dialogType: DialogType.warning,
-            animType: AnimType.bottomSlide,
-            title: 'ไม่ได้เปิดโหมดควบคุมร้านเอง',
-            desc:
-                'กรุณาเปิด "ควบคุมร้านด้วยตนเอง" ก่อนจึงจะสามารถสั่งเปิด/ปิดร้านได้',
-            btnOkText: 'เปิดเมนู',
-            btnOkOnPress: () {
-              _scaffoldKey.currentState?.openDrawer();
-            },
-            btnCancelOnPress: () {},
-          ).show();
-        }
+      onTap: () {
+        Navigator.pushNamed(context, '/editFood', arguments: foodData);
       },
-
       child: Container(
         padding: EdgeInsets.all(isTablet ? 18 : size.width * 0.02),
         decoration: BoxDecoration(

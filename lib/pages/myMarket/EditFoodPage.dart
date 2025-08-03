@@ -40,11 +40,11 @@ class _EditFoodPageState extends State<EditFoodPage> {
     if (!_isInit) {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args != null && args is Map<String, dynamic>) {
-        _foodNameController.text = args['name'] ?? '';
+        _foodNameController.text = args['food_name'] ?? '';
         _priceController.text = args['price'] != null
             ? double.tryParse(args['price'].toString())?.toString() ?? '0'
             : '0';
-        currentImageUrl = args['imagePath'];
+        currentImageUrl = args['image_url'];
 
         final rawOptions = args['options'];
 

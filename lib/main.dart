@@ -1,6 +1,7 @@
 import 'package:delivery/SplashScreens/SplashScreen.dart';
 import 'package:delivery/middleware/AuthGuard.dart';
 import 'package:delivery/middleware/authService.dart';
+import 'package:delivery/pages/EditProfilePage.dart';
 import 'package:delivery/pages/Verify-OTP-Page.dart';
 import 'package:delivery/pages/VerifyPage.dart';
 import 'package:delivery/pages/basket/MyBasket.dart';
@@ -51,6 +52,8 @@ class MyApp extends StatelessWidget {
         '/add/market': (_) =>
             AuthGuard(child: RegisterShopPage()), 
         '/myMarket': (_) => AuthGuard(child: Mymarketpage()), 
+        '/editprofile': (_) => AuthGuard(child: EditProfilePage
+        ()),
         '/myMarket/edit': (_) => AuthGuard(child: EditShopPage()), 
         '/addFood': (_) => AuthGuard(child: AddFoodPage()), 
         '/editFood': (_) => AuthGuard(child: EditFoodPage()),

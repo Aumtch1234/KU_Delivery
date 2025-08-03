@@ -123,18 +123,26 @@ class ShopPage extends StatelessWidget {
                                       ),
                                     ),
                                     SizedBox(width: isTablet ? 12 : 8),
-                                    Container(
-                                      padding: EdgeInsets.all(
-                                        isTablet ? 12 : 8,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Icon(
-                                        Icons.person,
-                                        color: Colors.white,
-                                        size: isTablet ? 24 : 20,
+                                    GestureDetector(
+                                      onTap: () {
+                                        Navigator.pushNamed(
+                                          context,
+                                          '/dashboard',
+                                        );
+                                      },
+                                      child: Container(
+                                        padding: EdgeInsets.all(
+                                          isTablet ? 12 : 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.2),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Icon(
+                                          Icons.person,
+                                          color: Colors.white,
+                                          size: isTablet ? 24 : 20,
+                                        ),
                                       ),
                                     ),
                                   ],

@@ -10,6 +10,8 @@ Future<Map<String, dynamic>> AddMarketApiMultipart({
   required File imageFile,
   String? openTime,      // เพิ่มนี้
   String? closeTime,     // เพิ่มนี้
+  required double latitude,
+  required double longitude,
 }) async {
   final uri = Uri.parse('http://10.0.2.2:4000/api/market/add');
 
@@ -21,6 +23,8 @@ Future<Map<String, dynamic>> AddMarketApiMultipart({
     ..fields['shop_description'] = shopDesc
     ..fields['open_time'] = openTime ?? ''
     ..fields['close_time'] = closeTime ?? ''
+    ..fields['latitude'] = latitude.toString()
+    ..fields['longitude'] = longitude.toString()
     ..files.add(await http.MultipartFile.fromPath('shop_logo', imageFile.path));
 
   final streamedResponse = await request.send();

@@ -27,6 +27,8 @@ dev_dependencies:
   longdo_maps_api3_flutter: ^1.12.4
   image_picker: ^1.1.2
   google_maps_flutter: ^2.12.3
+  geolocator: ^14.0.2
+  flutter_typeahead: ^5.2.0
   
 
 flutter:

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:delivery/LoadingOverlay/LoadingOverlay.dart';
+import 'package:delivery/pages/myMarket/SelectLocationPage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart'
     as picker;
@@ -7,6 +8,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:delivery/APIs/AddMarketAPI.dart';
 import 'package:delivery/middleware/authService.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
 
 class RegisterShopPage extends StatefulWidget {
   @override
@@ -19,6 +22,9 @@ class _RegisterShopPageState extends State<RegisterShopPage> {
   TimeOfDay? openTime;
   TimeOfDay? closeTime;
   File? _image;
+  double? latitude;
+  double? longitude;
+
   bool _isLoading = false;
 
   Future<void> _pickImage() async {
@@ -56,6 +62,17 @@ class _RegisterShopPageState extends State<RegisterShopPage> {
       time == null ? 'เลือกเวลา' : time.format(context);
 
   void _submit() async {
+    if (latitude == null || longitude == null) {
+  AwesomeDialog(
+    context: context,
+    dialogType: DialogType.warning,
+    title: 'ตำแหน่งยังไม่ถูกเลือก',
+    desc: 'โปรดเลือกตำแหน่งร้านค้าบนแผนที่',
+    btnOkOnPress: () {},
+  ).show();
+  return;
+}
+
     if (_nameController.text.isEmpty ||
         _image == null ||
         openTime == null ||
@@ -89,6 +106,8 @@ class _RegisterShopPageState extends State<RegisterShopPage> {
       shopName: _nameController.text,
       shopDesc: _descController.text,
       imageFile: _image!,
+      latitude: latitude!,
+      longitude: longitude!,
       openTime:
           '${openTime!.hour.toString().padLeft(2, '0')}:${openTime!.minute.toString().padLeft(2, '0')}',
       closeTime:
@@ -156,6 +175,32 @@ class _RegisterShopPageState extends State<RegisterShopPage> {
               const SizedBox(height: 12),
               _buildLabel('เลือกตำแหน่งร้านบนแผนที่'),
               const SizedBox(height: 8),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.map),
+                label: Text(
+                  latitude == null
+                      ? 'เลือกตำแหน่งร้าน'
+                      : 'ตำแหน่ง: $latitude, $longitude',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green[600],
+                ),
+                onPressed: () async {
+                  final LatLng? selected = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const SelectLocationPage(),
+                    ),
+                  );
+                  if (selected != null) {
+                    setState(() {
+                      latitude = selected.latitude;
+                      longitude = selected.longitude;
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _submit,
