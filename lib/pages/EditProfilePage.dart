@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:delivery/APIs/UpdateInfoUser.dart';
 import 'package:delivery/APIs/UpdateProfileAPI.dart';
 import 'package:delivery/middleware/authService.dart';
 import 'package:flutter/material.dart';
@@ -114,7 +115,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (_selectedImage == null && _image == null) {
       return _showDialog('กรุณาเลือกรูปโปรไฟล์');
     }
-    
 
     AwesomeDialog(
       context: context,
@@ -124,37 +124,57 @@ class _EditProfilePageState extends State<EditProfilePage> {
       desc: 'คุณต้องการยืนยันข้อมูลส่วนตัวนี้ใช่หรือไม่?',
       btnCancelOnPress: () {},
       btnOkOnPress: () async {
-  setState(() => _isLoading = true);
-  try {
-    final result = await UpdateProfileAPI(
-      displayName: _nameController.text,
-      phone: _phoneController.text,
-      gender: _gender!.toString(),
-      birthdate: _selectedDate!.toIso8601String(),
-      email: _emailController.text,
-      photoUrl: _selectedImage ?? '',
-      imageFile: _image,
-    );
+        setState(() => _isLoading = true);
+        try {
+          final result = await UpdateProfileAPI(
+            displayName: _nameController.text,
+            phone: _phoneController.text,
+            gender: _gender!.toString(),
+            birthdate: _selectedDate!.toIso8601String(),
+            email: _emailController.text,
+            photoUrl: _selectedImage ?? '',
+            imageFile: _image, // ถ้าไม่มีรูปใหม่จะเป็น null
+          );
 
-    if (result['success'] == true) {
-      _showDialog(
-        'อัปเดตข้อมูลสำเร็จ',
-        DialogType.success,
-        () => Navigator.pop(context), // ปิดหน้าปัจจุบันกลับไปหน้าก่อนหน้า
-      );
-    } else {
-      _showDialog(
-        result['message'] ?? 'เกิดข้อผิดพลาด',
-        DialogType.error,
-      );
-    }
-  } catch (e) {
-    _showDialog('เกิดข้อผิดพลาด: $e', DialogType.error);
-  } finally {
-    setState(() => _isLoading = false);
-  }
-}
+          if (result['success'] == true) {
+            if (!_isVerified) {
+              // ส่ง OTP ก็ต่อเมื่อยังไม่ยืนยันตัวตน
+              final otpResult = await UpdateInfoUser.sendOtp(
+                _emailController.text,
+              );
 
+              if (otpResult['success'] == true) {
+                _showDialog(
+                  'อัปเดตข้อมูลสำเร็จ กรุณายืนยัน OTP ที่อีเมลของคุณ',
+                  DialogType.success,
+                  () => Navigator.pushReplacementNamed(context, '/verify-otp'),
+                );
+              } else {
+                _showDialog(
+                  otpResult['message'] ?? 'ส่ง OTP ไม่สำเร็จ',
+                  DialogType.error,
+                );
+              }
+            } else {
+              // ถ้า verified แล้ว ไม่ต้องส่ง OTP แสดงข้อความสำเร็จเฉย ๆ
+              _showDialog(
+                'อัปเดตข้อมูลสำเร็จ',
+                DialogType.success,
+                () => Navigator.pop(context), // ปิดหน้านี้กลับไปหน้าก่อนหน้า
+              );
+            }
+          } else {
+            _showDialog(
+              result['message'] ?? 'เกิดข้อผิดพลาด',
+              DialogType.error,
+            );
+          }
+        } catch (e) {
+          _showDialog('เกิดข้อผิดพลาด: $e', DialogType.error);
+        } finally {
+          setState(() => _isLoading = false);
+        }
+      },
     ).show();
   }
 
@@ -178,7 +198,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("แก้ไขข้อมูลส่วนตัว"),
+        title: const Text("ยืนยันข้อมูลส่วนตัว"),
         backgroundColor: primaryGreen,
       ),
       body: _isLoading

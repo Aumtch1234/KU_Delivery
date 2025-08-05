@@ -15,17 +15,13 @@ class SelectLocationPage extends StatefulWidget {
 
 class _SelectLocationPageState extends State<SelectLocationPage> {
   LatLng? _selectedLocation;
+  LatLng _initialPosition = const LatLng(
+    13.7563,
+    100.5018,
+  ); // แก้เป็นพิกัดกรุงเทพฯเริ่มต้น
   late GoogleMapController _mapController;
   final TextEditingController _searchController = TextEditingController();
-
-  // ให้พิกัดเริ่มต้นเป็นกรุงเทพฯ เพื่อการแสดงผลที่เหมาะสม
-  static const LatLng _defaultInitialPosition = LatLng(13.7563, 100.5018);
-
-  // TODO: อย่าลืมเปลี่ยนเป็น API Key ของคุณ
-  final String apiKey = "";
-
-  // ใช้เพื่อแสดง Marker ของตำแหน่งปัจจุบัน
-  final Set<Marker> _markers = {};
+  final String apiKey = "YOUR_GOOGLE_MAPS_API_KEY"; // ใส่ API KEY ของคุณตรงนี้
 
   @override
   void initState() {
@@ -33,89 +29,46 @@ class _SelectLocationPageState extends State<SelectLocationPage> {
     _getCurrentLocation();
   }
 
-  // ฟังก์ชันหาพิกัดปัจจุบันของผู้ใช้
   Future<void> _getCurrentLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      _showSnackbar("กรุณาเปิด Location Service เพื่อใช้งาน");
-      return;
-    }
-
-    permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        _showSnackbar("ไม่ได้รับอนุญาตให้เข้าถึงตำแหน่ง");
-        return;
-      }
     }
-
     if (permission == LocationPermission.deniedForever) {
-      _showSnackbar("กรุณาอนุญาต Location ใน Settings ของเครื่อง");
+      // แจ้งผู้ใช้เปิดสิทธิ์ Location ใน settings
       return;
     }
 
-    try {
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-      LatLng currentPosition = LatLng(position.latitude, position.longitude);
-      _updateMapAndMarker(currentPosition);
-    } catch (e) {
-      _showSnackbar("ไม่สามารถหาตำแหน่งปัจจุบันได้");
+    if (await Geolocator.isLocationServiceEnabled()) {
+      Position position = await Geolocator.getCurrentPosition();
+      setState(() {
+        _initialPosition = LatLng(position.latitude, position.longitude);
+      });
+      if (_mapController != null) {
+        _mapController.animateCamera(CameraUpdate.newLatLng(_initialPosition));
+      }
     }
   }
 
-  // ฟังก์ชันค้นหาสถานที่
   Future<List<String>> fetchPlaceSuggestions(String input) async {
-    print('fetchPlaceSuggestions called with input: $input'); // เพิ่มบรรทัดนี้
+    if (input.isEmpty) return [];
+    final url =
+        "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&language=th&key=$apiKey";
+    final response = await http.get(Uri.parse(url));
 
-    if (input.isEmpty) {
-      return [];
-    }
-
-    // ใช้ try-catch เพื่อจับทุกอย่าง
-    try {
-      Uri url = Uri.https(
-        "maps.googleapis.com",
-        "/maps/api/place/autocomplete/json",
-        {
-          "input": input,
-          "language": "th",
-          "key": apiKey,
-          "components": "country:th",
-        },
-      );
-
-      print('Calling API URL: $url');
-      final response = await http.get(url);
-      print('API Response Status Code: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final result = json.decode(response.body);
-        print('API Response Body: $result');
-
-        if (result['status'] == 'OK') {
-          final predictions = result['predictions'] as List;
-          return predictions.map((p) => p['description'] as String).toList();
-        } else {
-          print('API status is not OK. Status: ${result['status']}');
-          return [];
-        }
+    if (response.statusCode == 200) {
+      final result = json.decode(response.body);
+      if (result['status'] == 'OK') {
+        final predictions = result['predictions'] as List;
+        return predictions.map((p) => p['description'] as String).toList();
       } else {
-        print('HTTP request failed with status: ${response.statusCode}');
         return [];
       }
-    } catch (e) {
-      print('Error fetching suggestions: $e');
+    } else {
       return [];
     }
   }
 
-  // ฟังก์ชันแปลงชื่อสถานที่ให้เป็นพิกัด LatLng
   Future<LatLng?> fetchLatLngFromPlaceName(String description) async {
     final url =
         "https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=$description&inputtype=textquery&fields=geometry&key=$apiKey";
@@ -133,183 +86,109 @@ class _SelectLocationPageState extends State<SelectLocationPage> {
     return null;
   }
 
-  // ฟังก์ชันอัปเดตแผนที่และ Marker
-  void _updateMapAndMarker(LatLng newLocation) {
-    setState(() {
-      _selectedLocation = newLocation;
-      _markers.clear();
-      _markers.add(
-        Marker(
-          markerId: const MarkerId('selected'),
-          position: newLocation,
-          infoWindow: const InfoWindow(title: 'ตำแหน่งที่เลือก'),
-        ),
-      );
-    });
-    _mapController.animateCamera(CameraUpdate.newLatLngZoom(newLocation, 16));
-  }
-
-  // ฟังก์ชันยืนยันตำแหน่ง
   void _confirmLocation() {
     if (_selectedLocation != null) {
       Navigator.pop(context, _selectedLocation);
-    } else {
-      _showSnackbar("กรุณาเลือกตำแหน่งบนแผนที่ก่อน");
     }
-  }
-
-  // ฟังก์ชันแสดง Snackbar
-  void _showSnackbar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "เลือกตำแหน่งร้าน",
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text("เลือกตำแหน่งร้าน"),
         backgroundColor: const Color(0xFF34C759),
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Stack(
         children: [
           GoogleMap(
             onMapCreated: (controller) => _mapController = controller,
-            initialCameraPosition: const CameraPosition(
-              target: _defaultInitialPosition,
-              zoom: 12,
+            initialCameraPosition: CameraPosition(
+              target: _initialPosition,
+              zoom: 16,
             ),
             onTap: (LatLng pos) {
-              _updateMapAndMarker(pos);
+              setState(() {
+                _selectedLocation = pos;
+              });
             },
-            markers: _markers,
+            markers: _selectedLocation != null
+                ? {
+                    Marker(
+                      markerId: const MarkerId('selected'),
+                      position: _selectedLocation!,
+                    ),
+                  }
+                : {},
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
-            zoomControlsEnabled: false, // ซ่อนปุ่มซูมเพื่อความสวยงาม
           ),
-
-          // Search Bar
           Positioned(
             top: 16,
             left: 16,
             right: 16,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+            child: TypeAheadField<String>(
+              builder: (context, controller, focusNode) {
+                return TextField(
+                  controller: _searchController,
+                  focusNode: focusNode,
+                  decoration: InputDecoration(
+                    labelText: 'ค้นหาสถานที่',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    prefixIcon: Icon(Icons.search),
+                    filled: true,
+                    fillColor: Colors.white,
                   ),
-                ],
-              ),
-              child: TypeAheadField<String>(
-                controller: _searchController, // ใช้ controller เดิม
-                builder: (context, controller, focusNode) {
-                  return TextField(
-                    controller: controller, // ใช้ controller ที่มาจาก builder
-                    focusNode: focusNode,
-                    decoration: InputDecoration(
-                      labelText: 'ค้นหาสถานที่...',
-                      labelStyle: TextStyle(color: Colors.grey[600]),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 15,
-                      ),
-                      prefixIcon: const Icon(
-                        Icons.search,
-                        color: Color(0xFF34C759),
-                      ),
-                      suffixIcon: controller.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear, color: Colors.grey),
-                              onPressed: () {
-                                controller.clear();
-                                FocusScope.of(context).unfocus();
-                              },
-                            )
-                          : null,
-                    ),
+                );
+              },
+              suggestionsCallback: fetchPlaceSuggestions,
+              itemBuilder: (context, suggestion) {
+                return ListTile(
+                  leading: const Icon(Icons.location_on),
+                  title: Text(suggestion),
+                );
+              },
+              onSelected: (suggestion) async {
+                final location = await fetchLatLngFromPlaceName(suggestion);
+                if (location != null) {
+                  _mapController.animateCamera(
+                    CameraUpdate.newLatLng(location),
                   );
-                },
-                suggestionsCallback: (pattern) =>
-                    fetchPlaceSuggestions(pattern), // ใช้ (pattern)
-                itemBuilder: (context, suggestion) {
-                  return ListTile(
-                    leading: const Icon(
-                      Icons.location_on,
-                      color: Color(0xFF34C759),
-                    ),
-                    title: Text(suggestion),
-                  );
-                },
-                emptyBuilder: (context) {
-                  return InkWell(
-                    onTap: () {
-                      _getCurrentLocation();
-                      FocusScope.of(context).unfocus(); // ซ่อนคีย์บอร์ด
-                    },
-                    child: const ListTile(
-                      leading: Icon(
-                        Icons.my_location,
-                        color: Color(0xFF34C759),
-                      ),
-                      title: Text("ตำแหน่งของคุณ"),
-                    ),
-                  );
-                },
-                onSelected: (suggestion) async {
-                  final location = await fetchLatLngFromPlaceName(suggestion);
-                  if (location != null) {
-                    _updateMapAndMarker(location);
+                  setState(() {
+                    _selectedLocation = location;
                     _searchController.text = suggestion;
-                    FocusScope.of(context).unfocus();
-                  }
-                },
-              ),
+                  });
+                }
+              },
             ),
           ),
-
-          // My Location Button
           Positioned(
-            bottom: 100, // ปรับตำแหน่งให้ไม่ทับปุ่มยืนยัน
+            top: 80,
             right: 16,
             child: FloatingActionButton(
-              onPressed: _getCurrentLocation,
+              mini: true,
               backgroundColor: Colors.white,
-              child: const Icon(Icons.my_location, color: Color(0xFF34C759)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
+              onPressed: _getCurrentLocation,
+              child: const Icon(Icons.my_location, color: Colors.black),
             ),
           ),
         ],
       ),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        child: ElevatedButton(
+        padding: const EdgeInsets.all(12),
+        child: ElevatedButton.icon(
           onPressed: _selectedLocation != null ? _confirmLocation : null,
-          child: const Text(
-            "ยืนยันตำแหน่ง",
-            style: TextStyle(fontSize: 18, color: Colors.white),
-          ),
+          icon: const Icon(Icons.check),
+          label: const Text("ยืนยันตำแหน่ง"),
           style: ElevatedButton.styleFrom(
-            backgroundColor: _selectedLocation != null
-                ? const Color(0xFF34C759)
-                : Colors.grey,
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            backgroundColor: const Color(0xFF34C759),
+            padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
             ),
-            elevation: 5,
+            textStyle: const TextStyle(fontSize: 18),
           ),
         ),
       ),
