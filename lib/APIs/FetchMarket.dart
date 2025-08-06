@@ -5,7 +5,7 @@ import 'package:delivery/middleware/authService.dart';
 Future<Map<String, dynamic>?> fetchMyMarket() async {
   final token = await AuthService().getToken(); // ได้จาก SharedPreferences
   final response = await http.get(
-    Uri.parse('http://10.0.2.2:4000/api/my-market'), // สมมุติ endpoint
+    Uri.parse('http://192.168.99.44:4000/api/my-market'), // สมมุติ endpoint
     headers: {
       'Authorization': 'Bearer $token',
       'Content-Type': 'application/json',

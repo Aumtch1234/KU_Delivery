@@ -19,11 +19,15 @@ import 'package:delivery/pages/order/RecipientAddress.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/basket_provider.dart';
+import 'package:intl/date_symbol_data_local.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final auth = AuthService();
   await auth.loadUser();
+  await initializeDateFormatting('th', null); // โหลด locale "th"
+
   runApp(
     ChangeNotifierProvider(create: (_) => BasketProvider(), child: MyApp()),
   );

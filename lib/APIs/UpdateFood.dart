@@ -14,7 +14,7 @@ Future<bool> updateFood({
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('token');
 
-  final uri = Uri.parse('http://10.0.2.2:4000/api/food/update/$foodId');
+  final uri = Uri.parse('http://192.168.99.44:4000/api/food/update/$foodId');
   final request = http.MultipartRequest('PUT', uri);
 
   // ✅ แนบ Authorization header
