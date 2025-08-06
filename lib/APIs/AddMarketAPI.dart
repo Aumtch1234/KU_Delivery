@@ -13,7 +13,7 @@ Future<Map<String, dynamic>> AddMarketApiMultipart({
   required double latitude,
   required double longitude,
 }) async {
-  final uri = Uri.parse('http://10.0.2.2:4000/api/market/add');
+  final uri = Uri.parse('http://192.168.99.44:4000/api/market/add');
 
   final token = await AuthService().getToken(); // ✅ ดึง token มาใช้
 

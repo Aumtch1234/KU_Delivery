@@ -9,7 +9,7 @@ class AuthService {
   AuthService._internal();
 
   Map<String, dynamic>? currentUser;
-  final String baseUrl = 'http://10.0.2.2:4000/api';
+  final String baseUrl = 'http://192.168.99.44:4000/api';
   // C75 192.168.159.44
 
   /// ✅ Login แบบ Manual (อีเมล + รหัสผ่าน)

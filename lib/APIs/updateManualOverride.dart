@@ -8,7 +8,7 @@ Future<bool> updateManualOverrideAPI(String marketId, bool isManualOverride, boo
 
   try {
     final response = await http.patch(
-      Uri.parse('http://10.0.2.2:4000/api/my-market/override/$marketId'),
+      Uri.parse('http://192.168.99.44:4000/api/my-market/override/$marketId'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',

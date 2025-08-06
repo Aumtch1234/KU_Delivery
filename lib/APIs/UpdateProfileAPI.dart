@@ -15,7 +15,7 @@ Future<Map<String, dynamic>> UpdateProfileAPI({
 }) async {
   final token = await AuthService().getToken();
 
-  final uri = Uri.parse('http://10.0.2.2:4000/api/update-profile');
+  final uri = Uri.parse('http://192.168.99.44:4000/api/update-profile');
   final request = http.MultipartRequest('PUT', uri)
     ..headers['Authorization'] = 'Bearer $token'
     ..fields['display_name'] = displayName

@@ -1,5 +1,6 @@
 import 'package:delivery/pages/bottom/DashboardPage.dart';
 import 'package:delivery/pages/bottom/ShopPage.dart';
+import 'package:delivery/pages/chat/ChatPage.dart';
 import 'package:flutter/material.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -12,7 +13,9 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Widget> _pages = [
     ShopPage(), 
-    DashboardPage()
+    ChatPage(),
+    DashboardPage(),
+    // เพิ่มหน้าอื่นๆ ที่ต้องการใน navigation bar
   ];
 
   void _onItemTapped(int index) {
@@ -23,6 +26,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<BottomNavigationBarItem> _navItems = [
     BottomNavigationBarItem(icon: Icon(Icons.home), label: 'หน้าหลัก'),
+    BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'แชท'),
     BottomNavigationBarItem(icon: Icon(Icons.person), label: 'โปรไฟล์'),
   ];
 
