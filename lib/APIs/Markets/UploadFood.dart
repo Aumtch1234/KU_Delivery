@@ -17,7 +17,7 @@ Future<void> uploadFood({
     return;
   }
 
-  var uri = Uri.parse('http://192.168.99.44:4000/api/food/add');
+  var uri = Uri.parse('http://10.0.2.2:4000/api/food/add');
 
   var request = http.MultipartRequest('POST', uri);
 

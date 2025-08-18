@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:delivery/middleware/authService.dart';
+import 'package:delivery/APIs/middleware/authService.dart';
 import 'package:delivery/pages/RegisterPage.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';

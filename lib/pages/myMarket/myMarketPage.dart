@@ -1,8 +1,9 @@
-import 'package:delivery/APIs/updateManualOverride.dart';
+import 'package:delivery/APIs/Markets/updateManualOverride.dart';
+import 'package:delivery/pages/bottom/MainNavigation.dart';
 import 'package:flutter/material.dart';
-import 'package:delivery/APIs/FetchFoodsForMarket.dart';
-import 'package:delivery/APIs/FetchMarket.dart';
-import 'package:delivery/APIs/MarketStatusToggleAPI.dart';
+import 'package:delivery/APIs/Markets/FetchFoodsForMarket.dart';
+import 'package:delivery/APIs/Markets/FetchMarket.dart';
+import 'package:delivery/APIs/Markets/MarketStatusToggleAPI.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 
 class Mymarketpage extends StatefulWidget {
@@ -335,7 +336,18 @@ class _MymarketpageState extends State<Mymarketpage> {
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.pushNamed(context, '/addFood');
+                  Navigator.pushNamed(context, '/addFood').then((onValue) {
+                    if (onValue == true) {
+                      setState(() {
+                        isLoading = true;
+                      });
+                      loadMarket().then((_) {
+                        setState(() {
+                          isLoading = false;
+                        });
+                      });
+                    }
+                  });
                 },
               ),
               ListTile(
@@ -394,8 +406,14 @@ class _MymarketpageState extends State<Mymarketpage> {
                   style: TextStyle(color: Colors.white),
                 ),
                 onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/dashboard');
+                  // และลบหน้าอื่นๆ ทั้งหมดใน stack
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MainNavigation(),
+                    ), // เปลี่ยนไปหน้า Dashboard
+                    (Route<dynamic> route) => false, // ลบทุกหน้าใน Stack
+                  );
                 },
               ),
               const Spacer(),
@@ -424,7 +442,21 @@ class _MymarketpageState extends State<Mymarketpage> {
 
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(context, '/editFood', arguments: foodData);
+        Navigator.pushNamed(context, '/editFood', arguments: foodData).then((
+          onValue,
+        ) {
+          if (onValue == true) {
+            // รีโหลดข้อมูลร้านและเมนูล่าสุดจาก API
+            setState(() {
+              isLoading = true; // แสดง loading ระหว่างโหลด
+            });
+            loadMarket().then((_) {
+              setState(() {
+                isLoading = false; // ซ่อน loading
+              });
+            });
+          }
+        });
       },
       child: Container(
         padding: EdgeInsets.all(isTablet ? 18 : size.width * 0.02),

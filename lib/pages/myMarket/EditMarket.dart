@@ -1,11 +1,11 @@
 import 'dart:io';
-import 'package:delivery/APIs/FetchMarket.dart';
+import 'package:delivery/APIs/Markets/FetchMarket.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
-import 'package:delivery/LoadingOverlay/LoadingOverlay.dart';
-import 'package:delivery/APIs/UpdateMarketApi.dart';
-import 'package:delivery/middleware/authService.dart';
+import 'package:delivery/pages/LoadingOverlay/LoadingOverlay.dart';
+import 'package:delivery/APIs/Markets/UpdateMarketApi.dart';
+import 'package:delivery/APIs/middleware/authService.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart'
     as picker;
 import 'package:google_maps_flutter/google_maps_flutter.dart';

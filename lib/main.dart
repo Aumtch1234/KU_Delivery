@@ -1,6 +1,6 @@
 import 'package:delivery/SplashScreens/SplashScreen.dart';
-import 'package:delivery/middleware/AuthGuard.dart';
-import 'package:delivery/middleware/authService.dart';
+import 'package:delivery/APIs/middleware/AuthGuard.dart';
+import 'package:delivery/APIs/middleware/authService.dart';
 import 'package:delivery/pages/EditProfilePage.dart';
 import 'package:delivery/pages/Verify-OTP-Page.dart';
 import 'package:delivery/pages/VerifyPage.dart';

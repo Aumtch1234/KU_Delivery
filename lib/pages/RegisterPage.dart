@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'package:delivery/APIs/RegisterAPI.dart';
-import 'package:delivery/LoadingOverlay/LoadingOverlay.dart';
+import 'package:delivery/APIs/Users/RegisterAPI.dart';
+import 'package:delivery/pages/LoadingOverlay/LoadingOverlay.dart';
 import 'package:flutter/material.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:image_picker/image_picker.dart';

@@ -1,8 +1,8 @@
 import 'dart:io';
-import 'package:delivery/LoadingOverlay/LoadingOverlay.dart';
+import 'package:delivery/pages/LoadingOverlay/LoadingOverlay.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:delivery/APIs/UploadFood.dart';
+import 'package:delivery/APIs/Markets/UploadFood.dart';
 
 class AddFoodPage extends StatefulWidget {
   @override

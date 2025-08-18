@@ -1,8 +1,9 @@
 import 'dart:convert';
+import 'package:delivery/pages/WellcomePage.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:delivery/middleware/authService.dart';
+import 'package:delivery/APIs/middleware/authService.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -279,21 +280,31 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   void _showLogoutDialog() {
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.warning,
-      animType: AnimType.rightSlide,
-      headerAnimationLoop: false,
-      title: 'ต้องการออกจากระบบใช่หรือไม่?',
-      desc: 'คุณจะต้องเข้าสู่ระบบใหม่อีกครั้งเพื่อใช้งาน',
-      btnCancelOnPress: () {},
-      btnCancelText: 'ยกเลิก',
-      // แก้ไขตรงนี้: เรียกใช้ AuthService().logout() พร้อมส่ง context
-      btnOkOnPress: () => AuthService().logout(),
-      btnOkText: 'ออกจากระบบ',
-      btnOkColor: Colors.red,
-    ).show();
-  }
+  AwesomeDialog(
+    context: context,
+    dialogType: DialogType.warning,
+    animType: AnimType.rightSlide,
+    headerAnimationLoop: false,
+    title: 'ต้องการออกจากระบบใช่หรือไม่?',
+    desc: 'คุณจะต้องเข้าสู่ระบบใหม่อีกครั้งเพื่อใช้งาน',
+    btnCancelOnPress: () {},
+    btnCancelText: 'ยกเลิก',
+    // แก้ไขตรงนี้: เรียกใช้ AuthService().logout() และจัดการการนำทาง
+    btnOkOnPress: () async {
+      // 1. เรียกใช้ฟังก์ชัน logout
+      await AuthService().logout();
+
+      // 2. นำทางผู้ใช้ไปยังหน้า Login และลบทุกหน้าก่อนหน้า
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => wellcomePage()), 
+        (Route<dynamic> route) => false, // ลบทุกหน้าใน Stack
+      );
+    },
+    btnOkText: 'ออกจากระบบ',
+    btnOkColor: Colors.green,
+  ).show();
+}
 
   @override
   Widget build(BuildContext context) {

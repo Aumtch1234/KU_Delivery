@@ -1,11 +1,50 @@
+import 'package:delivery/APIs/Foods/FoodsMenuAPI.dart';
+import 'package:delivery/APIs/Foods/MaketsAllAPI.dart';
 import 'package:delivery/pages/store/StoreMenuPage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../store/foods/OrderFoodPage.dart';
 import '../../providers/basket_provider.dart';
 
-class ShopPage extends StatelessWidget {
+class ShopPage extends StatefulWidget {
   const ShopPage({super.key});
+
+  @override
+  State<ShopPage> createState() => _ShopPageState();
+}
+
+class _ShopPageState extends State<ShopPage> {
+  final FoodApiService _foodApiService = FoodApiService();
+  final MarketsApiService _MarketApiService = MarketsApiService();
+
+  List<dynamic> allFoods = [];
+  List<dynamic> allMarkets = [];
+
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchAllFoods();
+  }
+
+  Future<void> fetchAllFoods() async {
+    try {
+      final foodData = await _foodApiService.getAllFoods();
+      final MarketData = await _MarketApiService.getAllMarkets();
+
+      setState(() {
+        allFoods = foodData;
+        allMarkets = MarketData;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      print('Error: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,7 +175,9 @@ class ShopPage extends StatelessWidget {
                                         ),
                                         decoration: BoxDecoration(
                                           color: Colors.white.withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                         child: Icon(
                                           Icons.person,
@@ -328,26 +369,19 @@ class ShopPage extends StatelessWidget {
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceAround,
-                                children: [
-                                  _buildStoreItem(
+                                children: allMarkets.map((Maket) {
+                                  print('Maket data: $Maket');
+
+                                  // เรียกใช้ _buildStoreItem และส่ง image_url เข้าไปด้วย
+                                  return _buildStoreItem(
                                     context,
                                     size,
                                     isTablet,
-                                    'ร้านข้าวมันไก่',
-                                  ),
-                                  _buildStoreItem(
-                                    context,
-                                    size,
-                                    isTablet,
-                                    'ร้านก๋วยเตี๋ยว',
-                                  ),
-                                  _buildStoreItem(
-                                    context,
-                                    size,
-                                    isTablet,
-                                    'ร้านอาหารตามสั่ง',
-                                  ),
-                                ],
+                                    Maket['shop_name'] ?? 'ชื่อร้านไม่ระบุ',
+                                    Maket['shop_logo_url'] ??
+                                        'https://via.placeholder.com/150', // ส่ง URL รูปภาพ
+                                  );
+                                }).toList(),
                               ),
                               SizedBox(
                                 height: isTablet ? 24 : size.height * 0.02,
@@ -417,27 +451,80 @@ class ShopPage extends StatelessWidget {
                                     'assets/menus/yam.png',
                                     4.0,
                                   ),
-                                  _buildRecommendedMenu(
-                                    size,
-                                    isTablet,
-                                    "ก๋วยเตี๋ยว",
-                                    "ร้านเตี๋ยวเด็ด",
-                                    "12 นาที",
-                                    40,
-                                    'assets/menus/yam.png',
-                                    4.0,
+                                ],
+                              ),
+                              SizedBox(
+                                height: isTablet ? 24 : size.height * 0.02,
+                              ),
+                              Divider(color: Colors.grey),
+                              SizedBox(
+                                height: isTablet ? 24 : size.height * 0.02,
+                              ),
+                              // Recommended menu section
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'เมนูทั้งหมด',
+                                    style: TextStyle(
+                                      fontSize: isTablet
+                                          ? 20
+                                          : size.width * 0.045,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                  _buildRecommendedMenu(
-                                    size,
-                                    isTablet,
-                                    "ข้าวหมูแดง",
-                                    "ร้านหมูแดง",
-                                    "10 นาที",
-                                    55,
-                                    'assets/menus/kai.png',
-                                    4.3,
+                                  TextButton(
+                                    onPressed: () {},
+                                    child: Text(
+                                      'เพิ่มเติม',
+                                      style: TextStyle(
+                                        color: Color(0xFF34C759),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: isTablet
+                                            ? 18
+                                            : size.width * 0.04,
+                                      ),
+                                    ),
                                   ),
                                 ],
+                              ),
+                              SizedBox(
+                                height: isTablet ? 12 : size.height * 0.01,
+                              ),
+                              // Recommended menu grid
+                              GridView.count(
+                                crossAxisCount: isTablet ? 3 : 2,
+                                crossAxisSpacing: isTablet ? 24 : 16,
+                                mainAxisSpacing: isTablet ? 24 : 16,
+                                childAspectRatio: isTablet ? 0.9 : 0.75,
+                                shrinkWrap: true,
+                                physics: NeverScrollableScrollPhysics(),
+                                children: allFoods.map((food) {
+                                  // ใช้ข้อมูลจาก API มาแสดงผลในเมนูแต่ละรายการ
+                                  // print('Food data: $food');  เอาไว้ log เบิ่งข้อมูล
+                                  final price =
+                                      double.tryParse(
+                                        food['price'].toString(),
+                                      ) ??
+                                      0.0;
+                                  final rating =
+                                      double.tryParse(
+                                        food['rating'].toString(),
+                                      ) ??
+                                      0.0;
+                                  return _buildRecommendedMenu(
+                                    size,
+                                    isTablet,
+                                    food['food_name'] ?? 'ชื่ออาหารไม่ระบุ',
+                                    food['shop_name'] ?? 'ร้านค้าไม่ระบุ',
+                                    food['estimated_delivery_time'] ?? '- นาที',
+                                    price, // ใช้ตัวแปร price ที่แปลงค่าแล้ว
+                                    food['image_url'] ??
+                                        'https://via.placeholder.com/150',
+                                    rating, // ใช้ตัวแปร rating ที่แปลงค่าแล้ว
+                                  );
+                                }).toList(),
                               ),
                               SizedBox(
                                 height: isTablet ? 40 : size.height * 0.05,
@@ -484,6 +571,7 @@ class ShopPage extends StatelessWidget {
     Size size,
     bool isTablet,
     String name,
+    String imageUrl,
   ) {
     return GestureDetector(
       onTap: () {
@@ -499,23 +587,40 @@ class ShopPage extends StatelessWidget {
           Container(
             width: isTablet ? 120 : size.width * 0.22,
             height: isTablet ? 120 : size.width * 0.22,
+            // เพิ่มเงา (shadow) ให้ดูมีมิติ
             decoration: BoxDecoration(
-              color: Colors.grey[200],
+              color: Colors.white, // เปลี่ยนสีพื้นหลังเป็นสีขาว
               borderRadius: BorderRadius.circular(
-                isTablet ? 20 : size.width * 0.04,
+                isTablet ? 60 : size.width * 0.11, // ทำให้เป็นวงกลม
               ),
-              image: const DecorationImage(
-                image: AssetImage('assets/menus/kai.png'),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  spreadRadius: 2,
+                  blurRadius: 5,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+              // ใช้ NetworkImage เพื่อดึงรูปจาก URL
+              image: DecorationImage(
+                image: NetworkImage(imageUrl),
                 fit: BoxFit.cover,
               ),
             ),
           ),
           SizedBox(height: isTablet ? 8 : size.height * 0.01),
-          Text(
-            name,
-            style: TextStyle(
-              fontSize: isTablet ? 16 : size.width * 0.035,
-              fontWeight: FontWeight.w500,
+          // ใช้ Padding เพื่อให้ชื่อร้านไม่ติดขอบมากเกินไป
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: isTablet ? 8 : 4),
+            child: Text(
+              name,
+              textAlign: TextAlign.center, // จัดตำแหน่งข้อความตรงกลาง
+              maxLines: 1, // จำกัดให้แสดงแค่บรรทัดเดียว
+              overflow: TextOverflow.ellipsis, // ถ้าชื่อยาวเกินให้แสดง ...
+              style: TextStyle(
+                fontSize: isTablet ? 16 : size.width * 0.035,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -580,11 +685,32 @@ class ShopPage extends StatelessWidget {
                 ),
                 child: Stack(
                   children: [
-                    Image.asset(
+                    Image.network(
                       imagePath,
                       height: isTablet ? 120 : size.width * 0.25,
                       width: double.infinity,
                       fit: BoxFit.cover,
+                      // เพิ่ม loadingBuilder และ errorBuilder เพื่อจัดการสถานะการโหลด
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        // Fallback UI เมื่อโหลดรูปไม่ได้
+                        return Container(
+                          height: isTablet ? 120 : size.width * 0.25,
+                          width: double.infinity,
+                          color: Colors.grey[200],
+                          child: Icon(Icons.broken_image, size: 50),
+                        );
+                      },
                     ),
                     Positioned(
                       top: isTablet ? 12 : size.width * 0.02,

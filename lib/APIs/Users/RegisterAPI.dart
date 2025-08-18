@@ -12,7 +12,7 @@ Future<Map<String, dynamic>> registerUserAPI({
   required String birthdate,
   File? imageFile, // รูปภาพที่ผู้ใช้เลือก (File)
 }) async {
-  final uri = Uri.parse('http://192.168.99.44:4000/api/register');
+  final uri = Uri.parse('http://10.0.2.2:4000/api/register');
 
   var request = http.MultipartRequest('POST', uri);
 

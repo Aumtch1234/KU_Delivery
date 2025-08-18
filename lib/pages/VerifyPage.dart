@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'package:delivery/APIs/UpdateInfoUser.dart';
-import 'package:delivery/middleware/authService.dart';
+import 'package:delivery/APIs/Users/UpdateInfoUser.dart';
+import 'package:delivery/APIs/middleware/authService.dart';
 import 'package:flutter/material.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:image_picker/image_picker.dart';

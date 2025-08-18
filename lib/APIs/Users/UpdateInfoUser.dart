@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:delivery/middleware/authService.dart';
+import 'package:delivery/APIs/middleware/authService.dart';
 
 class UpdateInfoUser {
-  static const String baseUrl = 'http://192.168.99.44:4000/api';
+  static const String baseUrl = 'http://10.0.2.2:4000/api';
 
   static Future<Map<String, dynamic>> updateVerify({
     required String displayName,

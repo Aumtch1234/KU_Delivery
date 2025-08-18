@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:delivery/middleware/authService.dart';
+import 'package:delivery/APIs/middleware/authService.dart';
 import 'package:http/http.dart' as http;
 
 Future<Map<String, dynamic>> UpdateMarketApiMultipart({
@@ -13,7 +13,7 @@ Future<Map<String, dynamic>> UpdateMarketApiMultipart({
   required double longitude, // เพิ่ม parameter สำหรับ longitude
   File? imageFile,
 }) async {
-  const String baseUrl = "http://192.168.99.44:4000/api";
+  const String baseUrl = "http://10.0.2.2:4000/api";
   final uri = Uri.parse('$baseUrl/markets/$marketId');
   print('🔵 Sending request to $uri');
 

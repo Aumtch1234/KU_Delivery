@@ -1,13 +1,13 @@
 import 'dart:io';
-import 'package:delivery/LoadingOverlay/LoadingOverlay.dart';
+import 'package:delivery/APIs/Markets/AddMarketAPI.dart';
+import 'package:delivery/pages/LoadingOverlay/LoadingOverlay.dart';
 import 'package:delivery/pages/myMarket/SelectLocationPage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart'
     as picker;
 import 'package:image_picker/image_picker.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
-import 'package:delivery/APIs/AddMarketAPI.dart'; // ตรวจสอบว่าไฟล์นี้มีอยู่จริง
-import 'package:delivery/middleware/authService.dart'; // ตรวจสอบว่าไฟล์นี้มีอยู่จริง
+import 'package:delivery/APIs/middleware/authService.dart'; // ตรวจสอบว่าไฟล์นี้มีอยู่จริง
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class RegisterShopPage extends StatefulWidget {

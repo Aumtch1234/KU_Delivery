@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'dart:convert';
-import 'package:delivery/LoadingOverlay/LoadingOverlay.dart';
+import 'package:delivery/APIs/Markets/DeleteFoodAPI.dart';
+import 'package:delivery/pages/LoadingOverlay/LoadingOverlay.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:delivery/APIs/UpdateFood.dart';
+import 'package:delivery/APIs/Markets/UpdateFood.dart';
+import 'package:awesome_dialog/awesome_dialog.dart';
 
 class EditFoodPage extends StatefulWidget {
   const EditFoodPage({Key? key}) : super(key: key);
@@ -135,7 +137,7 @@ class _EditFoodPageState extends State<EditFoodPage> {
       final optionsJson = jsonEncode(optionsForApi);
 
       await updateFood(
-        foodId: (ModalRoute.of(context)?.settings.arguments as Map)['id'],
+        foodId: (ModalRoute.of(context)?.settings.arguments as Map)['food_id'],
         foodName: foodName,
         price: price,
         imageFile: newImage,
@@ -146,7 +148,7 @@ class _EditFoodPageState extends State<EditFoodPage> {
         _isLoading = false; // ซ่อนโหลด
       });
 
-      Navigator.pop(context);
+      Navigator.pop(context, true);
     }
   }
 
@@ -178,6 +180,36 @@ class _EditFoodPageState extends State<EditFoodPage> {
         appBar: AppBar(
           title: const Text('แก้ไขเมนู'),
           backgroundColor: primaryColor,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.delete),
+              tooltip: 'ลบตัวเมนูนี้',
+              onPressed: () {
+                AwesomeDialog(
+                  context: context,
+                  dialogType: DialogType.warning,
+                  animType: AnimType.scale,
+                  title: 'ยืนยันการลบ',
+                  desc: 'คุณต้องการลบเมนูนี้จริงหรือไม่?',
+                  btnCancelOnPress: () {},
+                  btnOkOnPress: () async {
+                    // เรียก API ลบอาหาร
+                    final foodId =
+                        (ModalRoute.of(context)?.settings.arguments
+                            as Map)['food_id'];
+                    final success = await deleteFood(foodId); // ฟังก์ชันลบ
+                    if (success) {
+                      Navigator.pop(context, true); // ปิดหน้านี้และคืนค่า true
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('ลบเมนูไม่สำเร็จ')),
+                      );
+                    }
+                  },
+                ).show();
+              },
+            ),
+          ],
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),

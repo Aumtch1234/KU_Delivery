@@ -7,7 +7,10 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class SelectLocationPage extends StatefulWidget {
-  const SelectLocationPage({Key? key}) : super(key: key);
+  
+  final double? initLat;
+  final double? initLng;
+  const SelectLocationPage({Key? key, this.initLat, this.initLng}) : super(key: key);
 
   @override
   _SelectLocationPageState createState() => _SelectLocationPageState();
@@ -22,7 +25,7 @@ class _SelectLocationPageState extends State<SelectLocationPage> {
   static const LatLng _defaultInitialPosition = LatLng(13.7563, 100.5018);
 
   // TODO: อย่าลืมเปลี่ยนเป็น API Key ของคุณ
-  final String apiKey = "AIzaSyC80ckycu48M9WQ8Lb8Fk0wtIhkHFN-Nb4";
+  final String apiKey = "";
 
   // ใช้เพื่อแสดง Marker ของตำแหน่งปัจจุบัน
   final Set<Marker> _markers = {};
@@ -31,6 +34,7 @@ class _SelectLocationPageState extends State<SelectLocationPage> {
   void initState() {
     super.initState();
     _getCurrentLocation();
+    
   }
 
   // ฟังก์ชันหาพิกัดปัจจุบันของผู้ใช้
