@@ -1,10 +1,8 @@
-// lib/apis/food_api_service.dart
-
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class FoodApiService {
-  static const String _baseUrl = 'http://10.0.2.2:4000/api';
+  static const String _baseUrl = 'http://10.0.2.2:4000/client';
 
   Future<List<dynamic>> getAllFoods() async {
     final response = await http.get(Uri.parse('$_baseUrl/foods'));

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class MarketsApiService {
-  static const String _baseUrl = 'http://10.0.2.2:4000/api';
+  static const String _baseUrl = 'http://10.0.2.2:4000/client';
 
   Future<List<dynamic>> getAllMarkets() async {
     final response = await http.get(Uri.parse('$_baseUrl/markets'));

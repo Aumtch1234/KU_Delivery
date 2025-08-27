@@ -25,7 +25,7 @@ class _SelectLocationPageState extends State<SelectLocationPage> {
   static const LatLng _defaultInitialPosition = LatLng(13.7563, 100.5018);
 
   // TODO: อย่าลืมเปลี่ยนเป็น API Key ของคุณ
-  final String apiKey = "";
+  final String apiKey = "AIzaSyCF7hvFxLITbitH3ulH6zQ601O3N4siTzs";
 
   // ใช้เพื่อแสดง Marker ของตำแหน่งปัจจุบัน
   final Set<Marker> _markers = {};

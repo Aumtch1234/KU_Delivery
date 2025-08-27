@@ -13,7 +13,7 @@ Future<Map<String, dynamic>> UpdateMarketApiMultipart({
   required double longitude, // เพิ่ม parameter สำหรับ longitude
   File? imageFile,
 }) async {
-  const String baseUrl = "http://10.0.2.2:4000/api";
+  const String baseUrl = "http://10.0.2.2:4000/client";
   final uri = Uri.parse('$baseUrl/markets/$marketId');
   print('🔵 Sending request to $uri');
 

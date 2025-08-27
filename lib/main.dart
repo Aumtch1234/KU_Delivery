@@ -16,6 +16,7 @@ import 'package:delivery/pages/myMarket/RegisterShopPage.dart';
 import 'package:delivery/pages/myMarket/myMarketPage.dart';
 import 'package:delivery/pages/order/OrderNowPage.dart';
 import 'package:delivery/pages/order/RecipientAddress.dart';
+import 'package:delivery/pages/status/TakingStatusPage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/basket_provider.dart';
@@ -64,6 +65,8 @@ class MyApp extends StatelessWidget {
         '/basket': (context) => MyBasketPage(),
         '/order-now': (context) => const OrderNowPage(),
         '/recipient-address': (context) => const RecipientAddressPage(),
+        '/status': (_) => AuthGuard(child: TakingStatusPage()),
+        
       },
       debugShowCheckedModeBanner: false,
     );

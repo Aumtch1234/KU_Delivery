@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:delivery/pages/store/StoreDetailPage.dart'; // ตรวจสอบให้แน่ใจว่า import ถูกต้อง
 
+// StatefulWidget
+
 class StoreMenuPage extends StatelessWidget {
   final String storeName;
 

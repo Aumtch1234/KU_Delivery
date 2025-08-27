@@ -259,7 +259,10 @@ class _OrderNowPageState extends State<OrderNowPage> {
           children: [
             Expanded(
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                    Navigator.pushNamed(context, '/status');
+
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF34C759),
                   padding: const EdgeInsets.symmetric(vertical: 16),

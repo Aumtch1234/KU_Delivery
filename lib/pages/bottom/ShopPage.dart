@@ -1,5 +1,6 @@
 import 'package:delivery/APIs/Foods/FoodsMenuAPI.dart';
 import 'package:delivery/APIs/Foods/MaketsAllAPI.dart';
+import 'package:delivery/APIs/middleware/authService.dart';
 import 'package:delivery/pages/store/StoreMenuPage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -27,24 +28,38 @@ class _ShopPageState extends State<ShopPage> {
     super.initState();
     fetchAllFoods();
   }
+Future<void> fetchAllFoods() async {
+  try {
+    final auth = AuthService();
 
-  Future<void> fetchAllFoods() async {
-    try {
-      final foodData = await _foodApiService.getAllFoods();
-      final MarketData = await _MarketApiService.getAllMarkets();
-
-      setState(() {
-        allFoods = foodData;
-        allMarkets = MarketData;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      print('Error: $e');
+    // ✅ รีเฟรช token ถ้าหมดอายุ
+    final refreshed = await auth.refreshUserToken();
+    if (!refreshed) {
+      print("❌ refresh token ไม่สำเร็จ → กลับไปหน้า login");
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+      return;
     }
+
+    final token = await auth.getToken();
+    if (token == null) return;
+
+    // ✅ ยิง API ด้วย token ล่าสุด
+    final foodData = await _foodApiService.getAllFoods();
+    final marketData = await _MarketApiService.getAllMarkets();
+
+    setState(() {
+      allFoods = foodData;
+      allMarkets = marketData;
+      isLoading = false;
+    });
+  } catch (e) {
+    setState(() => isLoading = false);
+    print('Error: $e');
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -369,17 +384,19 @@ class _ShopPageState extends State<ShopPage> {
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceAround,
-                                children: allMarkets.map((Maket) {
-                                  print('Maket data: $Maket');
+                                children: allMarkets.map((market) {
+                                  print('Maket data: $market');
 
                                   // เรียกใช้ _buildStoreItem และส่ง image_url เข้าไปด้วย
                                   return _buildStoreItem(
                                     context,
                                     size,
                                     isTablet,
-                                    Maket['shop_name'] ?? 'ชื่อร้านไม่ระบุ',
-                                    Maket['shop_logo_url'] ??
+                                    market['shop_name'] ?? 'ชื่อร้านไม่ระบุ',
+                                    market['shop_logo_url'] ??
                                         'https://via.placeholder.com/150', // ส่ง URL รูปภาพ
+                                    market['market_id'], // ✅ ส่ง marketId ไปด้วย
+
                                   );
                                 }).toList(),
                               ),
@@ -423,6 +440,7 @@ class _ShopPageState extends State<ShopPage> {
                                 height: isTablet ? 12 : size.height * 0.01,
                               ),
                               // Recommended menu grid
+                              
                               GridView.count(
                                 crossAxisCount: isTablet ? 3 : 2,
                                 crossAxisSpacing: isTablet ? 24 : 16,
@@ -572,6 +590,8 @@ class _ShopPageState extends State<ShopPage> {
     bool isTablet,
     String name,
     String imageUrl,
+    int marketId, // ✅ เพิ่ม parameter
+
   ) {
     return GestureDetector(
       onTap: () {

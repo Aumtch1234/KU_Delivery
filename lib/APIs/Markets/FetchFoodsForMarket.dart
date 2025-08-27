@@ -7,7 +7,7 @@ Future<List<dynamic>?> FetchFoodsForMarket() async {
   final token = prefs.getString('token');
 
   final response = await http.get(
-    Uri.parse('http://10.0.2.2:4000/api/my-foods'),
+    Uri.parse('http://10.0.2.2:4000/client/my-foods'),
     headers: {
       'Authorization': 'Bearer $token',
     },

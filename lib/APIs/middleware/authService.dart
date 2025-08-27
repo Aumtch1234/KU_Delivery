@@ -9,7 +9,7 @@ class AuthService {
   AuthService._internal();
 
   Map<String, dynamic>? currentUser;
-  final String baseUrl = 'http://10.0.2.2:4000/api';
+  final String baseUrl = 'http://10.0.2.2:4000/client';
 
   /// ✅ Login แบบ Manual (อีเมล + รหัสผ่าน)
   Future<Map<String, dynamic>> loginWithEmail(
@@ -57,25 +57,33 @@ class AuthService {
     }
   }
 
-  /// ✅ รีเฟรช Token
-  Future<void> refreshUserToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
+  /// ✅ รีเฟรช Token/// ✅ รีเฟรช Token แล้ว return true/false
+Future<bool> refreshUserToken() async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('token') ?? '';
 
-    final response = await http.post(
-      Uri.parse('$baseUrl/refresh-token'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
+  final response = await http.post(
+    Uri.parse('$baseUrl/refresh-token'),
+    headers: {'Authorization': 'Bearer $token'},
+  );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      await prefs.setString('token', data['token']);
-      await prefs.setString('user', jsonEncode(data['user']));
-      currentUser = data['user'];
-    } else {
-      print('Refresh token failed: ${response.body}');
-    }
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    await prefs.setString('token', data['token']);
+    await prefs.setString('user', jsonEncode(data['user']));
+    currentUser = data['user'];
+    return true;  // ✅ สำเร็จ
+  } else {
+    print('Refresh token failed: ${response.body}');
+    // ลบ token เก่า ถ้า refresh ไม่สำเร็จ
+    print('Refresh token failed: ${response.body}');
+    await prefs.remove('token');
+    await prefs.remove('user');
+    currentUser = null;
+    return false; // ❌ ไม่สำเร็จ
   }
+}
+
 
   /// ✅ โหลดผู้ใช้จาก local
   Future<void> loadUser() async {

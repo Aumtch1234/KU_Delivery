@@ -1,6 +1,6 @@
 import 'package:delivery/pages/bottom/DashboardPage.dart';
 import 'package:delivery/pages/bottom/ShopPage.dart';
-import 'package:delivery/pages/chat/ChatPage.dart';
+import 'package:delivery/pages/chat/ChatListPage.dart';
 import 'package:flutter/material.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -13,7 +13,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Widget> _pages = [
     ShopPage(), 
-    ChatPage(),
+    ChatListScreen(),
     DashboardPage(),
     // เพิ่มหน้าอื่นๆ ที่ต้องการใน navigation bar
   ];

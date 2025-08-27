@@ -32,6 +32,24 @@ class _OtpVerifyPageState extends State<OtpVerifyPage> {
   void initState() {
     super.initState();
     _refreshAndLoadUser();
+    _startTimer(); // ✅ เริ่มนับถอยหลังตั้งแต่เปิดหน้านี้
+  }
+
+  void _startTimer() {
+    _timer?.cancel(); // ยกเลิกตัวเก่า (ถ้ามี)
+    setState(() {
+      _secondsRemaining = 60; // รีเซ็ตกลับไป 60
+    });
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining > 0) {
+        setState(() {
+          _secondsRemaining--;
+        });
+      } else {
+        timer.cancel();
+      }
+    });
   }
 
   Future<void> _refreshAndLoadUser() async {
@@ -112,6 +130,7 @@ class _OtpVerifyPageState extends State<OtpVerifyPage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('ส่ง OTP ใหม่แล้ว')));
+        _startTimer(); // ✅ รีสตาร์ทนับถอยหลังใหม่ทุกครั้งที่ส่ง OTP
         _refreshAndLoadUser();
       } else {
         ScaffoldMessenger.of(

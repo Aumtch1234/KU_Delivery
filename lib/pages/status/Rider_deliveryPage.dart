@@ -1,4 +1,4 @@
-import 'package:delivery/pages/status/rider_waitingPage.dart';
+import 'package:delivery/pages/status/Rider_waitingPage.dart';
 import 'package:flutter/material.dart';
 
 class RiderDeliverypage extends StatelessWidget {

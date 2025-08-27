@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:delivery/APIs/Markets/FetchMarket.dart';
 import 'package:delivery/pages/WellcomePage.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -13,6 +14,7 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   Map<String, dynamic>? user;
+  Map<String, dynamic>? marketData;
 
   @override
   void initState() {
@@ -28,11 +30,36 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _loadUser() async {
     final prefs = await SharedPreferences.getInstance();
     final userStr = prefs.getString('user');
-    if (userStr != null) {
-      setState(() {
-        user = jsonDecode(userStr);
-      });
+
+    if (userStr == null) return;
+
+    // โหลด user จาก SharedPreferences
+    final loadedUser = jsonDecode(userStr);
+
+    try {
+      // เรียก API my-market
+      final marketDataResult =
+          await fetchMyMarket(); // ฟังก์ชันนี้ return Map หรือ null
+
+      if (marketDataResult != null) {
+        // ตรวจสอบ approve
+        loadedUser['is_seller'] = marketDataResult['approve'] == true;
+        // เก็บ marketData สำหรับการแสดงสถานะ
+        marketData = marketDataResult;
+      } else {
+        loadedUser['is_seller'] = false;
+        marketData = null;
+      }
+    } catch (e) {
+      loadedUser['is_seller'] = false;
+      marketData = null;
+      debugPrint('Error fetching my-market: $e');
     }
+
+    // อัปเดต state
+    setState(() {
+      user = loadedUser;
+    });
   }
 
   bool _isNetworkUrl(String? url) {
@@ -54,6 +81,76 @@ class _DashboardPageState extends State<DashboardPage> {
       debugPrint('Date parse error: $e | input: $dateStr');
       return '-';
     }
+  }
+
+  // เพิ่มฟังก์ชันสำหรับแสดงแบนเนอร์แจ้งเตือนสถานะรออนุมัติ
+  Widget _buildPendingApprovalBanner() {
+    // แสดงเฉพาะเมื่อมี marketData และ approve = false
+    if (marketData == null || marketData!['approve'] == true) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFF3CD), Color(0xFFFFF8E1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFFC107), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFC107),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.access_time_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'อยู่ระหว่างการตรวจสอบ',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF856404),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'ร้านค้าของคุณอยู่ในขั้นตอนการรออนุมัติ\nกรุณารอการตรวจสอบจากผู้ดูแลระบบ',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF856404),
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildProfileHeader() {
@@ -176,10 +273,21 @@ class _DashboardPageState extends State<DashboardPage> {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             trailing: Text(
-              (user!['is_seller'] == true || user!['is_seller'] == 'true')
-                  ? 'เป็นเจ้าของร้าน'
-                  : 'ยังไม่ได้สมัคร',
-              style: const TextStyle(color: Colors.black54),
+              (marketData != null && marketData!['approve'] == true)
+                  ? 'เจ้าของร้าน ${marketData!['shop_name']}'
+                  : marketData != null && marketData!['approve'] == false
+                      ? 'รอการอนุมัติ'
+                      : 'ไม่มีร้านค้า',
+              style: TextStyle(
+                color: (marketData != null && marketData!['approve'] == true)
+                    ? const Color(0xFF34C759)
+                    : marketData != null && marketData!['approve'] == false
+                        ? Colors.orange
+                        : Colors.black54,
+                fontWeight: (marketData != null && marketData!['approve'] != null)
+                    ? FontWeight.w600
+                    : FontWeight.normal,
+              ),
             ),
           ),
         ],
@@ -191,6 +299,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final isSeller = user!['is_seller'] == true || user!['is_seller'] == 'true';
     final isVerified =
         user!['is_verified'] == true || user!['is_verified'] == 'true';
+    final isPending = marketData != null && marketData!['approve'] == false;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -208,6 +317,20 @@ class _DashboardPageState extends State<DashboardPage> {
               text: 'ร้านค้าของฉัน',
               icon: Icons.storefront_rounded,
               onPressed: () => Navigator.pushNamed(context, '/myMarket'),
+            )
+          else if (isPending)
+            _buildMenuTile(
+              text: 'ร้านค้าของฉัน (รออนุมัติ)',
+              icon: Icons.access_time_rounded,
+              color: Colors.orange,
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('ร้านค้าของคุณอยู่ระหว่างการรออนุมัติ กรุณารอการตรวจสอบ'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              },
             )
           else
             _buildMenuTile(
@@ -280,31 +403,27 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   void _showLogoutDialog() {
-  AwesomeDialog(
-    context: context,
-    dialogType: DialogType.warning,
-    animType: AnimType.rightSlide,
-    headerAnimationLoop: false,
-    title: 'ต้องการออกจากระบบใช่หรือไม่?',
-    desc: 'คุณจะต้องเข้าสู่ระบบใหม่อีกครั้งเพื่อใช้งาน',
-    btnCancelOnPress: () {},
-    btnCancelText: 'ยกเลิก',
-    // แก้ไขตรงนี้: เรียกใช้ AuthService().logout() และจัดการการนำทาง
-    btnOkOnPress: () async {
-      // 1. เรียกใช้ฟังก์ชัน logout
-      await AuthService().logout();
-
-      // 2. นำทางผู้ใช้ไปยังหน้า Login และลบทุกหน้าก่อนหน้า
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => wellcomePage()), 
-        (Route<dynamic> route) => false, // ลบทุกหน้าใน Stack
-      );
-    },
-    btnOkText: 'ออกจากระบบ',
-    btnOkColor: Colors.green,
-  ).show();
-}
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.warning,
+      animType: AnimType.rightSlide,
+      headerAnimationLoop: false,
+      title: 'ต้องการออกจากระบบใช่หรือไม่?',
+      desc: 'คุณจะต้องเข้าสู่ระบบใหม่อีกครั้งเพื่อใช้งาน',
+      btnCancelOnPress: () {},
+      btnCancelText: 'ยกเลิก',
+      btnOkOnPress: () async {
+        await AuthService().logout();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => wellcomePage()),
+          (Route<dynamic> route) => false,
+        );
+      },
+      btnOkText: 'ออกจากระบบ',
+      btnOkColor: Colors.green,
+    ).show();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -333,6 +452,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
                 SliverList(
                   delegate: SliverChildListDelegate([
+                    const SizedBox(height: 16),
+                    // เพิ่มแบนเนอร์แจ้งเตือนสถานะรออนุมัติ
+                    _buildPendingApprovalBanner(),
                     const SizedBox(height: 16),
                     _buildUserInfoCard(),
                     const SizedBox(height: 24),
