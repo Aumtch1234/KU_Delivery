@@ -4,7 +4,7 @@ import 'package:delivery/APIs/middleware/authService.dart';
 import 'package:delivery/pages/store/StoreMenuPage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../store/foods/OrderFoodPage.dart';
+import '../store/OrderFoodPage.dart';
 import '../../providers/basket_provider.dart';
 
 class ShopPage extends StatefulWidget {
@@ -28,38 +28,38 @@ class _ShopPageState extends State<ShopPage> {
     super.initState();
     fetchAllFoods();
   }
-Future<void> fetchAllFoods() async {
-  try {
-    final auth = AuthService();
 
-    // ✅ รีเฟรช token ถ้าหมดอายุ
-    final refreshed = await auth.refreshUserToken();
-    if (!refreshed) {
-      print("❌ refresh token ไม่สำเร็จ → กลับไปหน้า login");
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/login');
+  Future<void> fetchAllFoods() async {
+    try {
+      final auth = AuthService();
+
+      // ✅ รีเฟรช token ถ้าหมดอายุ
+      final refreshed = await auth.refreshUserToken();
+      if (!refreshed) {
+        print("❌ refresh token ไม่สำเร็จ → กลับไปหน้า login");
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/login');
+        }
+        return;
       }
-      return;
+
+      final token = await auth.getToken();
+      if (token == null) return;
+
+      // ✅ ยิง API ด้วย token ล่าสุด
+      final foodData = await _foodApiService.getAllFoods();
+      final marketData = await _MarketApiService.getAllMarkets();
+
+      setState(() {
+        allFoods = foodData;
+        allMarkets = marketData;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() => isLoading = false);
+      print('Error: $e');
     }
-
-    final token = await auth.getToken();
-    if (token == null) return;
-
-    // ✅ ยิง API ด้วย token ล่าสุด
-    final foodData = await _foodApiService.getAllFoods();
-    final marketData = await _MarketApiService.getAllMarkets();
-
-    setState(() {
-      allFoods = foodData;
-      allMarkets = marketData;
-      isLoading = false;
-    });
-  } catch (e) {
-    setState(() => isLoading = false);
-    print('Error: $e');
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -392,11 +392,10 @@ Future<void> fetchAllFoods() async {
                                     context,
                                     size,
                                     isTablet,
+                                    market['market_id'], // ✅ ส่ง marketId ไปด้วย
                                     market['shop_name'] ?? 'ชื่อร้านไม่ระบุ',
                                     market['shop_logo_url'] ??
                                         'https://via.placeholder.com/150', // ส่ง URL รูปภาพ
-                                    market['market_id'], // ✅ ส่ง marketId ไปด้วย
-
                                   );
                                 }).toList(),
                               ),
@@ -439,8 +438,8 @@ Future<void> fetchAllFoods() async {
                               SizedBox(
                                 height: isTablet ? 12 : size.height * 0.01,
                               ),
+
                               // Recommended menu grid
-                              
                               GridView.count(
                                 crossAxisCount: isTablet ? 3 : 2,
                                 crossAxisSpacing: isTablet ? 24 : 16,
@@ -448,28 +447,30 @@ Future<void> fetchAllFoods() async {
                                 childAspectRatio: isTablet ? 0.9 : 0.75,
                                 shrinkWrap: true,
                                 physics: NeverScrollableScrollPhysics(),
-                                children: [
-                                  _buildRecommendedMenu(
+                                children: allFoods.map((food) {
+                                  final price =
+                                      double.tryParse(
+                                        food['price'].toString(),
+                                      ) ??
+                                      0.0;
+                                  final rating =
+                                      double.tryParse(
+                                        food['rating'].toString(),
+                                      ) ??
+                                      0.0;
+                                  return _buildRecommendedMenu(
                                     size,
                                     isTablet,
-                                    "ข้าวกระเพรา หมูสับ ผัดพริกแกง ต้มเป็ด",
-                                    "ร้านอร่อย",
-                                    "15 นาที",
-                                    45,
-                                    'assets/menus/kai.png',
-                                    5.0,
-                                  ),
-                                  _buildRecommendedMenu(
-                                    size,
-                                    isTablet,
-                                    "ข้าวผัด",
-                                    "ร้านเจ๊หมี",
-                                    "20 นาที",
-                                    50,
-                                    'assets/menus/yam.png',
-                                    4.0,
-                                  ),
-                                ],
+                                    food['food_name'] ?? 'ชื่ออาหารไม่ระบุ',
+                                    food['shop_name'] ?? 'ร้านค้าไม่ระบุ',
+                                    food['estimated_delivery_time'] ?? '- นาที',
+                                    price,
+                                    food['image_url'] ??
+                                        'https://via.placeholder.com/150',
+                                    rating,
+                                    food['food_id'],
+                                  );
+                                }).toList(),
                               ),
                               SizedBox(
                                 height: isTablet ? 24 : size.height * 0.02,
@@ -541,6 +542,7 @@ Future<void> fetchAllFoods() async {
                                     food['image_url'] ??
                                         'https://via.placeholder.com/150',
                                     rating, // ใช้ตัวแปร rating ที่แปลงค่าแล้ว
+                                    food['food_id'],
                                   );
                                 }).toList(),
                               ),
@@ -588,19 +590,19 @@ Future<void> fetchAllFoods() async {
     BuildContext context,
     Size size,
     bool isTablet,
-    String name,
+    int marketID,
+    String shopName,
     String imageUrl,
-    int marketId, // ✅ เพิ่ม parameter
-
   ) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => StoreMenuPage(storeName: name),
+            builder: (context) => StoreMenuPage(marketID: marketID),
           ),
         );
+        print("Navigating to StoreMenuPage with marketID: $marketID");
       },
       child: Column(
         children: [
@@ -633,7 +635,7 @@ Future<void> fetchAllFoods() async {
           Padding(
             padding: EdgeInsets.symmetric(horizontal: isTablet ? 8 : 4),
             child: Text(
-              name,
+              shopName,
               textAlign: TextAlign.center, // จัดตำแหน่งข้อความตรงกลาง
               maxLines: 1, // จำกัดให้แสดงแค่บรรทัดเดียว
               overflow: TextOverflow.ellipsis, // ถ้าชื่อยาวเกินให้แสดง ...
@@ -657,6 +659,7 @@ Future<void> fetchAllFoods() async {
     double price,
     String imagePath,
     double rating,
+    int foodId,
   ) {
     return Builder(
       builder: (context) => GestureDetector(
@@ -664,14 +667,7 @@ Future<void> fetchAllFoods() async {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => OrderFoodPage(
-                foodName: title,
-                imagePath: imagePath,
-                rating: rating,
-                storeName: shop,
-                price: price,
-                description: 'เมนูแนะนำจาก $shop',
-              ),
+              builder: (context) => OrderFoodPage(foodId: foodId),
             ),
           );
         },

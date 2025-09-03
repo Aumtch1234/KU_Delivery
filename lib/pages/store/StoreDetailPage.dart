@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 class StoreDetailPage extends StatefulWidget {
-  final String storeName;
+  final int marketID;
 
-  const StoreDetailPage({Key? key, required this.storeName}) : super(key: key);
+  const StoreDetailPage({Key? key, required this.marketID}) : super(key: key);
 
   @override
   State<StoreDetailPage> createState() => _StoreDetailPageState();
@@ -251,10 +251,10 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            widget.storeName,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
+          // Text(
+          //   widget.toString(), 
+          //   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          // ),
           const SizedBox(height: 8),
           Row(
             children: [

@@ -1,20 +1,33 @@
-import 'package:delivery/pages/store/foods/OrderFoodPage.dart';
-import 'package:delivery/providers/basket_provider.dart';
-import 'package:provider/provider.dart';
+import 'package:delivery/APIs/Foods/FoodSelectAPI.dart';
+import 'package:delivery/pages/store/models/Food_model.dart';
 import 'package:flutter/material.dart';
-import 'package:delivery/pages/store/StoreDetailPage.dart'; // ตรวจสอบให้แน่ใจว่า import ถูกต้อง
+import 'package:provider/provider.dart';
+import 'package:delivery/providers/basket_provider.dart';
+import 'package:delivery/pages/store/OrderFoodPage.dart';
+import 'package:delivery/pages/store/StoreDetailPage.dart';
 
-// StatefulWidget
+class StoreMenuPage extends StatefulWidget {
+  final int marketID;
 
-class StoreMenuPage extends StatelessWidget {
-  final String storeName;
+  const StoreMenuPage({Key? key, required this.marketID}) : super(key: key);
 
-  const StoreMenuPage({Key? key, required this.storeName}) : super(key: key);
+  @override
+  State<StoreMenuPage> createState() => _StoreMenuPageState();
+}
+
+class _StoreMenuPageState extends State<StoreMenuPage> {
+  late Future<List<Food>> _futureFoods;
+
+  @override
+  void initState() {
+    super.initState();
+    _futureFoods = FoodService.fetchFoods(widget.marketID);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5), // สีพื้นหลังที่ดูสบายตา
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -84,34 +97,50 @@ class StoreMenuPage extends StatelessWidget {
         ],
       ),
       extendBodyBehindAppBar: true,
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ส่วน Header รูปภาพร้านค้า
-            _buildStoreHeader(),
-            // ส่วนข้อมูลร้านค้า
-            _buildStoreInfo(context),
-            // ส่วนรายการเมนู
-            _buildMenuItems(),
-          ],
-        ),
+      body: FutureBuilder<List<Food>>(
+        future: _futureFoods,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          }
+
+          final foods = snapshot.data ?? [];
+          if (foods.isEmpty) {
+            return const Center(child: Text("ไม่มีเมนูในร้านนี้"));
+          }
+
+          final marketLogo = foods.first.shopLogoUrl;
+
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildStoreHeader(marketLogo),
+                _buildStoreInfo(context, foods.first),
+                _buildMenuItems(foods),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  /// สร้าง Widget สำหรับ Header ที่มีรูปภาพ
-  Widget _buildStoreHeader() {
+  // ✅ Header ใช้รูปจาก API
+  Widget _buildStoreHeader(String logoUrl) {
     return Stack(
       children: [
-        // รูปภาพขนาดใหญ่สำหรับส่วนหัว
-        Image.asset(
-          'assets/menus/kai.png', // เปลี่ยนเป็นรูปภาพจาก API จริง
+        Image.network(
+          logoUrl,
           height: 250,
           width: double.infinity,
           fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) =>
+              const Icon(Icons.image_not_supported, size: 80),
         ),
-        // Gradient overlay เพื่อให้ตัวอักษรด้านบนดูชัดเจนขึ้น
         Positioned.fill(
           child: Container(
             decoration: BoxDecoration(
@@ -131,8 +160,8 @@ class StoreMenuPage extends StatelessWidget {
     );
   }
 
-  /// สร้าง Widget สำหรับส่วนข้อมูลร้านค้า
-  Widget _buildStoreInfo(BuildContext context) {
+  // ✅ Market Info
+  Widget _buildStoreInfo(BuildContext context, Food marketInfo) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -146,13 +175,14 @@ class StoreMenuPage extends StatelessWidget {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => StoreDetailPage(storeName: storeName),
+                    builder: (context) =>
+                        StoreDetailPage(marketID: widget.marketID),
                   ),
                 ),
                 child: Row(
                   children: [
                     Text(
-                      storeName,
+                      marketInfo.shopName,
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -173,14 +203,32 @@ class StoreMenuPage extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.green.shade100,
+                  color: marketInfo.isOpen
+                      ? Colors.green.shade100
+                      : Colors.red.shade100,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
-                  'เปิดอยู่',
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: marketInfo.isOpen
+                        ? Colors
+                              .green
+                              .shade100 // ถ้าเปิด = เขียว
+                        : Colors.red.shade100, // ถ้าปิด = แดง
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    marketInfo.isOpen
+                        ? 'เปิดอยู่'
+                        : 'ปิดแล้ว', // แสดงข้อความตามสถานะ
+                    style: TextStyle(
+                      color: marketInfo.isOpen ? Colors.green : Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -188,16 +236,19 @@ class StoreMenuPage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Row(
-            children: const [
-              Icon(Icons.star, color: Colors.amber, size: 20),
-              SizedBox(width: 4),
+            children: [
+              const Icon(Icons.star, color: Colors.amber, size: 20),
+              const SizedBox(width: 4),
               Text(
-                '4.5',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                (marketInfo.marketRating ?? 0).toStringAsFixed(1),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-              Text(' • ', style: TextStyle(fontSize: 16)),
-              Text(
-                '15-20 นาที',
+              const Text(' • ', style: TextStyle(fontSize: 16)),
+              const Text(
+                '15-20 นาที', // เดี๋ยวตรงนี้ถ้า API มีเวลาจริง เราจะดึงมาแทน
                 style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
             ],
@@ -213,33 +264,21 @@ class StoreMenuPage extends StatelessWidget {
     );
   }
 
-  /// สร้าง Widget สำหรับรายการเมนู
-  Widget _buildMenuItems() {
+  // ✅ Menu Items
+  Widget _buildMenuItems(List<Food> foods) {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: 5, // สามารถเปลี่ยนให้ดึงข้อมูลจริงได้
+      itemCount: foods.length,
       itemBuilder: (context, index) {
-        return _buildMenuItem(
-          context: context,
-          name: 'เมนูที่ ${index + 1}',
-          description: 'คำอธิบายรายละเอียดของเมนูที่ ${index + 1}',
-          price: (40 + index * 5).toDouble(),
-          imagePath: 'assets/menus/kai.png',
-        );
+        final food = foods[index];
+        return _buildMenuItem(context, food);
       },
     );
   }
 
-  /// Widget สำหรับแต่ละรายการเมนู
-  Widget _buildMenuItem({
-    required BuildContext context,
-    required String name,
-    required String description,
-    required double price,
-    required String imagePath,
-  }) {
+  Widget _buildMenuItem(BuildContext context, Food food) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: InkWell(
@@ -249,12 +288,7 @@ class StoreMenuPage extends StatelessWidget {
             context,
             MaterialPageRoute(
               builder: (context) => OrderFoodPage(
-                foodName: name,
-                imagePath: imagePath,
-                rating: 5.0,
-                storeName: storeName,
-                price: price,
-                description: description,
+                foodId: food.foodId,
               ),
             ),
           );
@@ -278,11 +312,13 @@ class StoreMenuPage extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  imagePath,
+                child: Image.network(
+                  food.imageUrl,
                   width: 100,
                   height: 100,
                   fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.image_not_supported),
                 ),
               ),
               const SizedBox(width: 16),
@@ -291,7 +327,7 @@ class StoreMenuPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      name,
+                      food.foodName,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -299,14 +335,12 @@ class StoreMenuPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      description,
+                      "รีวิว: ${food.foodRating ?? '-'} ⭐",
                       style: const TextStyle(color: Colors.grey, fontSize: 14),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '฿${price.toStringAsFixed(0)}',
+                      '฿${food.price.toStringAsFixed(0)}',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
