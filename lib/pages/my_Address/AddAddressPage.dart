@@ -1,10 +1,16 @@
+import 'package:delivery/APIs/Users/AddAddressAPI.dart';
+import 'package:delivery/APIs/Users/models/address.dart';
 import 'package:delivery/pages/my_Address/MapSelectPage.dart';
+import 'package:delivery/pages/my_Address/models.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
-
 class DeliveryAddressForm extends StatefulWidget {
+  final ShippingAddress? address; // ถ้าไม่ส่ง => เพิ่มใหม่
+
+  DeliveryAddressForm({this.address});
+
   @override
   _DeliveryAddressFormState createState() => _DeliveryAddressFormState();
 }
@@ -42,6 +48,20 @@ class _DeliveryAddressFormState extends State<DeliveryAddressForm>
     );
     _animationController.forward();
     _getCurrentLocation();
+
+    // ถ้ามี address ส่งมา => เติมลง controller
+    if (widget.address != null) {
+      _nameController.text = widget.address!.name;
+      _phoneController.text = widget.address!.phone;
+      _addressController.text = widget.address!.address;
+      _districtController.text = widget.address!.district;
+      _cityController.text = widget.address!.province;
+      _postalCodeController.text = widget.address!.postalCode;
+      _notesController.text = widget.address!.notes ?? '';
+      _selectedLat = widget.address!.latitude;
+      _selectedLng = widget.address!.longitude;
+      _selectedLocationText = widget.address!.address;
+    }
   }
 
   @override
@@ -83,9 +103,8 @@ class _DeliveryAddressFormState extends State<DeliveryAddressForm>
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => MapSelectionPage(
-          initialPosition: _currentPosition,
-        ),
+        builder: (context) =>
+            MapSelectionPage(initialPosition: _currentPosition),
       ),
     );
 
@@ -99,84 +118,84 @@ class _DeliveryAddressFormState extends State<DeliveryAddressForm>
       _selectedLat = locationData['latitude'];
       _selectedLng = locationData['longitude'];
       _selectedLocationText = locationData['address'] ?? '';
+      _addressController.text = locationData['address'] ?? '';
+      _districtController.text = locationData['district'] ?? '';
+      _cityController.text = locationData['province'] ?? '';
+      _postalCodeController.text = locationData['postalCode'] ?? '';
     });
-
-    // Auto-fill address fields if available
-    _parseAndFillAddress(locationData['address']);
   }
 
-  void _parseAndFillAddress(String? fullAddress) {
-    if (fullAddress == null || fullAddress.isEmpty) return;
-    
-    // This is a simple parsing logic - in real app you might want more sophisticated parsing
-    List<String> parts = fullAddress.split(' ');
-    if (parts.length >= 2) {
-      _addressController.text = parts.take(2).join(' ');
-      if (parts.length > 2) {
-        _districtController.text = parts[2];
-      }
-      if (parts.length > 3) {
-        _cityController.text = parts[3];
-      }
-    }
-  }
-
-  void _submitForm() {
+  void _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      // Collect form data
-      Map<String, dynamic> formData = {
-        'name': _nameController.text,
-        'phone': _phoneController.text,
-        'address': _addressController.text,
-        'district': _districtController.text,
-        'city': _cityController.text,
-        'postalCode': _postalCodeController.text,
-        'notes': _notesController.text,
-        'latitude': _selectedLat,
-        'longitude': _selectedLng,
-        'selectedLocationText': _selectedLocationText,
-      };
+      if (_selectedLat == null || _selectedLng == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("กรุณาเลือกตำแหน่งบนแผนที่")));
+        return;
+      }
 
-      // Show success dialog
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      DeliveryAddress address = DeliveryAddress(
+        id: widget.address?.id,
+        name: _nameController.text,
+        phone: _phoneController.text,
+        address: _addressController.text,
+        district: _districtController.text,
+        city: _cityController.text,
+        postalCode: _postalCodeController.text,
+        notes: _notesController.text,
+        latitude: _selectedLat!,
+        longitude: _selectedLng!,
+      );
+
+      print("📦 ส่งข้อมูล Address -> ${address.toJson()}");
+
+      Map<String, dynamic> result;
+
+      if (widget.address != null) {
+        result = await DeliveryAddressAPI.updateAddress(
+          widget.address!.id,
+          address,
+        );
+      } else {
+        result = await DeliveryAddressAPI.addAddress(address);
+      }
+
+      print("✅ API Result -> $result");
+
+      if (result["success"] == true) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             title: Row(
               children: [
                 Icon(Icons.check_circle, color: Color(0xFF34C759), size: 24),
                 SizedBox(width: 8),
-                Text(
-                  'บันทึกสำเร็จ!',
-                  style: TextStyle(fontSize: 16),
-                ),
+                Text('บันทึกสำเร็จ!', style: TextStyle(fontSize: 16)),
               ],
             ),
-            content: Text(
-              'ข้อมูลที่อยู่ของคุณได้รับการบันทึกเรียบร้อยแล้ว',
-              style: TextStyle(fontSize: 14),
-            ),
+            content: Text("ข้อมูลที่อยู่ถูกบันทึกเรียบร้อยแล้ว"),
             actions: [
               ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF34C759),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                ),
-                child: Text(
-                  'ตกลง',
-                  style: TextStyle(color: Colors.white, fontSize: 14),
-                ),
                 onPressed: () {
                   Navigator.of(context).pop();
-                  print('Form Data: $formData');
+                  Navigator.pushReplacementNamed(context, "/myaddress");
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF34C759),
+                ),
+                child: Text("ตกลง", style: TextStyle(color: Colors.white)),
               ),
             ],
-          );
-        },
-      );
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("บันทึกไม่สำเร็จ: ${result['message']}")),
+        );
+      }
     }
   }
 
@@ -188,10 +207,7 @@ class _DeliveryAddressFormState extends State<DeliveryAddressForm>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF34C759),
-              Color(0xFF30D158),
-            ],
+            colors: [Color(0xFF34C759), Color(0xFF30D158)],
           ),
         ),
         child: SafeArea(
@@ -218,7 +234,7 @@ class _DeliveryAddressFormState extends State<DeliveryAddressForm>
                   ),
                 ),
               ),
-              
+
               // Form Container
               Expanded(
                 child: Container(
@@ -252,7 +268,9 @@ class _DeliveryAddressFormState extends State<DeliveryAddressForm>
                                     controller: _nameController,
                                     label: 'ชื่อผู้รับ',
                                     icon: Icons.person,
-                                    validator: (value) => value?.isEmpty ?? true ? 'กรุณาระบุชื่อผู้รับ' : null,
+                                    validator: (value) => value?.isEmpty ?? true
+                                        ? 'กรุณาระบุชื่อผู้รับ'
+                                        : null,
                                     delay: 200,
                                   ),
                                   SizedBox(height: 16),
@@ -261,7 +279,9 @@ class _DeliveryAddressFormState extends State<DeliveryAddressForm>
                                     label: 'เบอร์โทรศัพท์',
                                     icon: Icons.phone,
                                     keyboardType: TextInputType.phone,
-                                    validator: (value) => value?.isEmpty ?? true ? 'กรุณาระบุเบอร์โทรศัพท์' : null,
+                                    validator: (value) => value?.isEmpty ?? true
+                                        ? 'กรุณาระบุเบอร์โทรศัพท์'
+                                        : null,
                                     delay: 300,
                                   ),
                                   SizedBox(height: 16),
@@ -270,7 +290,9 @@ class _DeliveryAddressFormState extends State<DeliveryAddressForm>
                                     label: 'ที่อยู่',
                                     icon: Icons.home,
                                     maxLines: 2,
-                                    validator: (value) => value?.isEmpty ?? true ? 'กรุณาระบุที่อยู่' : null,
+                                    validator: (value) => value?.isEmpty ?? true
+                                        ? 'กรุณาระบุที่อยู่'
+                                        : null,
                                     delay: 400,
                                   ),
                                   SizedBox(height: 16),
@@ -281,7 +303,10 @@ class _DeliveryAddressFormState extends State<DeliveryAddressForm>
                                           controller: _districtController,
                                           label: 'เขต/อำเภอ',
                                           icon: Icons.location_city,
-                                          validator: (value) => value?.isEmpty ?? true ? 'กรุณาระบุเขต/อำเภอ' : null,
+                                          validator: (value) =>
+                                              value?.isEmpty ?? true
+                                              ? 'กรุณาระบุเขต/อำเภอ'
+                                              : null,
                                           delay: 500,
                                         ),
                                       ),
@@ -291,7 +316,10 @@ class _DeliveryAddressFormState extends State<DeliveryAddressForm>
                                           controller: _cityController,
                                           label: 'จังหวัด',
                                           icon: Icons.business,
-                                          validator: (value) => value?.isEmpty ?? true ? 'กรุณาระบุจังหวัด' : null,
+                                          validator: (value) =>
+                                              value?.isEmpty ?? true
+                                              ? 'กรุณาระบุจังหวัด'
+                                              : null,
                                           delay: 600,
                                         ),
                                       ),
@@ -303,7 +331,9 @@ class _DeliveryAddressFormState extends State<DeliveryAddressForm>
                                     label: 'รหัสไปรษณีย์',
                                     icon: Icons.markunread_mailbox,
                                     keyboardType: TextInputType.number,
-                                    validator: (value) => value?.isEmpty ?? true ? 'กรุณาระบุรหัสไปรษณีย์' : null,
+                                    validator: (value) => value?.isEmpty ?? true
+                                        ? 'กรุณาระบุรหัสไปรษณีย์'
+                                        : null,
                                     delay: 700,
                                   ),
                                   SizedBox(height: 16),
@@ -315,19 +345,20 @@ class _DeliveryAddressFormState extends State<DeliveryAddressForm>
                                     delay: 800,
                                   ),
                                   SizedBox(height: 24),
-                                  
+
                                   // Map Selection Button
                                   _buildMapSelectionButton(),
-                                  
+
                                   // Location Info
-                                  if (_selectedLat != null && _selectedLng != null)
+                                  if (_selectedLat != null &&
+                                      _selectedLng != null)
                                     _buildLocationInfo(),
                                 ],
                               ),
                             ),
                           ),
                         ),
-                        
+
                         // Submit Button
                         Container(
                           padding: EdgeInsets.all(16),
@@ -406,7 +437,10 @@ class _DeliveryAddressFormState extends State<DeliveryAddressForm>
                 ),
                 filled: true,
                 fillColor: Colors.grey.shade50,
-                contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 14,
+                ),
               ),
             ),
           );
@@ -517,9 +551,31 @@ class _DeliveryAddressFormState extends State<DeliveryAddressForm>
           ],
           Text(
             'พิกัด: ${_selectedLat!.toStringAsFixed(6)}, ${_selectedLng!.toStringAsFixed(6)}',
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey.shade600,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+          ),
+          SizedBox(height: 8),
+          Container(
+            height: 120,
+            width: double.infinity,
+            child: GoogleMap(
+              initialCameraPosition: CameraPosition(
+                target: LatLng(_selectedLat!, _selectedLng!),
+                zoom: 16,
+              ),
+              markers: {
+                Marker(
+                  markerId: MarkerId('selected'),
+                  position: LatLng(_selectedLat!, _selectedLng!),
+                  icon: BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueGreen,
+                  ),
+                ),
+              },
+              zoomControlsEnabled: false,
+              myLocationEnabled: false,
+              myLocationButtonEnabled: false,
+              mapType: MapType.normal,
+              onMapCreated: (_) {},
             ),
           ),
         ],

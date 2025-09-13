@@ -1,3 +1,5 @@
+import 'package:delivery/APIs/Users/AddAddressAPI.dart';
+import 'package:delivery/pages/my_Address/AddAddressPage.dart';
 import 'package:delivery/pages/my_Address/models.dart';
 import 'package:flutter/material.dart';
 
@@ -7,28 +9,29 @@ class ShippingAddressPage extends StatefulWidget {
 }
 
 class _ShippingAddressPageState extends State<ShippingAddressPage> {
-  List<ShippingAddress> addresses = [
-    ShippingAddress(
-      id: '1',
-      name: 'สมชาย ใจดี',
-      phone: '081-234-5678',
-      address: '123/45 ซอยรามคำแหง 24',
-      district: 'หัวหมาก',
-      province: 'กรุงเทพมหานคร',
-      postalCode: '10240',
-      isDefault: true,
-    ),
-    ShippingAddress(
-      id: '2',
-      name: 'สมหญิง รักเรียน',
-      phone: '089-876-5432',
-      address: '789 ถนนสุขุมวิท',
-      district: 'วัฒนา',
-      province: 'กรุงเทพมหานคร',
-      postalCode: '10110',
-      isDefault: false,
-    ),
-  ];
+  List<ShippingAddress> addresses = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAddresses();
+  }
+
+  Future<void> _fetchAddresses() async {
+    final res = await DeliveryAddressAPI.GetAddress(); // เรียก API
+    if (res['success']) {
+      setState(() {
+        addresses = (res['addresses'] as List)
+            .map((a) => ShippingAddress.fromJson(a))
+            .toList();
+        isLoading = false;
+      });
+    } else {
+      setState(() => isLoading = false);
+      print("❌ โหลดที่อยู่ล้มเหลว: ${res['message']}");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +41,8 @@ class _ShippingAddressPageState extends State<ShippingAddressPage> {
         title: Text(
           'ที่อยู่การจัดส่ง',
           style: TextStyle(
-            fontWeight: FontWeight.w600,fontSize: 16,
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
             color: Colors.white,
           ),
         ),
@@ -73,11 +77,7 @@ class _ShippingAddressPageState extends State<ShippingAddressPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.location_off_outlined,
-            size: 80,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.location_off_outlined, size: 80, color: Colors.grey[400]),
           SizedBox(height: 16),
           Text(
             'ยังไม่มีที่อยู่การจัดส่ง',
@@ -90,10 +90,7 @@ class _ShippingAddressPageState extends State<ShippingAddressPage> {
           SizedBox(height: 8),
           Text(
             'เพิ่มที่อยู่เพื่อความสะดวกในการสั่งซื้อ',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
         ],
       ),
@@ -144,7 +141,10 @@ class _ShippingAddressPageState extends State<ShippingAddressPage> {
                       if (address.isDefault) ...[
                         SizedBox(width: 8),
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.green[50],
                             borderRadius: BorderRadius.circular(12),
@@ -164,10 +164,17 @@ class _ShippingAddressPageState extends State<ShippingAddressPage> {
                 ),
                 PopupMenuButton<String>(
                   icon: Icon(Icons.more_vert, color: Colors.grey[600]),
-                  onSelected: (value) {
+                  onSelected: (value) async {
                     switch (value) {
                       case 'edit':
-                        _showAddEditDialog(address: address, index: index);
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                DeliveryAddressForm(address: addresses[index]),
+                          ),
+                        );
+                        _fetchAddresses(); // โหลดใหม่หลังแก้ไข
                         break;
                       case 'default':
                         _setAsDefault(index);
@@ -188,7 +195,7 @@ class _ShippingAddressPageState extends State<ShippingAddressPage> {
                         ],
                       ),
                     ),
-                    if (!address.isDefault)
+                    if (!addresses[index].isDefault)
                       PopupMenuItem(
                         value: 'default',
                         child: Row(
@@ -203,7 +210,11 @@ class _ShippingAddressPageState extends State<ShippingAddressPage> {
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                          Icon(
+                            Icons.delete_outline,
+                            size: 20,
+                            color: Colors.red,
+                          ),
                           SizedBox(width: 8),
                           Text('ลบ', style: TextStyle(color: Colors.red)),
                         ],
@@ -216,18 +227,11 @@ class _ShippingAddressPageState extends State<ShippingAddressPage> {
             SizedBox(height: 12),
             Row(
               children: [
-                Icon(
-                  Icons.phone_outlined,
-                  color: Colors.grey[600],
-                  size: 16,
-                ),
+                Icon(Icons.phone_outlined, color: Colors.grey[600], size: 16),
                 SizedBox(width: 8),
                 Text(
                   address.phone,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 10, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -277,9 +281,10 @@ class _ShippingAddressPageState extends State<ShippingAddressPage> {
           width: double.infinity,
           height: 50,
           child: ElevatedButton.icon(
-            onPressed: () => Navigator.pushNamed(context, '/add-address').then((_) {
-              setState(() {});
-            }),
+            onPressed: () =>
+                Navigator.pushNamed(context, '/add-address').then((_) {
+                  _fetchAddresses(); // เรียกใหม่หลังกลับมา
+                }),
             icon: Icon(Icons.add, color: Colors.white),
             label: Text(
               'เพิ่มที่อยู่ใหม่',
@@ -302,185 +307,6 @@ class _ShippingAddressPageState extends State<ShippingAddressPage> {
     );
   }
 
-  void _showAddEditDialog({ShippingAddress? address, int? index}) {
-    final nameController = TextEditingController(text: address?.name ?? '');
-    final phoneController = TextEditingController(text: address?.phone ?? '');
-    final addressController = TextEditingController(text: address?.address ?? '');
-    final districtController = TextEditingController(text: address?.district ?? '');
-    final provinceController = TextEditingController(text: address?.province ?? '');
-    final postalCodeController = TextEditingController(text: address?.postalCode ?? '');
-    bool isDefault = address?.isDefault ?? false;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Container(
-            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
-            padding: EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  address == null ? 'เพิ่มที่อยู่ใหม่' : 'แก้ไขที่อยู่',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 24),
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        _buildTextField('ชื่อ-สกุล', nameController, Icons.person_outline),
-                        SizedBox(height: 16),
-                        _buildTextField('หมายเลขโทรศัพท์', phoneController, Icons.phone_outlined),
-                        SizedBox(height: 16),
-                        _buildTextField('ที่อยู่', addressController, Icons.home_outlined, maxLines: 2),
-                        SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildTextField('เขต/อำเภอ', districtController, Icons.location_city_outlined),
-                            ),
-                            SizedBox(width: 12),
-                            Expanded(
-                              child: _buildTextField('จังหวัด', provinceController, Icons.map_outlined),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 16),
-                        _buildTextField('รหัสไปรษณีย์', postalCodeController, Icons.local_post_office_outlined),
-                        SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Checkbox(
-                              value: isDefault,
-                              onChanged: (value) {
-                                setDialogState(() {
-                                  isDefault = value ?? false;
-                                });
-                              },
-                            ),
-                            Text('ตั้งเป็นที่อยู่เริ่มต้น'),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text('ยกเลิก'),
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (_validateForm([
-                            nameController,
-                            phoneController,
-                            addressController,
-                            districtController,
-                            provinceController,
-                            postalCodeController,
-                          ])) {
-                            final newAddress = ShippingAddress(
-                              id: address?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-                              name: nameController.text,
-                              phone: phoneController.text,
-                              address: addressController.text,
-                              district: districtController.text,
-                              province: provinceController.text,
-                              postalCode: postalCodeController.text,
-                              isDefault: isDefault,
-                            );
-
-                            setState(() {
-                              if (isDefault) {
-                                for (var addr in addresses) {
-                                  addr.isDefault = false;
-                                }
-                              }
-
-                              if (index != null) {
-                                addresses[index] = newAddress;
-                              } else {
-                                addresses.add(newAddress);
-                              }
-                            });
-
-                            Navigator.pop(context);
-                          }
-                        },
-                        child: Text(
-                          address == null ? 'เพิ่ม' : 'บันทึก',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF34C759),
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField(String label, TextEditingController controller, IconData icon, {int maxLines = 1}) {
-    return TextField(
-      controller: controller,
-      maxLines: maxLines,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: const Color(0xFF34C759)),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: const Color(0xFF34C759)),
-        ),
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      ),
-    );
-  }
-
-  bool _validateForm(List<TextEditingController> controllers) {
-    for (var controller in controllers) {
-      if (controller.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('กรุณากรอกข้อมูลให้ครบถ้วน'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return false;
-      }
-    }
-    return true;
-  }
-
   void _setAsDefault(int index) {
     setState(() {
       for (int i = 0; i < addresses.length; i++) {
@@ -489,29 +315,41 @@ class _ShippingAddressPageState extends State<ShippingAddressPage> {
     });
   }
 
-  void _deleteAddress(int index) {
-    showDialog(
+  void _deleteAddress(int addressId) async {
+    final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: Text('ยืนยันการลบ'),
-        content: Text('คุณต้องการลบที่อยู่นี้หรือไม่?'),
+        title: Text("ยืนยันการลบ"),
+        content: Text("คุณต้องการลบที่อยู่นี้ใช่หรือไม่?"),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('ยกเลิก'),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text("ยกเลิก"),
           ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                addresses.removeAt(index);
-              });
-              Navigator.pop(context);
-            },
-            child: Text('ลบ', style: TextStyle(color: Colors.red)),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text("ลบ"),
           ),
         ],
       ),
     );
+
+    if (confirm != true) return;
+
+    final result = await DeliveryAddressAPI.deleteAddress(addressId);
+
+    if (result["success"] == true) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("ลบที่อยู่เรียบร้อย")));
+      // รีเฟรช list
+      setState(() {
+        addresses.removeWhere((a) => a.id == addressId);
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("ลบไม่สำเร็จ: ${result['message']}")),
+      );
+    }
   }
 }

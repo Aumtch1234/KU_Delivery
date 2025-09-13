@@ -286,7 +286,7 @@ class _MyBasketPageState extends State<MyBasketPage> {
                   child: Text(
                     storeName,
                     style: TextStyle(
-                      fontSize: _responsiveFontSize(context, 16),
+                      fontSize: _responsiveFontSize(context, 14),
                       fontWeight: FontWeight.w600,
                       color: Colors.black87,
                     ),
@@ -302,7 +302,7 @@ class _MyBasketPageState extends State<MyBasketPage> {
                     child: Text(
                       'เลือกบางส่วน',
                       style: TextStyle(
-                        fontSize: _responsiveFontSize(context, 11),
+                        fontSize: _responsiveFontSize(context, 10),
                         color: Colors.orange[700],
                         fontWeight: FontWeight.w500,
                       ),
@@ -411,7 +411,7 @@ class _MyBasketPageState extends State<MyBasketPage> {
                       Text(
                         item.foodName,
                         style: TextStyle(
-                          fontSize: _responsiveFontSize(context, 16),
+                          fontSize: _responsiveFontSize(context, 12),
                           fontWeight: FontWeight.w600,
                           color: Colors.black87,
                         ),
@@ -425,7 +425,7 @@ class _MyBasketPageState extends State<MyBasketPage> {
                         Text(
                           item.optionsText,
                           style: TextStyle(
-                            fontSize: _responsiveFontSize(context, 13),
+                            fontSize: _responsiveFontSize(context, 10),
                             color: Colors.grey[600],
                           ),
                           maxLines: 2,
@@ -439,7 +439,7 @@ class _MyBasketPageState extends State<MyBasketPage> {
                         Text(
                           "หมายเหตุ: ${item.note}",
                           style: TextStyle(
-                            fontSize: _responsiveFontSize(context, 12),
+                            fontSize: _responsiveFontSize(context, 10),
                             color: Colors.orange[700],
                             fontStyle: FontStyle.italic,
                           ),
@@ -453,7 +453,7 @@ class _MyBasketPageState extends State<MyBasketPage> {
                       Text(
                         '${item.sell_price.toStringAsFixed(0)} บาท',
                         style: TextStyle(
-                          fontSize: _responsiveFontSize(context, 16),
+                          fontSize: _responsiveFontSize(context, 13),
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFF34C759),
                         ),

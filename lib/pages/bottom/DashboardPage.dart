@@ -15,6 +15,7 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   Map<String, dynamic>? user;
   Map<String, dynamic>? marketData;
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -23,8 +24,10 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _refreshAndLoadUser() async {
+    setState(() => isLoading = true);
     await AuthService().refreshUserToken();
     await _loadUser();
+    setState(() => isLoading = false);
   }
 
   Future<void> _loadUser() async {
@@ -33,18 +36,13 @@ class _DashboardPageState extends State<DashboardPage> {
 
     if (userStr == null) return;
 
-    // โหลด user จาก SharedPreferences
     final loadedUser = jsonDecode(userStr);
 
     try {
-      // เรียก API my-market
-      final marketDataResult =
-          await fetchMyMarket(); // ฟังก์ชันนี้ return Map หรือ null
+      final marketDataResult = await fetchMyMarket();
 
       if (marketDataResult != null) {
-        // ตรวจสอบ approve
         loadedUser['is_seller'] = marketDataResult['approve'] == true;
-        // เก็บ marketData สำหรับการแสดงสถานะ
         marketData = marketDataResult;
       } else {
         loadedUser['is_seller'] = false;
@@ -56,7 +54,6 @@ class _DashboardPageState extends State<DashboardPage> {
       debugPrint('Error fetching my-market: $e');
     }
 
-    // อัปเดต state
     setState(() {
       user = loadedUser;
     });
@@ -75,7 +72,7 @@ class _DashboardPageState extends State<DashboardPage> {
     try {
       final fixed = dateStr.replaceFirst(' ', 'T');
       final date = DateTime.parse(fixed);
-      final formatter = DateFormat('d MMMM y', 'th');
+      final formatter = DateFormat('d MMM y', 'th');
       return formatter.format(date);
     } catch (e) {
       debugPrint('Date parse error: $e | input: $dateStr');
@@ -83,72 +80,74 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  // เพิ่มฟังก์ชันสำหรับแสดงแบนเนอร์แจ้งเตือนสถานะรออนุมัติ
   Widget _buildPendingApprovalBanner() {
-    // แสดงเฉพาะเมื่อมี marketData และ approve = false
     if (marketData == null || marketData!['approve'] == true) {
       return const SizedBox.shrink();
     }
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFF3CD), Color(0xFFFFF8E1)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+      child: Material(
+        elevation: 2,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.orange.shade50, Colors.amber.shade50],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.orange.shade200),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.schedule_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'อยู่ระหว่างการตรวจสอบ',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade800,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'ร้านค้าของคุณอยู่ในขั้นตอนการรออนุมัติ กรุณารอการตรวจสอบจากผู้ดูแลระบบ',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.orange.shade700,
+                        height: 1.4,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFFC107), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.orange.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFC107),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.access_time_rounded,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'อยู่ระหว่างการตรวจสอบ',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF856404),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'ร้านค้าของคุณอยู่ในขั้นตอนการรออนุมัติ\nกรุณารอการตรวจสอบจากผู้ดูแลระบบ',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF856404),
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -156,88 +155,163 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildProfileHeader() {
     if (user == null) return const SizedBox.shrink();
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        CircleAvatar(
-          radius: 50,
-          backgroundColor: Colors.white,
-          backgroundImage: _isNetworkUrl(user!['photo_url'])
-              ? NetworkImage(user!['photo_url'])
-              : const AssetImage('assets/default_profile.png') as ImageProvider,
-        ),
-        const SizedBox(height: 16),
-        Text(
-          user!['display_name'] ?? 'ผู้ใช้งาน',
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: CircleAvatar(
+                  radius: 60,
+                  backgroundColor: Colors.white,
+                  backgroundImage: _isNetworkUrl(user!['photo_url'])
+                      ? NetworkImage(user!['photo_url'])
+                      : const AssetImage('assets/default_profile.png')
+                            as ImageProvider,
+                ),
+              ),
+              if (user!['is_verified'] == true ||
+                  user!['is_verified'] == 'true')
+                Positioned(
+                  bottom: 5,
+                  right: 5,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF34C759),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.verified_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+            ],
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          user!['email'] ?? '',
-          style: TextStyle(fontSize: 16, color: Colors.white.withOpacity(0.8)),
-        ),
-        const SizedBox(height: 8),
-        _buildVerificationStatus(),
-      ],
+          const SizedBox(height: 20),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 300),
+            child: Text(
+              user!['display_name'] ?? 'ผู้ใช้งาน',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                shadows: [
+                  Shadow(
+                    offset: Offset(0, 2),
+                    blurRadius: 4,
+                    color: Colors.black26,
+                  ),
+                ],
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 250),
+            child: Text(
+              user!['email'] ?? '',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white.withOpacity(0.9),
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildVerificationStatus(),
+        ],
+      ),
     );
   }
 
   Widget _buildVerificationStatus() {
     final isVerified =
         user!['is_verified'] == true || user!['is_verified'] == 'true';
-    final verificationText = isVerified
-        ? 'ยืนยันตัวตนแล้ว'
-        : 'ยังไม่ยืนยันตัวตน';
-    final verificationColor = isVerified
-        ? const Color(0xFF34C759)
-        : Colors.redAccent;
 
     if (isVerified) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: verificationColor.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(20),
+          color: Colors.white.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(color: Colors.white.withOpacity(0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.verified, color: verificationColor, size: 18),
-            const SizedBox(width: 6),
-            Text(
-              verificationText,
+            const Icon(Icons.verified_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            const Text(
+              'ยืนยันตัวตนแล้ว',
               style: TextStyle(
-                fontSize: 14,
-                color: verificationColor,
-                fontWeight: FontWeight.bold,
+                fontSize: 10,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
         ),
       );
     } else {
-      return TextButton.icon(
-        icon: const Icon(
-          Icons.error_outline,
-          color: Colors.redAccent,
-          size: 18,
-        ),
-        label: Text(
-          verificationText,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Colors.redAccent,
-            fontWeight: FontWeight.bold,
+      return Container(
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(25)),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(25),
+            onTap: () => Navigator.pushNamed(
+              context,
+              '/verify',
+            ).then((_) => _refreshAndLoadUser()),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(25),
+                border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.warning_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'ยืนยันตัวตน',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-        onPressed: () => Navigator.pushNamed(
-          context,
-          '/verify',
-        ).then((_) => _refreshAndLoadUser()),
       );
     }
   }
@@ -245,50 +319,102 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildUserInfoCard() {
     if (user == null) return const SizedBox.shrink();
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 4,
-      child: Column(
+      child: Material(
+        child: Container(
+          child: Column(
+            children: [
+              _buildInfoTile(
+                icon: Icons.calendar_today_rounded,
+                title: "ลงทะเบียนเมื่อ",
+                value: _formatDate(user!['created_at']),
+                iconColor: const Color(0xFF34C759),
+              ),
+              const Divider(height: 1, indent: 20, endIndent: 20),
+              _buildInfoTile(
+                icon: Icons.store_rounded,
+                title: "สถานะร้านค้า",
+                value: _getShopStatusText(),
+                valueColor: _getShopStatusColor(),
+                iconColor: const Color(0xFF34C759),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getShopStatusText() {
+    if (marketData != null && marketData!['approve'] == true) {
+      return 'เจ้าของร้าน ${marketData!['shop_name'] ?? ''}';
+    } else if (marketData != null && marketData!['approve'] == false) {
+      return 'รอการอนุมัติ';
+    } else {
+      return 'ไม่มีร้านค้า';
+    }
+  }
+
+  Color _getShopStatusColor() {
+    if (marketData != null && marketData!['approve'] == true) {
+      return const Color(0xFF34C759);
+    } else if (marketData != null && marketData!['approve'] == false) {
+      return Colors.orange;
+    } else {
+      return Colors.grey.shade600;
+    }
+  }
+
+  Widget _buildInfoTile({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color iconColor,
+    Color? valueColor,
+  }) {
+    return Container(
+      width: double.infinity, // ให้เต็มบรรทัด
+      padding: const EdgeInsets.symmetric(
+        vertical: 18,
+      ), // ปรับเหลือเฉพาะ vertical
+      child: Row(
         children: [
-          ListTile(
-            leading: const Icon(
-              Icons.calendar_today_rounded,
-              color: Color(0xFF34C759),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            title: const Text(
-              "ลงทะเบียนเมื่อ",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            trailing: Text(
-              _formatDate(user!['created_at']),
-              style: const TextStyle(color: Colors.black54),
+            child: Icon(icon, color: iconColor, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 2,
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: Colors.black87,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          const Divider(height: 1, indent: 16, endIndent: 16),
-          ListTile(
-            leading: const Icon(Icons.store_rounded, color: Color(0xFF34C759)),
-            title: const Text(
-              "สถานะร้านค้า",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            trailing: Text(
-              (marketData != null && marketData!['approve'] == true)
-                  ? 'เจ้าของร้าน ${marketData!['shop_name']}'
-                  : marketData != null && marketData!['approve'] == false
-                  ? 'รอการอนุมัติ'
-                  : 'ไม่มีร้านค้า',
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
               style: TextStyle(
-                color: (marketData != null && marketData!['approve'] == true)
-                    ? const Color(0xFF34C759)
-                    : marketData != null && marketData!['approve'] == false
-                    ? Colors.orange
-                    : Colors.black54,
-                fontWeight:
-                    (marketData != null && marketData!['approve'] != null)
-                    ? FontWeight.w600
-                    : FontWeight.normal,
+                color: valueColor ?? Colors.grey.shade700,
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
               ),
+              textAlign: TextAlign.end,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -304,110 +430,161 @@ class _DashboardPageState extends State<DashboardPage> {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-        ],
+      child: Material(
+        child: Container(
+          child: Column(
+            children: [
+              if (isSeller)
+                _buildMenuTile(
+                  text: 'ร้านค้าของฉัน',
+                  icon: Icons.storefront_rounded,
+                  iconColor: const Color(0xFF34C759),
+                  onPressed: () => Navigator.pushNamed(context, '/myMarket'),
+                )
+              else if (isPending)
+                _buildMenuTile(
+                  text: 'ร้านค้าของฉัน (รออนุมัติ)',
+                  icon: Icons.schedule_rounded,
+                  iconColor: Colors.orange,
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text(
+                          'ร้านค้าของคุณอยู่ระหว่างการรออนุมัติ กรุณารอการตรวจสอบ',
+                        ),
+                        backgroundColor: Colors.orange,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    );
+                  },
+                )
+              else
+                _buildMenuTile(
+                  text: 'สมัครร้านค้า',
+                  icon: Icons.add_business_rounded,
+                  iconColor: const Color(0xFF007AFF),
+                  onPressed: () {
+                    if (!isVerified) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text(
+                            'กรุณายืนยันตัวตนก่อนสมัครร้านค้า',
+                          ),
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      );
+                      Navigator.pushNamed(
+                        context,
+                        '/verify',
+                      ).then((_) => _refreshAndLoadUser());
+                    } else {
+                      Navigator.pushNamed(
+                        context,
+                        '/add/market',
+                      ).then((_) => _refreshAndLoadUser());
+                    }
+                  },
+                ),
+              _buildDivider(),
+              _buildMenuTile(
+                text: 'ที่อยู่ของฉัน',
+                icon: Icons.location_on_rounded,
+                iconColor: const Color(0xFFFF3B30),
+                onPressed: () => Navigator.pushNamed(context, '/myaddress'),
+              ),
+              _buildDivider(),
+              _buildMenuTile(
+                text: 'แก้ไขข้อมูลส่วนตัว',
+                icon: Icons.edit_rounded,
+                iconColor: const Color(0xFF007AFF),
+                onPressed: () => Navigator.pushNamed(context, '/editprofile'),
+              ),
+              _buildDivider(),
+              _buildMenuTile(
+                text: 'ออกจากระบบ',
+                icon: Icons.logout_rounded,
+                iconColor: Colors.redAccent,
+                textColor: Colors.redAccent,
+                onPressed: () => _showLogoutDialog(),
+                isLast: true,
+              ),
+            ],
+          ),
+        ),
       ),
-      child: Column(
-        children: [
-          if (isSeller)
-            _buildMenuTile(
-              text: 'ร้านค้าของฉัน',
-              icon: Icons.storefront_rounded,
-              onPressed: () => Navigator.pushNamed(context, '/myMarket'),
-            )
-          else if (isPending)
-            _buildMenuTile(
-              text: 'ร้านค้าของฉัน (รออนุมัติ)',
-              icon: Icons.access_time_rounded,
-              color: Colors.orange,
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'ร้านค้าของคุณอยู่ระหว่างการรออนุมัติ กรุณารอการตรวจสอบ',
-                    ),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-              },
-            )
-          else
-            _buildMenuTile(
-              text: 'สมัครร้านค้า',
-              icon: Icons.add_business_rounded,
-              onPressed: () {
-                if (!isVerified) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('กรุณายืนยันตัวตนก่อนสมัครร้านค้า'),
-                    ),
-                  );
-                  Navigator.pushNamed(
-                    context,
-                    '/verify',
-                  ).then((_) => _refreshAndLoadUser());
-                } else {
-                  Navigator.pushNamed(
-                    context,
-                    '/add/market',
-                  ).then((_) => _refreshAndLoadUser());
-                }
-              },
-            ),
-          const Divider(height: 1, thickness: 0.5),
-          _buildMenuTile(
-            text: 'ที่อยู่ของฉัน',
-            icon: Icons.edit_rounded,
-            onPressed: () => Navigator.pushNamed(context, '/myaddress'),
-          ),
-          const Divider(height: 1, thickness: 0.5),
-          _buildMenuTile(
-            text: 'แก้ไขข้อมูลส่วนตัว',
-            icon: Icons.edit_rounded,
-            onPressed: () => Navigator.pushNamed(context, '/editprofile'),
-          ),
-          const Divider(height: 1, thickness: 0.5),
-          _buildMenuTile(
-            text: 'ออกจากระบบ',
-            icon: Icons.logout_rounded,
-            color: Colors.redAccent,
-            onPressed: () => _showLogoutDialog(),
-          ),
-        ],
-      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Divider(
+      height: 1,
+      thickness: 0.5,
+      indent: 20,
+      endIndent: 20,
+      color: Colors.grey.shade200,
     );
   }
 
   Widget _buildMenuTile({
     required String text,
     required IconData icon,
+    required Color iconColor,
     required VoidCallback onPressed,
-    Color color = Colors.black87,
+    Color? textColor,
+    bool isLast = false,
   }) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      leading: Icon(icon, color: color, size: 24),
-      title: Text(
-        text,
-        style: TextStyle(
-          fontSize: 16,
-          color: color,
-          fontWeight: FontWeight.w500,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.vertical(
+          top: isLast ? Radius.zero : const Radius.circular(0),
+          bottom: isLast ? const Radius.circular(20) : Radius.zero,
+        ),
+        onTap: onPressed,
+        child: Container(
+          width: double.infinity, // เพิ่มบรรทัดนี้
+          padding: const EdgeInsets.symmetric(
+            vertical: 18,
+          ), // ปรับเหลือเฉพาะ vertical
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: iconColor, size: 22),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: textColor ?? Colors.black87,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 24,
+                color: Colors.grey.shade400,
+              ),
+            ],
+          ),
         ),
       ),
-      trailing: Icon(
-        Icons.arrow_forward_ios_rounded,
-        size: 18,
-        color: Colors.grey.shade400,
-      ),
-      onTap: onPressed,
-      dense: false,
-      minVerticalPadding: 12,
-      visualDensity: const VisualDensity(horizontal: 0, vertical: -1),
     );
   }
 
@@ -415,10 +592,10 @@ class _DashboardPageState extends State<DashboardPage> {
     AwesomeDialog(
       context: context,
       dialogType: DialogType.warning,
-      animType: AnimType.rightSlide,
+      animType: AnimType.scale,
       headerAnimationLoop: false,
-      title: 'ต้องการออกจากระบบใช่หรือไม่?',
-      desc: 'คุณจะต้องเข้าสู่ระบบใหม่อีกครั้งเพื่อใช้งาน',
+      title: 'ออกจากระบบ',
+      desc: 'คุณต้องการออกจากระบบใช่หรือไม่?',
       btnCancelOnPress: () {},
       btnCancelText: 'ยกเลิก',
       btnOkOnPress: () async {
@@ -430,48 +607,117 @@ class _DashboardPageState extends State<DashboardPage> {
         );
       },
       btnOkText: 'ออกจากระบบ',
-      btnOkColor: Colors.green,
+      btnOkColor: Colors.redAccent,
+      btnCancelColor: Colors.grey,
+      dismissOnTouchOutside: false,
     ).show();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      body: user == null
-          ? const Center(child: CircularProgressIndicator())
-          : CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                  backgroundColor: const Color(0xFF34C759),
-                  pinned: true,
+      backgroundColor: Colors.grey.shade50,
+      body: isLoading
+          ? Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF34C759), Color(0xFF5AC8FA)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                SliverToBoxAdapter(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF34C759), Color(0xFF5AC8FA)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+            )
+          : user == null
+          ? const Center(child: Text('ไม่พบข้อมูลผู้ใช้'))
+          : RefreshIndicator(
+              onRefresh: _refreshAndLoadUser,
+              color: const Color(0xFF34C759),
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  // ...existing code...
+                  SliverAppBar(
+                    expandedHeight: 0,
+                    pinned: true,
+                    backgroundColor: const Color(0xFF34C759),
+                    elevation: 0,
+                    automaticallyImplyLeading: false,
+                    flexibleSpace: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF34C759), Color(0xFF5AC8FA)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                          child: Text(
+                            'โปรไฟล์ของฉัน',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              shadows: [
+                                Shadow(
+                                  offset: Offset(0, 2),
+                                  blurRadius: 4,
+                                  color: Colors.black26,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    child: Center(child: _buildProfileHeader()),
                   ),
-                ),
-                SliverList(
-                  delegate: SliverChildListDelegate([
-                    const SizedBox(height: 16),
-                    // เพิ่มแบนเนอร์แจ้งเตือนสถานะรออนุมัติ
-                    _buildPendingApprovalBanner(),
-                    const SizedBox(height: 16),
-                    _buildUserInfoCard(),
-                    const SizedBox(height: 24),
-                    _buildActionButtons(),
-                    const SizedBox(height: 24),
-                  ]),
-                ),
-              ],
+
+                  // ...existing code...
+                  SliverToBoxAdapter(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF34C759), Color(0xFF5AC8FA)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: _buildProfileHeader(),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(30),
+                          topRight: Radius.circular(30),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 24),
+                          _buildPendingApprovalBanner(),
+                          const SizedBox(height: 8),
+                          _buildUserInfoCard(),
+                          const SizedBox(height: 24),
+                          _buildActionButtons(),
+                          const SizedBox(height: 32),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
     );
   }
