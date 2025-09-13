@@ -72,7 +72,7 @@ class FoodOption {
 class FoodDetail {
   final int foodId;
   final String foodName;
-  final double price;
+  final double sell_price;
   final String imageUrl;
   final double foodRating;
 
@@ -91,7 +91,7 @@ class FoodDetail {
   FoodDetail({
     required this.foodId,
     required this.foodName,
-    required this.price,
+    required this.sell_price,
     required this.imageUrl,
     required this.foodRating,
     required this.marketId,
@@ -110,7 +110,7 @@ class FoodDetail {
     return FoodDetail(
       foodId: json['food_id'],
       foodName: json['food_name'] ?? '',
-      price: double.tryParse(json['price'].toString()) ?? 0.0,
+      sell_price: double.tryParse(json['sell_price'].toString()) ?? 0.0,
       imageUrl: json['image_url'] ?? '',
       foodRating: json['food_rating'] != null
           ? double.tryParse(json['food_rating'].toString()) ?? 0.0

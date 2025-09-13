@@ -1,15 +1,13 @@
 import 'dart:convert';
+import 'package:delivery/APIs/api_config.dart';
 import 'package:delivery/pages/store/models/food_detail_model.dart';
 import 'package:http/http.dart' as http;
 
 class FoodOrderController {
-  final String baseUrl =
-      "http://10.0.2.2:4000/client"; // 🔧 เปลี่ยนเป็น API ของคุณ
-
   Future<FoodDetail?> getFoodDetail(int foodId) async {
     try {
       final response = await http.get(
-        Uri.parse("$baseUrl/foods/order/$foodId"),
+        Uri.parse("${ApiConfig.baseUrl}/foods/order/$foodId"),
       );
 
       if (response.statusCode == 200) {
@@ -34,7 +32,7 @@ class FoodOrderController {
           return FoodDetail(
             foodId: food.foodId,
             foodName: food.foodName,
-            price: food.price,
+            sell_price: food.sell_price,
             imageUrl: food.imageUrl,
             foodRating: food.foodRating,
             marketId: food.marketId,

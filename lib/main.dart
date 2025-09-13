@@ -14,12 +14,14 @@ import 'package:delivery/pages/myMarket/EditFoodPage.dart';
 import 'package:delivery/pages/myMarket/EditMarket.dart';
 import 'package:delivery/pages/myMarket/RegisterShopPage.dart';
 import 'package:delivery/pages/myMarket/myMarketPage.dart';
+import 'package:delivery/pages/my_Address/AddAddressPage.dart';
+import 'package:delivery/pages/my_Address/MyAddressPage.dart';
 import 'package:delivery/pages/order/OrderNowPage.dart';
 import 'package:delivery/pages/order/RecipientAddress.dart';
 import 'package:delivery/pages/status/TakingStatusPage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'providers/basket_provider.dart';
+import 'pages/basket/providers/basket_provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 
@@ -66,7 +68,10 @@ class MyApp extends StatelessWidget {
         '/order-now': (context) => const OrderNowPage(),
         '/recipient-address': (context) => const RecipientAddressPage(),
         '/status': (_) => AuthGuard(child: TakingStatusPage()),
-        
+
+        '/myaddress': (_) => AuthGuard(child: ShippingAddressPage()),
+        '/add-address': (_) => AuthGuard(child: DeliveryAddressForm()),
+
       },
       debugShowCheckedModeBanner: false,
     );

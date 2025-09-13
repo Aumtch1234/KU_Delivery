@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:delivery/APIs/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
@@ -14,7 +15,7 @@ Future<bool> updateFood({
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('token');
 
-  final uri = Uri.parse('http://10.0.2.2:4000/client/food/update/$foodId');
+  final uri = Uri.parse('${ApiConfig.baseUrl}/food/update/$foodId');
   final request = http.MultipartRequest('PUT', uri);
 
   // ✅ แนบ Authorization header

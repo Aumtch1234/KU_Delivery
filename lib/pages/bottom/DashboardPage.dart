@@ -276,15 +276,16 @@ class _DashboardPageState extends State<DashboardPage> {
               (marketData != null && marketData!['approve'] == true)
                   ? 'เจ้าของร้าน ${marketData!['shop_name']}'
                   : marketData != null && marketData!['approve'] == false
-                      ? 'รอการอนุมัติ'
-                      : 'ไม่มีร้านค้า',
+                  ? 'รอการอนุมัติ'
+                  : 'ไม่มีร้านค้า',
               style: TextStyle(
                 color: (marketData != null && marketData!['approve'] == true)
                     ? const Color(0xFF34C759)
                     : marketData != null && marketData!['approve'] == false
-                        ? Colors.orange
-                        : Colors.black54,
-                fontWeight: (marketData != null && marketData!['approve'] != null)
+                    ? Colors.orange
+                    : Colors.black54,
+                fontWeight:
+                    (marketData != null && marketData!['approve'] != null)
                     ? FontWeight.w600
                     : FontWeight.normal,
               ),
@@ -326,7 +327,9 @@ class _DashboardPageState extends State<DashboardPage> {
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('ร้านค้าของคุณอยู่ระหว่างการรออนุมัติ กรุณารอการตรวจสอบ'),
+                    content: Text(
+                      'ร้านค้าของคุณอยู่ระหว่างการรออนุมัติ กรุณารอการตรวจสอบ',
+                    ),
                     backgroundColor: Colors.orange,
                   ),
                 );
@@ -355,6 +358,12 @@ class _DashboardPageState extends State<DashboardPage> {
                 }
               },
             ),
+          const Divider(height: 1, thickness: 0.5),
+          _buildMenuTile(
+            text: 'ที่อยู่ของฉัน',
+            icon: Icons.edit_rounded,
+            onPressed: () => Navigator.pushNamed(context, '/myaddress'),
+          ),
           const Divider(height: 1, thickness: 0.5),
           _buildMenuTile(
             text: 'แก้ไขข้อมูลส่วนตัว',

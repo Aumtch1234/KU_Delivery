@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:delivery/APIs/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -7,7 +8,7 @@ Future<List<dynamic>?> FetchFoodsForMarket() async {
   final token = prefs.getString('token');
 
   final response = await http.get(
-    Uri.parse('http://10.0.2.2:4000/client/my-foods'),
+    Uri.parse('${ApiConfig.baseUrl}/my-foods'),
     headers: {
       'Authorization': 'Bearer $token',
     },

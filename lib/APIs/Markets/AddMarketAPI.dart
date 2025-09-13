@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:delivery/APIs/api_config.dart';
 import 'package:delivery/APIs/middleware/authService.dart';
 import 'package:http/http.dart' as http;
 
@@ -15,7 +16,7 @@ Future<Map<String, dynamic>> AddMarketApiMultipart({
   required double latitude,
   required double longitude,
 }) async {
-  final uri = Uri.parse('http://10.0.2.2:4000/client/market/add');
+  final uri = Uri.parse('${ApiConfig.baseUrl}/market/add');
 
   final token = await AuthService().getToken(); // ✅ ดึง token มาใช้
 

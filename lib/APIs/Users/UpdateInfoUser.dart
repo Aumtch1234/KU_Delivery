@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:delivery/APIs/middleware/authService.dart';
 
 class UpdateInfoUser {
-  static const String baseUrl = 'http://10.0.2.2:4000/client';
+  static const String baseUrl = 'http://10.90.92.44:4000/client';
 
   static Future<Map<String, dynamic>> updateVerify({
     required String displayName,

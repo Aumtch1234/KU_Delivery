@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:delivery/APIs/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,7 +18,7 @@ Future<void> uploadFood({
     return;
   }
 
-  var uri = Uri.parse('http://10.0.2.2:4000/client/food/add');
+  var uri = Uri.parse('${ApiConfig.baseUrl}/food/add');
 
   var request = http.MultipartRequest('POST', uri);
 

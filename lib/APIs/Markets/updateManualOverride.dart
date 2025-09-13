@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:delivery/APIs/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:delivery/APIs/middleware/authService.dart';
 
@@ -8,7 +9,7 @@ Future<bool> updateManualOverrideAPI(String marketId, bool isManualOverride, boo
 
   try {
     final response = await http.patch(
-      Uri.parse('http://10.0.2.2:4000/client/my-market/override/$marketId'),
+      Uri.parse('${ApiConfig.baseUrl}/my-market/override/$marketId'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',

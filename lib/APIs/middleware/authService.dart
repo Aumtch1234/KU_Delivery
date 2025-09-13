@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:delivery/APIs/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,6 @@ class AuthService {
   AuthService._internal();
 
   Map<String, dynamic>? currentUser;
-  final String baseUrl = 'http://10.0.2.2:4000/client';
 
   /// ✅ Login แบบ Manual (อีเมล + รหัสผ่าน)
   Future<Map<String, dynamic>> loginWithEmail(
@@ -18,7 +18,7 @@ class AuthService {
   ) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/login'),
+        Uri.parse('${ApiConfig.baseUrl}/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       );
@@ -42,7 +42,7 @@ class AuthService {
   /// ✅ Login แบบ Google
   Future<bool> loginWithGoogle(String idToken) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/google-login'),
+      Uri.parse('${ApiConfig.baseUrl}/google-login'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'id_token': idToken}),
     );
@@ -63,7 +63,7 @@ Future<bool> refreshUserToken() async {
   final token = prefs.getString('token') ?? '';
 
   final response = await http.post(
-    Uri.parse('$baseUrl/refresh-token'),
+    Uri.parse('${ApiConfig.baseUrl}/refresh-token'),
     headers: {'Authorization': 'Bearer $token'},
   );
 

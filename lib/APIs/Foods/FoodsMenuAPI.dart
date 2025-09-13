@@ -1,11 +1,11 @@
 import 'dart:convert';
+import 'package:delivery/APIs/api_config.dart';
 import 'package:http/http.dart' as http;
 
 class FoodApiService {
-  static const String _baseUrl = 'http://10.0.2.2:4000/client';
 
   Future<List<dynamic>> getAllFoods() async {
-    final response = await http.get(Uri.parse('$_baseUrl/foods'));
+    final response = await http.get(Uri.parse('${ApiConfig.baseUrl}/foods'));
 
     if (response.statusCode == 200) {
       final jsonResponse = json.decode(response.body);

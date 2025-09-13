@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:delivery/APIs/api_config.dart';
 import 'package:delivery/APIs/middleware/authService.dart';
 import 'package:http/http.dart' as http;
 
@@ -14,7 +15,7 @@ Future<bool> toggleMarketStatus(bool newStatus, String marketId) async {
 
   try {
     final response = await http.patch(
-      Uri.parse('http://10.0.2.2:4000/client/my-market/status/$marketId'), // ✅ ระวัง path prefix
+      Uri.parse('${ApiConfig.baseUrl}/my-market/status/$marketId'), // ✅ ระวัง path prefix
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',

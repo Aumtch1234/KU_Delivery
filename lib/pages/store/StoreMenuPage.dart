@@ -2,7 +2,7 @@ import 'package:delivery/APIs/Foods/FoodSelectAPI.dart';
 import 'package:delivery/pages/store/models/Food_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:delivery/providers/basket_provider.dart';
+import 'package:delivery/pages/basket/providers/basket_provider.dart';
 import 'package:delivery/pages/store/OrderFoodPage.dart';
 import 'package:delivery/pages/store/StoreDetailPage.dart';
 

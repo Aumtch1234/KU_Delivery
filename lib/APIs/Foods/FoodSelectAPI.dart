@@ -1,11 +1,12 @@
 import 'dart:convert';
+import 'package:delivery/APIs/api_config.dart';
 import 'package:delivery/pages/store/models/Food_model.dart';
 import 'package:http/http.dart' as http;
 
 class FoodService {
   static Future<List<Food>> fetchFoods(int marketId) async {
     final response = await http.get(
-      Uri.parse("http://10.0.2.2:4000/client/foods/$marketId"),
+      Uri.parse("${ApiConfig.baseUrl}/foods/$marketId"),
     );
 
     if (response.statusCode == 200) {
