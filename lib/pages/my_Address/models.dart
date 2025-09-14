@@ -34,7 +34,7 @@ class ShippingAddress {
       district: json['district'] ?? '',
       province: json['city'] ?? '',
       postalCode: json['postal_code'] ?? '',
-      isDefault: json['is_default'] ?? false,
+      isDefault: json['set_address'] ?? false,
       notes: json['notes'],                 // เพิ่ม
       latitude: json['latitude']?.toDouble(),   // เพิ่ม
       longitude: json['longitude']?.toDouble(), // เพิ่ม

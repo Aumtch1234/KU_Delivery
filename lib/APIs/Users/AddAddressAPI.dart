@@ -64,6 +64,34 @@ class DeliveryAddressAPI {
     }
   }
 
+  static Future<Map<String, dynamic>> GetDefaultAddress() async {
+    try {
+      final token = await AuthService().getToken();
+      print("📌 ใช้ Token: $token");
+
+      final response = await http.get(
+        Uri.parse(
+          "${ApiConfig.baseUrl}/address/default",
+        ), // สมมติ API ใหม่สำหรับ default
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        return {
+          "success": false,
+          "message": "Error ${response.statusCode}: ${response.body}",
+        };
+      }
+    } catch (e) {
+      return {"success": false, "message": e.toString()};
+    }
+  }
+
   static Future<Map<String, dynamic>> updateAddress(
     int id,
     DeliveryAddress address,
@@ -99,6 +127,22 @@ class DeliveryAddressAPI {
         "success": false,
         "message": "Error ${response.statusCode}: ${response.body}",
       };
+    }
+  }
+
+  static Future<Map<String, dynamic>> setDefaultAddress(int id) async {
+    try {
+      final response = await http.put(
+        Uri.parse("${ApiConfig.baseUrl}/address/set-main/$id"),
+        headers: {
+          "Authorization": "Bearer ${await AuthService().getToken()}",
+          "Content-Type": "application/json",
+        },
+      );
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {"success": false, "message": e.toString()};
     }
   }
 

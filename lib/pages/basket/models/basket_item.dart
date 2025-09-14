@@ -1,8 +1,10 @@
 class BasketItem {
   final int cartId; // ✅ เพิ่ม
   final String storeName;
+  final int foodId;
   final String foodName;
   final String imagePath;
+  final int marketId;
   final List<Map<String, dynamic>> selectedOptions;
   final String note;
   final double sell_price; // ราคาขาย
@@ -13,8 +15,10 @@ class BasketItem {
   BasketItem({
     required this.cartId,
     required this.storeName,
+    required this.foodId,
     required this.foodName,
     this.imagePath = '',
+    this.marketId = 0,
     this.selectedOptions = const [],
     this.note = '',
     required this.sell_price,
@@ -41,8 +45,10 @@ class BasketItem {
     return BasketItem(
       cartId: json['cart_id'] ?? 0, // ✅ เพิ่ม
       storeName: json['shop_name'] ?? 'ร้านค้าไม่ระบุ',
+      foodId: json['food_id'] != null ? int.tryParse(json['food_id'].toString()) ?? 0 : 0,
       foodName: json['food_name'] ?? 'ไม่ระบุ',
       imagePath: json['image_url'] ?? '',
+      marketId: json['market_id'] != null ? int.tryParse(json['market_id'].toString()) ?? 0 : 0,
       selectedOptions: List<Map<String, dynamic>>.from(
           json['selected_options'] ?? []),
       note: json['note'] ?? '',

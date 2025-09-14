@@ -77,8 +77,10 @@ class CartAPI {
           cartId: item['cart_id'] ?? 0, // ✅ เพิ่ม
           storeName:
               'ร้าน ${item['shop_name'] ?? ''}', // ถ้ามี market_name ใช้อันนั้น
+          foodId: item['food_id'] ?? 'ไม่ระบุ',
           foodName: item['food_name'] ?? 'ไม่ระบุ',
           imagePath: item['image_url'] ?? '',
+          marketId: item['market_id'] ?? 0,
           selectedOptions: List<Map<String, dynamic>>.from(
             item['selected_options'] ?? [],
           ),

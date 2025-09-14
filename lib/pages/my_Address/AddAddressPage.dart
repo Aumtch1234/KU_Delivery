@@ -180,8 +180,9 @@ class _DeliveryAddressFormState extends State<DeliveryAddressForm>
             actions: [
               ElevatedButton(
                 onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.pushReplacementNamed(context, "/myaddress");
+                  Navigator.of(
+                    context,
+                  ).popUntil((route) => route.settings.name == "/myaddress");
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF34C759),

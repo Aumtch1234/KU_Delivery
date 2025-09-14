@@ -4,6 +4,7 @@ import '../models/basket_item.dart';
 
 class BasketProvider extends ChangeNotifier {
   final List<BasketItem> _items = [];
+  int cartCount = 0; 
   bool isEditMode = false;
 
   List<BasketItem> get items => _items;

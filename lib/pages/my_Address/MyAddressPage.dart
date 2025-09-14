@@ -257,6 +257,19 @@ class _ShippingAddressPageState extends State<ShippingAddressPage> {
                 ),
               ],
             ),
+            SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.note_alt_outlined, color: Colors.grey[600], size: 16),
+                SizedBox(width: 8),
+                Text(
+                  address.notes == null || address.notes.toString().isEmpty
+                      ? 'ไม่มีหมายเหตุ'
+                      : address.notes.toString(),
+                  style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -307,12 +320,24 @@ class _ShippingAddressPageState extends State<ShippingAddressPage> {
     );
   }
 
-  void _setAsDefault(int index) {
-    setState(() {
-      for (int i = 0; i < addresses.length; i++) {
-        addresses[i].isDefault = i == index;
-      }
-    });
+  void _setAsDefault(int index) async {
+    final id = addresses[index].id;
+    final result = await DeliveryAddressAPI.setDefaultAddress(id);
+
+    if (result["success"] == true) {
+      setState(() {
+        for (int i = 0; i < addresses.length; i++) {
+          addresses[i].isDefault = i == index;
+        }
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("ตั้งที่อยู่หลักเรียบร้อย")));
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("ผิดพลาด: ${result['message']}")));
+    }
   }
 
   void _deleteAddress(int addressId) async {

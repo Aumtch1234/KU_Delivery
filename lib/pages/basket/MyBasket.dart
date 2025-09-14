@@ -161,7 +161,7 @@ class _MyBasketPageState extends State<MyBasketPage> {
 
   Widget _buildEmptyState(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
-    
+
     return Center(
       child: Padding(
         padding: _responsivePadding(context),
@@ -204,7 +204,11 @@ class _MyBasketPageState extends State<MyBasketPage> {
   }
 
   // 🆕 แสดงสินค้าโดยจำแนกตามร้าน
-  Widget _buildBasketItemsByStore(BuildContext context, BasketProvider basket, bool isEdit) {
+  Widget _buildBasketItemsByStore(
+    BuildContext context,
+    BasketProvider basket,
+    bool isEdit,
+  ) {
     final responsivePadding = _responsivePadding(context);
     final itemsByStore = basket.itemsByStore;
 
@@ -218,7 +222,13 @@ class _MyBasketPageState extends State<MyBasketPage> {
             ...itemsByStore.entries.map((entry) {
               final storeName = entry.key;
               final storeItems = entry.value;
-              return _buildStoreGroup(context, basket, storeName, storeItems, isEdit);
+              return _buildStoreGroup(
+                context,
+                basket,
+                storeName,
+                storeItems,
+                isEdit,
+              );
             }).toList(),
             const SizedBox(height: 100), // พื้นที่สำหรับ bottom bar
           ],
@@ -228,10 +238,21 @@ class _MyBasketPageState extends State<MyBasketPage> {
   }
 
   // 🆕 สร้างกลุ่มสินค้าของแต่ละร้าน
-  Widget _buildStoreGroup(BuildContext context, BasketProvider basket, String storeName, List storeItems, bool isEdit) {
+  // 🆕 แสดงราคาสรุปร้าน
+  Widget _buildStoreGroup(
+    BuildContext context,
+    BasketProvider basket,
+    String storeName,
+    List storeItems,
+    bool isEdit,
+  ) {
     final isSmallScreen = _isSmallScreen(context);
     final isFullySelected = basket.isStoreFullySelected(storeName);
     final isPartiallySelected = basket.isStorePartiallySelected(storeName);
+
+    final storeTotal = storeItems
+        .where((item) => item.selected)
+        .fold<double>(0, (sum, item) => sum + item.total);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -249,7 +270,7 @@ class _MyBasketPageState extends State<MyBasketPage> {
       ),
       child: Column(
         children: [
-          // 🆕 Header ร้าน
+          // Header ร้าน
           Container(
             padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
             decoration: const BoxDecoration(
@@ -294,7 +315,10 @@ class _MyBasketPageState extends State<MyBasketPage> {
                 ),
                 if (isPartiallySelected && !isFullySelected)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.orange[100],
                       borderRadius: BorderRadius.circular(12),
@@ -311,24 +335,56 @@ class _MyBasketPageState extends State<MyBasketPage> {
               ],
             ),
           ),
-          
+
           // รายการสินค้าของร้าน
           ...storeItems.asMap().entries.map((entry) {
             final itemIndex = basket.items.indexOf(entry.value);
-            return _buildBasketItem(context, basket, entry.value, itemIndex, isEdit);
+            return _buildBasketItem(
+              context,
+              basket,
+              entry.value,
+              itemIndex,
+              isEdit,
+            );
           }).toList(),
+
+          // 🆕 แสดงราคาสรุปร้าน
+          if (storeTotal > 0)
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmallScreen ? 12 : 16,
+                vertical: isSmallScreen ? 8 : 12,
+              ),
+              alignment: Alignment.centerRight,
+              child: Text(
+                'รวม: ${storeTotal.toStringAsFixed(0)} บาท',
+                style: TextStyle(
+                  fontSize: _responsiveFontSize(context, 14),
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF34C759),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildBasketItem(BuildContext context, BasketProvider basket, dynamic item, int index, bool isEdit) {
+  Widget _buildBasketItem(
+    BuildContext context,
+    BasketProvider basket,
+    dynamic item,
+    int index,
+    bool isEdit,
+  ) {
     final isSmallScreen = _isSmallScreen(context);
     final imageSize = isSmallScreen ? 70.0 : 90.0;
 
     return Container(
       decoration: BoxDecoration(
-        color: item.selected ? const Color(0xFF34C759).withOpacity(0.05) : Colors.white,
+        color: item.selected
+            ? const Color(0xFF34C759).withOpacity(0.05)
+            : Colors.white,
         border: const Border(
           top: BorderSide(color: Color(0xFFE5E5E5), width: 0.5),
         ),
@@ -355,7 +411,8 @@ class _MyBasketPageState extends State<MyBasketPage> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        onChanged: (v) => basket.toggleItemSelected(index, v ?? false),
+                        onChanged: (v) =>
+                            basket.toggleItemSelected(index, v ?? false),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -381,7 +438,9 @@ class _MyBasketPageState extends State<MyBasketPage> {
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(
                                     color: Colors.grey[200],
-                                    child: const Icon(Icons.image_not_supported),
+                                    child: const Icon(
+                                      Icons.image_not_supported,
+                                    ),
                                   );
                                 },
                               )
@@ -391,7 +450,9 @@ class _MyBasketPageState extends State<MyBasketPage> {
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(
                                     color: Colors.grey[200],
-                                    child: const Icon(Icons.image_not_supported),
+                                    child: const Icon(
+                                      Icons.image_not_supported,
+                                    ),
                                   );
                                 },
                               ),
@@ -399,9 +460,9 @@ class _MyBasketPageState extends State<MyBasketPage> {
                     ),
                   ],
                 ),
-                
+
                 SizedBox(width: isSmallScreen ? 12 : 16),
-                
+
                 // ข้อมูลสินค้า
                 Expanded(
                   child: Column(
@@ -419,7 +480,7 @@ class _MyBasketPageState extends State<MyBasketPage> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 6),
-                      
+
                       // ตัวเลือก
                       if (item.optionsText.isNotEmpty) ...[
                         Text(
@@ -433,7 +494,7 @@ class _MyBasketPageState extends State<MyBasketPage> {
                         ),
                         const SizedBox(height: 4),
                       ],
-                      
+
                       // หมายเหตุ
                       if (item.note.isNotEmpty) ...[
                         Text(
@@ -448,7 +509,7 @@ class _MyBasketPageState extends State<MyBasketPage> {
                         ),
                         const SizedBox(height: 6),
                       ],
-                      
+
                       // ราคา
                       Text(
                         '${item.sell_price.toStringAsFixed(0)} บาท',
@@ -461,7 +522,7 @@ class _MyBasketPageState extends State<MyBasketPage> {
                     ],
                   ),
                 ),
-                
+
                 // ปุ่มจำนวน
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -477,7 +538,8 @@ class _MyBasketPageState extends State<MyBasketPage> {
                         children: [
                           _buildQuantityButton(
                             Icons.remove,
-                            () => basket.updateQuantity(index, item.quantity - 1),
+                            () =>
+                                basket.updateQuantity(index, item.quantity - 1),
                             item.quantity > 1 && !isEdit,
                             isSmallScreen,
                           ),
@@ -495,7 +557,8 @@ class _MyBasketPageState extends State<MyBasketPage> {
                           ),
                           _buildQuantityButton(
                             Icons.add,
-                            () => basket.updateQuantity(index, item.quantity + 1),
+                            () =>
+                                basket.updateQuantity(index, item.quantity + 1),
                             !isEdit,
                             isSmallScreen,
                           ),
@@ -512,7 +575,12 @@ class _MyBasketPageState extends State<MyBasketPage> {
     );
   }
 
-  Widget _buildQuantityButton(IconData icon, VoidCallback? onPressed, bool enabled, bool isSmallScreen) {
+  Widget _buildQuantityButton(
+    IconData icon,
+    VoidCallback? onPressed,
+    bool enabled,
+    bool isSmallScreen,
+  ) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -535,7 +603,11 @@ class _MyBasketPageState extends State<MyBasketPage> {
     );
   }
 
-  Widget _buildBottomBar(BuildContext context, BasketProvider basket, bool isEdit) {
+  Widget _buildBottomBar(
+    BuildContext context,
+    BasketProvider basket,
+    bool isEdit,
+  ) {
     final isSmallScreen = _isSmallScreen(context);
     final screenWidth = _getScreenWidth(context);
 
@@ -571,7 +643,7 @@ class _MyBasketPageState extends State<MyBasketPage> {
                   onChanged: (v) => basket.toggleSelectAll(v ?? false),
                 ),
               ),
-              
+
               Text(
                 'ทั้งหมด',
                 style: TextStyle(
@@ -579,9 +651,9 @@ class _MyBasketPageState extends State<MyBasketPage> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              
+
               SizedBox(width: isSmallScreen ? 8 : 16),
-              
+
               // ราคารวม
               Expanded(
                 flex: screenWidth < 360 ? 2 : 3,
@@ -607,16 +679,42 @@ class _MyBasketPageState extends State<MyBasketPage> {
                   ],
                 ),
               ),
-              
+
               SizedBox(width: isSmallScreen ? 8 : 16),
-              
+
               // ปุ่มหลัก
               Expanded(
                 flex: screenWidth < 360 ? 3 : 4,
                 child: !isEdit
                     ? ElevatedButton(
                         onPressed: basket.selectedCount > 0
-                            ? () => Navigator.pushNamed(context, '/order-now')
+                            ? () {
+                                // 🔹 Log ข้อมูลก่อนส่งไปหน้า Order
+                                final selectedItems = basket.items
+                                    .where((item) => item.selected)
+                                    .map(
+                                      (item) => {
+                                        'cartId': item.cartId,
+                                        'foodId': item.foodId,
+                                        'foodName': item.foodName,
+                                        'marketId': item.marketId,
+                                        'storeName': item.storeName,
+                                        'quantity': item.quantity,
+                                        'price': item.sell_price,
+                                        'options': item.optionsText,
+                                      },
+                                    )
+                                    .toList();
+                                debugPrint(
+                                  'Selected items for order: $selectedItems',
+                                );
+                                debugPrint(
+                                  'Total price: ${basket.totalSelectedPrice}',
+                                );
+
+                                // ไปหน้า Order
+                                Navigator.pushNamed(context, '/order-now');
+                              }
                             : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF34C759),
@@ -645,7 +743,9 @@ class _MyBasketPageState extends State<MyBasketPage> {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red,
                           side: BorderSide(
-                            color: basket.selectedCount > 0 ? Colors.red : Colors.grey[300]!,
+                            color: basket.selectedCount > 0
+                                ? Colors.red
+                                : Colors.grey[300]!,
                           ),
                           padding: EdgeInsets.symmetric(
                             vertical: isSmallScreen ? 12 : 16,

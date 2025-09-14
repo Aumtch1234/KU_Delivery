@@ -348,7 +348,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   String _getShopStatusText() {
     if (marketData != null && marketData!['approve'] == true) {
-      return 'เจ้าของร้าน ${marketData!['shop_name'] ?? ''}';
+      return '${marketData!['shop_name'] ?? ''}';
     } else if (marketData != null && marketData!['approve'] == false) {
       return 'รอการอนุมัติ';
     } else {

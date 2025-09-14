@@ -27,6 +27,12 @@ class _ShopPageState extends State<ShopPage> {
   void initState() {
     super.initState();
     fetchAllFoods();
+
+    // ✅ โหลดตะกร้าทันที
+    Future.microtask(() {
+      final basket = Provider.of<BasketProvider>(context, listen: false);
+      basket.loadCartFromAPI();
+    });
   }
 
   Future<void> fetchAllFoods() async {
@@ -324,9 +330,7 @@ class _ShopPageState extends State<ShopPage> {
       child: Consumer<BasketProvider>(
         builder: (context, basket, _) {
           final isCartIcon = icon == Icons.shopping_cart;
-          final count = isCartIcon
-              ? basket.items.fold<int>(0, (sum, e) => sum + e.quantity)
-              : 0;
+          final count = isCartIcon ? basket.cartCount : 0;
 
           return Stack(
             clipBehavior: Clip.none,

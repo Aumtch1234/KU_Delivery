@@ -43,6 +43,7 @@ class _MapSelectionPageState extends State<MapSelectionPage>
   String _selectedPostalCode = '';
   bool _isLoading = false;
   bool _showLocationInfo = false;
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -118,6 +119,8 @@ class _MapSelectionPageState extends State<MapSelectionPage>
       return [];
     }
 
+    setState(() => _isSearching = true);
+
     try {
       Uri url = Uri.https(
         "maps.googleapis.com",
@@ -137,11 +140,14 @@ class _MapSelectionPageState extends State<MapSelectionPage>
         
         if (result['status'] == 'OK') {
           final predictions = result['predictions'] as List;
+          setState(() => _isSearching = false);
           return predictions.map((p) => p['description'] as String).toList();
         }
       }
+      setState(() => _isSearching = false);
       return [];
     } catch (e) {
+      setState(() => _isSearching = false);
       print('Error fetching suggestions: $e');
       return [];
     }
@@ -187,7 +193,7 @@ class _MapSelectionPageState extends State<MapSelectionPage>
 
     // ขยาย bottom sheet เมื่อเลือกตำแหน่งใหม่
     _bottomSheetController.animateTo(
-      0.35,
+      0.25, // ลดขนาดให้เล็กลงเพื่อให้เห็นปุ่มด้วย
       duration: Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
@@ -261,28 +267,15 @@ class _MapSelectionPageState extends State<MapSelectionPage>
 
   void _confirmLocation() {
     if (_selectedPosition != null) {
-      print('Selected Location:');
-      print('Address: $_selectedAddress');
-      print('Coordinates: ${_selectedPosition!.latitude}, ${_selectedPosition!.longitude}');
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text('บันทึกตำแหน่งเรียบร้อยแล้ว'),
-              ),
-            ],
-          ),
-          backgroundColor: Color(0xFF34C759),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
-        ),
-      );
-      
-      Navigator.pop(context, _selectedPosition);
+      Navigator.pop(context, {
+        'latitude': _selectedPosition!.latitude,
+        'longitude': _selectedPosition!.longitude,
+        'address': _selectedAddress,
+        'subDistrict': _selectedSubDistrict,
+        'district': _selectedDistrict,
+        'province': _selectedProvince,
+        'postalCode': _selectedPostalCode,
+      });
     } else {
       _showSnackbar("กรุณาเลือกตำแหน่งบนแผนที่ก่อน");
     }
@@ -333,65 +326,107 @@ class _MapSelectionPageState extends State<MapSelectionPage>
               opacity: _fadeAnimation,
               child: Column(
                 children: [
-                  // Header with back button and search
+                  // Header with back button, title, and current location button
                   Container(
-                    margin: EdgeInsets.all(16),
+                    margin: EdgeInsets.fromLTRB(16, 16, 16, 8),
                     child: Row(
                       children: [
+                        // ปุ่มย้อนกลับ
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 8,
-                                offset: Offset(0, 2),
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 12,
+                                offset: Offset(0, 4),
                               ),
                             ],
                           ),
                           child: IconButton(
                             onPressed: () => Navigator.pop(context),
-                            icon: Icon(Icons.arrow_back_ios_new, size: 20),
+                            icon: Icon(Icons.arrow_back_ios_new, size: 20, color: Colors.grey.shade700),
                           ),
                         ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: _buildSearchBar(),
+                        
+                        Spacer(),
+                        
+                        // Title
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'เลือกตำแหน่ง',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
-                        SizedBox(width: 12),
+                        
+                        Spacer(),
+                        
+                        // ปุ่มตำแหน่งปัจจุบัน (เฉพาะไอคอน)
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 8,
-                                offset: Offset(0, 2),
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 12,
+                                offset: Offset(0, 4),
                               ),
                             ],
                           ),
                           child: IconButton(
                             onPressed: _useCurrentLocation,
-                            icon: Icon(Icons.my_location_rounded, size: 20),
+                            icon: Icon(
+                              Icons.my_location_rounded,
+                              size: 20,
+                              color: Color(0xFF34C759),
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
 
+                  // Enhanced Search Bar
+                  Container(
+                    margin: EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildEnhancedSearchBar(),
+                  ),
+
+                  SizedBox(height: 16),
+
                   // Instructions (แสดงเฉพาะตอนยังไม่เลือกตำแหน่ง)
                   if (!_showLocationInfo)
                     Container(
                       margin: EdgeInsets.symmetric(horizontal: 16),
-                      padding: EdgeInsets.all(12),
+                      padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFF34C759).withOpacity(0.1),
+                            Color(0xFF34C759).withOpacity(0.05),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Color(0xFF34C759).withOpacity(0.2),
+                          width: 1,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Color(0xFF34C759).withOpacity(0.1),
                             blurRadius: 8,
                             offset: Offset(0, 2),
                           ),
@@ -399,16 +434,40 @@ class _MapSelectionPageState extends State<MapSelectionPage>
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.touch_app_rounded, color: Color(0xFF34C759), size: 20),
-                          SizedBox(width: 10),
+                          Container(
+                            padding: EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Color(0xFF34C759),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              Icons.touch_app_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          SizedBox(width: 12),
                           Expanded(
-                            child: Text(
-                              'แตะบนแผนที่เพื่อเลือกตำแหน่ง',
-                              style: TextStyle(
-                                color: Color(0xFF34C759),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'แตะบนแผนที่เพื่อเลือกตำแหน่ง',
+                                  style: TextStyle(
+                                    color: Color(0xFF34C759),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'หรือใช้การค้นหาด้านบน',
+                                  style: TextStyle(
+                                    color: Color(0xFF34C759).withOpacity(0.8),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -423,11 +482,11 @@ class _MapSelectionPageState extends State<MapSelectionPage>
           if (_showLocationInfo)
             DraggableScrollableSheet(
               controller: _bottomSheetController,
-              initialChildSize: 0.35,
-              minChildSize: 0.1,
+              initialChildSize: 0.25, // ลดขนาดเริ่มต้นให้เล็กลงเพื่อให้เห็นปุ่ม
+              minChildSize: 0.08,
               maxChildSize: 0.6,
               snap: true,
-              snapSizes: [0.1, 0.35, 0.6],
+              snapSizes: [0.08, 0.25, 0.6],
               builder: (BuildContext context, ScrollController scrollController) {
                 return Container(
                   decoration: BoxDecoration(
@@ -586,15 +645,20 @@ class _MapSelectionPageState extends State<MapSelectionPage>
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildEnhancedSearchBar() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: Offset(0, 8),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 4,
             offset: Offset(0, 2),
           ),
         ],
@@ -606,22 +670,58 @@ class _MapSelectionPageState extends State<MapSelectionPage>
             controller: controller,
             focusNode: focusNode,
             decoration: InputDecoration(
-              hintText: 'ค้นหาสถานที่...',
-              hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-              prefixIcon: Icon(Icons.search_rounded, color: Color(0xFF34C759), size: 20),
+              hintText: 'ค้นหาสถานที่, ที่อยู่, หรือชื่อสถานประกอบการ...',
+              hintStyle: TextStyle(
+                color: Colors.grey.shade500,
+                fontSize: 15,
+              ),
+              prefixIcon: Container(
+                padding: EdgeInsets.all(12),
+                child: _isSearching
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF34C759)),
+                        ),
+                      )
+                    : Icon(
+                        Icons.search_rounded,
+                        color: Color(0xFF34C759),
+                        size: 24,
+                      ),
+              ),
               suffixIcon: controller.text.isNotEmpty
-                  ? IconButton(
-                      icon: Icon(Icons.clear_rounded, size: 18),
-                      onPressed: () {
-                        controller.clear();
-                        FocusScope.of(context).unfocus();
-                      },
+                  ? Container(
+                      margin: EdgeInsets.only(right: 8),
+                      child: IconButton(
+                        icon: Container(
+                          padding: EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 16,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        onPressed: () {
+                          controller.clear();
+                          FocusScope.of(context).unfocus();
+                        },
+                      ),
                     )
                   : null,
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             ),
-            style: TextStyle(fontSize: 14),
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+            ),
           );
         },
         suggestionsCallback: (pattern) => fetchPlaceSuggestions(pattern),
@@ -629,16 +729,41 @@ class _MapSelectionPageState extends State<MapSelectionPage>
           return Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 0.5)),
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.grey.shade100,
+                  width: 1,
+                ),
+              ),
             ),
             child: ListTile(
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              leading: Icon(Icons.location_on_rounded, color: Color(0xFF34C759), size: 20),
+              contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              leading: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Color(0xFF34C759).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.location_on_rounded,
+                  color: Color(0xFF34C759),
+                  size: 20,
+                ),
+              ),
               title: Text(
                 suggestion,
-                style: TextStyle(fontSize: 14),
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade800,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
+              ),
+              trailing: Icon(
+                Icons.north_west_rounded,
+                color: Colors.grey.shade400,
+                size: 16,
               ),
             ),
           );
@@ -649,16 +774,33 @@ class _MapSelectionPageState extends State<MapSelectionPage>
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: InkWell(
-              onTap: () {
-                _useCurrentLocation();
-                FocusScope.of(context).unfocus();
-              },
-              child: ListTile(
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                leading: Icon(Icons.my_location, color: Color(0xFF34C759), size: 20),
-                title: Text("ใช้ตำแหน่งปัจจุบันของคุณ", style: TextStyle(fontSize: 14)),
-              ),
+            padding: EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.search_off_rounded,
+                  size: 48,
+                  color: Colors.grey.shade400,
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'ไม่พบผลลัพธ์ที่ตรงกัน',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'ลองใช้คำค้นหาอื่น หรือใช้ตำแหน่งปัจจุบัน',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              ],
             ),
           );
         },
@@ -676,9 +818,19 @@ class _MapSelectionPageState extends State<MapSelectionPage>
         decorationBuilder: (context, child) {
           return Material(
             type: MaterialType.card,
-            elevation: 4,
-            borderRadius: BorderRadius.circular(12),
-            child: child,
+            elevation: 12,
+            shadowColor: Colors.black.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.grey.shade100,
+                  width: 1,
+                ),
+              ),
+              child: child,
+            ),
           );
         },
       ),
@@ -687,7 +839,7 @@ class _MapSelectionPageState extends State<MapSelectionPage>
 
   Widget _buildInfoChip(String label) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: Color(0xFF34C759).withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
