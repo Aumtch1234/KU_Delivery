@@ -142,6 +142,9 @@ class _OrderNowPageState extends State<OrderNowPage> {
                     // ส่วนการชำระเงิน
                     _buildPaymentSection(),
 
+                    //
+                    _buildOrderReceipt(items),
+
                     const SizedBox(height: 8),
                   ],
                 ),
@@ -344,10 +347,12 @@ class _OrderNowPageState extends State<OrderNowPage> {
             }
             await _loadDefaultAddress(); // โหลด default address ใหม่
 
-             // คำนวณระยะทางใหม่
-          final basket = Provider.of<BasketProvider>(context, listen: false);
-          final selectedItems = basket.items.where((e) => e.selected).toList();
-          await _calculateDistances(selectedItems);
+            // คำนวณระยะทางใหม่
+            final basket = Provider.of<BasketProvider>(context, listen: false);
+            final selectedItems = basket.items
+                .where((e) => e.selected)
+                .toList();
+            await _calculateDistances(selectedItems);
           },
           child: const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -366,6 +371,30 @@ class _OrderNowPageState extends State<OrderNowPage> {
   }
 
   Widget _buildDeliveryTypeSection() {
+    final basket = Provider.of<BasketProvider>(context);
+    final items = basket.items.where((e) => e.selected).toList();
+
+    // คำนวณเวลาเฉลี่ยจาก durationMap
+    double totalMinutes = 0;
+    int count = 0;
+    Map<int, double> durationMapLocal = durationMap;
+
+    final Map<int, List<BasketItem>> itemsByMarket = {};
+    for (var item in items) {
+      itemsByMarket.putIfAbsent(item.marketId, () => []);
+      itemsByMarket[item.marketId]!.add(item);
+    }
+
+    itemsByMarket.forEach((marketId, marketItems) {
+      final mins = durationMapLocal[marketId] ?? 0.0;
+      if (mins > 0) {
+        totalMinutes += mins;
+        count++;
+      }
+    });
+
+    final averageMinutes = count > 0 ? (totalMinutes / count).round() : 35;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -475,9 +504,9 @@ class _OrderNowPageState extends State<OrderNowPage> {
                   size: 22,
                 ),
                 const SizedBox(width: 14),
-                const Text(
-                  'ส่งปกติ เวลา 35 นาที',
-                  style: TextStyle(
+                Text(
+                  'ส่งปกติ ประมาณ $averageMinutes นาที',
+                  style: const TextStyle(
                     color: Color(0xFF34C759),
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
@@ -491,8 +520,16 @@ class _OrderNowPageState extends State<OrderNowPage> {
     );
   }
 
+  double calculateDeliveryFee(double km) {
+    if (km <= 1) return 5;
+    return (km * 5).floorToDouble(); // 5 บาท/กม. ปัดลง
+  }
+
+  // ใช้ map จาก state โดยตรง
   Widget _buildFoodItemsSection(List<BasketItem> items) {
-    // แยกร้าน
+    final Map<int, double> distanceMapLocal = distanceMap;
+    final Map<int, double> durationMapLocal = durationMap;
+
     final Map<String, List<BasketItem>> itemsByStore = {};
     for (var item in items) {
       if (!itemsByStore.containsKey(item.storeName)) {
@@ -555,7 +592,6 @@ class _OrderNowPageState extends State<OrderNowPage> {
           ),
           const SizedBox(height: 20),
 
-          // Loop แต่ละร้าน
           ...itemsByStore.entries.map((entry) {
             final storeName = entry.key;
             final storeItems = entry.value;
@@ -563,30 +599,21 @@ class _OrderNowPageState extends State<OrderNowPage> {
               0,
               (sum, i) => sum + i.total,
             );
-// แสดงระยะทาง
-final marketId = storeItems[0].marketId;
-final distanceText = (distanceMap[marketId] != null && durationMap[marketId] != null)
-    ? "ระยะทาง: ${distanceMap[marketId]!.toStringAsFixed(2)} กม. | เวลาจัดส่ง: ${durationMap[marketId]!.toStringAsFixed(0)} นาที"
-    : "ระยะทาง/เวลาจัดส่ง: ไม่สามารถคำนวณได้";
 
-Padding(
-  padding: const EdgeInsets.only(bottom: 10),
-  child: Text(
-    distanceText,
-    style: const TextStyle(
-      fontSize: 12,
-      color: Colors.green,
-      fontWeight: FontWeight.w500,
-    ),
-  ),
-);
+            final marketId = storeItems[0].marketId;
+            final km = distanceMapLocal[marketId] ?? 0.0;
+            final mins = durationMapLocal[marketId] ?? 0.0;
 
+            final deliveryFee = calculateDeliveryFee(km);
 
+            final distanceText = km > 0
+                ? "ระยะทาง: ${km.toStringAsFixed(2)} กม. | ${mins.toStringAsFixed(0)} นาที"
+                : "ไม่สามารถคำนวณระยะทางได้";
 
+            final totalWithDelivery = storeTotal + deliveryFee;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // หัวข้อร้าน
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   child: Text(
@@ -598,10 +625,8 @@ Padding(
                     ),
                   ),
                 ),
-
-                // แสดงระยะทาง
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.only(bottom: 6),
                   child: Text(
                     distanceText,
                     style: const TextStyle(
@@ -611,27 +636,37 @@ Padding(
                     ),
                   ),
                 ),
-
-                // รายการอาหารในร้าน
                 ...storeItems.map(_orderItem).toList(),
-
-                // รวมราคาแยกร้าน
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        "รวม: ${storeTotal.toStringAsFixed(0)} บาท",
+                        "รวมอาหาร: ${storeTotal.toStringAsFixed(0)} บาท",
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF34C759),
                         ),
                       ),
+                      Text(
+                        "ค่าจัดส่ง: ${deliveryFee.toStringAsFixed(0)} บาท",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange,
+                        ),
+                      ),
+                      Text(
+                        "รวมทั้งหมด: ${totalWithDelivery.toStringAsFixed(0)} บาท",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF34C759),
+                          fontSize: 16,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-
                 const Divider(thickness: 1, height: 30),
               ],
             );
@@ -757,7 +792,22 @@ Padding(
     );
   }
 
-  Widget _buildBottomBar(List<BasketItem> items, double total) {
+  Widget _buildBottomBar(List<BasketItem> items, double totalFood) {
+    // คำนวณค่าจัดส่งรวมทุกร้าน
+    double totalDeliveryFee = 0;
+    Map<int, List<BasketItem>> itemsByMarket = {};
+    for (var item in items) {
+      itemsByMarket.putIfAbsent(item.marketId, () => []);
+      itemsByMarket[item.marketId]!.add(item);
+    }
+
+    itemsByMarket.forEach((marketId, marketItems) {
+      final km = distanceMap[marketId] ?? 0.0;
+      totalDeliveryFee += calculateDeliveryFee(km);
+    });
+
+    final totalAll = totalFood + totalDeliveryFee;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       decoration: BoxDecoration(
@@ -831,7 +881,7 @@ Padding(
                         ),
                         const SizedBox(width: 20),
                         Text(
-                          '\$${total.toStringAsFixed(0)}',
+                          '${totalAll.toStringAsFixed(0)} บาท',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 20,
@@ -1047,6 +1097,136 @@ Padding(
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildOrderReceipt(List<BasketItem> items) {
+    final Map<int, double> distanceMapLocal = distanceMap;
+
+    final Map<String, List<BasketItem>> itemsByStore = {};
+    for (var item in items) {
+      itemsByStore.putIfAbsent(item.storeName, () => []);
+      itemsByStore[item.storeName]!.add(item);
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      color: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'บิลรายการสั่งซื้อ',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 20),
+          ...itemsByStore.entries.map((entry) {
+            final storeName = entry.key;
+            final storeItems = entry.value;
+            final storeTotal = storeItems.fold<double>(
+              0,
+              (sum, i) => sum + i.total,
+            );
+
+            final marketId = storeItems[0].marketId;
+            final km = distanceMapLocal[marketId] ?? 0.0;
+            final deliveryFee = calculateDeliveryFee(km);
+            final totalWithDelivery = storeTotal + deliveryFee;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  storeName,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...storeItems.map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                "${item.foodName} x${item.quantity}",
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ),
+                            Text(
+                              "${item.total.toStringAsFixed(0)} บาท",
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF34C759),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (item.optionsText.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8, top: 2),
+                            child: Text(
+                              item.optionsText,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("รวมอาหาร"),
+                    Text("${storeTotal.toStringAsFixed(0)} บาท"),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("ค่าจัดส่ง"),
+                    Text("${deliveryFee.toStringAsFixed(0)} บาท"),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "รวมทั้งหมด",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      "${totalWithDelivery.toStringAsFixed(0)} บาท",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF34C759),
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(thickness: 1, height: 30),
+              ],
+            );
+          }).toList(),
+        ],
       ),
     );
   }
