@@ -366,6 +366,22 @@ class _MymarketpageState extends State<Mymarketpage> {
                     await loadMarket(); // รีโหลดข้อมูลหลังกลับมาหน้านี้
                   }
                 },
+              ), ListTile(
+                leading: const Icon(Icons.work_off_outlined, color: Colors.white),
+                title: const Text(
+                  'รับงาน',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final result = await Navigator.pushNamed(
+                    context,
+                    '/job',
+                  );
+                  if (result == true) {
+                    await loadMarket(); // รีโหลดข้อมูลหลังกลับมาหน้านี้
+                  }
+                },
               ),
               SwitchListTile(
                 title: const Text(

@@ -1,7 +1,10 @@
 import 'package:delivery/APIs/GoogleMap/DistanceAPI.dart';
+import 'package:delivery/APIs/Orders/OrdersAPI.dart';
+import 'package:delivery/APIs/SOCKET_IO/SocketService.dart';
 import 'package:delivery/APIs/Users/AddAddressAPI.dart';
 import 'package:delivery/pages/basket/models/basket_item.dart';
 import 'package:delivery/pages/my_Address/models.dart';
+import 'package:delivery/pages/order/WaitingAcceptPage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../basket/providers/basket_provider.dart';
@@ -805,7 +808,6 @@ class _OrderNowPageState extends State<OrderNowPage> {
       final km = distanceMap[marketId] ?? 0.0;
       totalDeliveryFee += calculateDeliveryFee(km);
     });
-
     final totalAll = totalFood + totalDeliveryFee;
 
     return Container(
@@ -844,9 +846,110 @@ class _OrderNowPageState extends State<OrderNowPage> {
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(18),
-                  onTap: () {
-                    Navigator.pushNamed(context, '/status');
+
+                  // Replace the order creation logic in your _buildBottomBar onTap method:
+                  onTap: () async {
+                    try {
+                      // Group items by market and calculate totals per market
+                      Map<int, List<BasketItem>> itemsByMarket = {};
+                      Map<String, double> distancesByMarket = {};
+                      Map<String, double> deliveryFeesByMarket = {};
+                      Map<String, double> totalPricesByMarket = {};
+
+                      // Group items by market
+                      for (var item in items) {
+                        itemsByMarket.putIfAbsent(item.marketId, () => []);
+                        itemsByMarket[item.marketId]!.add(item);
+                      }
+
+                      // Calculate per-market data
+                      itemsByMarket.forEach((marketId, marketItems) {
+                        final km = distanceMap[marketId] ?? 0.0;
+                        final deliveryFee = calculateDeliveryFee(km);
+                        final foodTotal = marketItems.fold<double>(
+                          0,
+                          (sum, item) => sum + item.total,
+                        );
+
+                        distancesByMarket[marketId.toString()] = km;
+                        deliveryFeesByMarket[marketId.toString()] = deliveryFee;
+                        totalPricesByMarket[marketId.toString()] =
+                            foodTotal + deliveryFee;
+                      });
+
+                      final basketForAPI = items.map((item) {
+                        return {
+                          "cart_id": item.cartId,
+                          "food_id": item.foodId,
+                          "food_name": item.foodName,
+                          "market_id": item.marketId,
+                          "shop_name": item.storeName,
+                          "quantity": item.quantity,
+                          "sell_price": item.sell_price,
+                          "total": item.total, // Keep individual item total
+                          "selected_options": item.selectedOptions,
+                          "note": item.note,
+                        };
+                      }).toList();
+
+                      final result = await OrdersAPI.createOrder(
+                        basket: basketForAPI,
+                        address: defaultAddress!.address,
+                        note: noteController.text,
+                        paymentMethod: paymentMethod,
+                        deliveryType: deliveryType,
+                        distances:
+                            distancesByMarket, // Object with marketId keys
+                        deliveryFees:
+                            deliveryFeesByMarket, // Object with marketId keys
+                        totalPrices:
+                            totalPricesByMarket, // Object with marketId keys
+                      );
+
+                      print("✅ Order created: $result");
+                      print("🛒 basketForAPI: $basketForAPI");
+                      print("📍 distancesByMarket: $distancesByMarket");
+                      print("🚚 deliveryFeesByMarket: $deliveryFeesByMarket");
+                      print("💰 totalPricesByMarket: $totalPricesByMarket");
+
+                      if (result['success'] == true &&
+                          result['orders'] != null &&
+                          result['orders'].isNotEmpty) {
+                        final orderId = result['orders'][0]['order_id'];
+                        print("✅ Order created with ID: $orderId");
+
+                        // เรียก getOrderStatus ด้วย orderId จริง
+                        await OrdersAPI.getOrderStatus(orderId);
+
+                        SocketService().emitNewOrder(result);
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              "สั่งอาหารเรียบร้อย! รอร้านค้ารับงาน...",
+                            ),
+                          ),
+                        );
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => OrderTrackingPage(orderId: orderId),
+                          ),
+                        );
+                      } else {
+                        print("❌ Failed to create order: ${result['message']}");
+                      }
+                    } catch (e) {
+                      print("❌ Order error: $e");
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("เกิดข้อผิดพลาดในการสั่งซื้อ"),
+                        ),
+                      );
+                    }
                   },
+
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 20),
                     child: Row(

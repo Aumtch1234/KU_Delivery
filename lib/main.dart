@@ -1,3 +1,4 @@
+import 'package:delivery/APIs/Orders/OrdersSocket.dart';
 import 'package:delivery/SplashScreens/SplashScreen.dart';
 import 'package:delivery/APIs/middleware/AuthGuard.dart';
 import 'package:delivery/APIs/middleware/authService.dart';
@@ -14,6 +15,7 @@ import 'package:delivery/pages/myMarket/EditFoodPage.dart';
 import 'package:delivery/pages/myMarket/EditMarket.dart';
 import 'package:delivery/pages/myMarket/RegisterShopPage.dart';
 import 'package:delivery/pages/myMarket/myMarketPage.dart';
+import 'package:delivery/pages/myMarket/orderFoodPage.dart';
 import 'package:delivery/pages/my_Address/AddAddressPage.dart';
 import 'package:delivery/pages/my_Address/MyAddressPage.dart';
 import 'package:delivery/pages/order/OrderNowPage.dart';
@@ -24,7 +26,6 @@ import 'package:provider/provider.dart';
 import 'pages/basket/providers/basket_provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final auth = AuthService();
@@ -32,7 +33,13 @@ void main() async {
   await initializeDateFormatting('th', null); // โหลด locale "th"
 
   runApp(
-    ChangeNotifierProvider(create: (_) => BasketProvider(), child: MyApp()),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => BasketProvider()),
+        ChangeNotifierProvider(create: (_) => OrderController()),
+      ],
+      child: MyApp(),
+    ),
   );
 }
 
@@ -56,13 +63,11 @@ class MyApp extends StatelessWidget {
         '/dashboard': (_) => AuthGuard(child: DashboardPage()),
         '/shop': (_) => AuthGuard(child: ShopPage()),
         '/main': (_) => AuthGuard(child: MainNavigation()),
-        '/add/market': (_) =>
-            AuthGuard(child: RegisterShopPage()), 
-        '/myMarket': (_) => AuthGuard(child: Mymarketpage()), 
-        '/editprofile': (_) => AuthGuard(child: EditProfilePage
-        ()),
-        '/myMarket/edit': (_) => AuthGuard(child: EditShopPage()), 
-        '/addFood': (_) => AuthGuard(child: AddFoodPage()), 
+        '/add/market': (_) => AuthGuard(child: RegisterShopPage()),
+        '/myMarket': (_) => AuthGuard(child: Mymarketpage()),
+        '/editprofile': (_) => AuthGuard(child: EditProfilePage()),
+        '/myMarket/edit': (_) => AuthGuard(child: EditShopPage()),
+        '/addFood': (_) => AuthGuard(child: AddFoodPage()),
         '/editFood': (_) => AuthGuard(child: EditFoodPage()),
         '/basket': (context) => MyBasketPage(),
         '/order-now': (context) => const OrderNowPage(),
@@ -71,7 +76,7 @@ class MyApp extends StatelessWidget {
 
         '/myaddress': (_) => AuthGuard(child: ShippingAddressPage()),
         '/add-address': (_) => AuthGuard(child: DeliveryAddressForm()),
-
+        '/job': (_) => AuthGuard(child: TestShopPage()),
       },
       debugShowCheckedModeBanner: false,
     );
