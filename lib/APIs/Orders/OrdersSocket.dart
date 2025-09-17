@@ -69,9 +69,9 @@ class OrderController extends ChangeNotifier {
       _currentOrder = _currentOrder?.copyWith(
         status: data['status'] ?? _currentOrder!.status,
         riderId: data['rider_id'] ?? _currentOrder!.riderId,
-        updatedAt: data['timestamp'] != null 
-          ? DateTime.parse(data['timestamp'])
-          : _currentOrder!.updatedAt,
+        updatedAt: data['timestamp'] != null
+            ? DateTime.parse(data['timestamp'])
+            : _currentOrder!.updatedAt,
       );
     }
 
@@ -81,9 +81,9 @@ class OrderController extends ChangeNotifier {
       _orders[index] = _orders[index].copyWith(
         status: data['status'] ?? _orders[index].status,
         riderId: data['rider_id'] ?? _orders[index].riderId,
-        updatedAt: data['timestamp'] != null 
-          ? DateTime.parse(data['timestamp'])
-          : _orders[index].updatedAt,
+        updatedAt: data['timestamp'] != null
+            ? DateTime.parse(data['timestamp'])
+            : _orders[index].updatedAt,
       );
     }
 
@@ -114,14 +114,14 @@ class OrderController extends ChangeNotifier {
     try {
       String url = '$baseUrl/orders';
       List<String> queryParams = [];
-      
+
       if (userId != null) {
         queryParams.add('user_id=$userId');
       }
       if (status != null) {
         queryParams.add('status=$status');
       }
-      
+
       if (queryParams.isNotEmpty) {
         url += '?' + queryParams.join('&');
       }
@@ -132,12 +132,15 @@ class OrderController extends ChangeNotifier {
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
       );
+      print("📦 Order JSON: ${jsonEncode(json)}");
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
           final List<dynamic> ordersData = data['data'] ?? [];
-          _orders = ordersData.map((orderJson) => Order.fromJson(orderJson)).toList();
+          _orders = ordersData
+              .map((orderJson) => Order.fromJson(orderJson))
+              .toList();
           print('✅ Successfully loaded ${_orders.length} orders');
         } else {
           _error = data['error'] ?? 'Failed to fetch orders';
@@ -162,7 +165,7 @@ class OrderController extends ChangeNotifier {
 
     try {
       String url = '$baseUrl/orders?market_id=$marketId';
-      
+
       print('🏪 Fetching orders for market $marketId from: $url');
 
       final response = await http.get(
@@ -171,31 +174,62 @@ class OrderController extends ChangeNotifier {
       );
 
       print('📡 Response status: ${response.statusCode}');
-      print('📦 Response body: ${response.body}');
+      // ตัด body ที่ยาวมาก ๆ ให้โชว์แค่ส่วนต้น
+      print(
+        '📦 Response body (first 500 chars): ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}',
+      );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+
         if (data['success'] == true) {
           final List<dynamic> ordersData = data['data'] ?? [];
-          _orders = ordersData.map((orderJson) {
-            try {
-              return Order.fromJson(orderJson);
-            } catch (e) {
-              print('❌ Error parsing order: $e');
-              print('📄 Order JSON: $orderJson');
-              return null;
-            }
-          }).where((order) => order != null).cast<Order>().toList();
-          
-          print('✅ Successfully loaded ${_orders.length} orders for market $marketId');
-          
-          // Group orders by status for debugging
+
+          print('📦 Raw orders count from API: ${ordersData.length}');
+          for (var i = 0; i < ordersData.length; i++) {
+            print('➡️ Order $i JSON: ${ordersData[i]}');
+          }
+
+          // แปลงเป็น Order objects
+          final parsedOrders = ordersData
+              .map((orderJson) {
+                try {
+                  return Order.fromJson(orderJson);
+                } catch (e) {
+                  print('❌ Error parsing order: $e');
+                  print('📄 Failed Order JSON: $orderJson');
+                  return null;
+                }
+              })
+              .where((o) => o != null)
+              .cast<Order>()
+              .toList();
+
+          // --- MERGE LOGIC ---
+          final Map<int, Order> merged = {
+            for (var o in _orders) o.orderId: o, // เก็บ state เดิม
+          };
+
+          for (var o in parsedOrders) {
+            merged[o.orderId] = o; // อัปเดตถ้ามีอยู่แล้ว / insert ถ้าใหม่
+          }
+
+          _orders = merged.values.toList()
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt)); // เรียงใหม่
+
+          print('✅ After merging, orders in state: ${_orders.length}');
+          for (var o in _orders) {
+            print(
+              '   ↳ OrderID: ${o.orderId}, status: ${o.status}, createdAt: ${o.createdAt}',
+            );
+          }
+
+          // Group orders by status
           final statusGroups = <String, int>{};
           for (var order in _orders) {
             statusGroups[order.status] = (statusGroups[order.status] ?? 0) + 1;
           }
           print('📊 Orders by status: $statusGroups');
-          
         } else {
           _error = data['error'] ?? 'Failed to fetch orders';
           print('❌ API Error: $_error');
@@ -225,6 +259,14 @@ class OrderController extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        double _toDouble(dynamic value) {
+          if (value == null) return 0.0;
+          if (value is double) return value;
+          if (value is int) return value.toDouble();
+          if (value is String) return double.tryParse(value) ?? 0.0;
+          return 0.0;
+        }
+
         if (data['success'] == true) {
           // Create order object from status data
           _currentOrder = Order(
@@ -235,13 +277,14 @@ class OrderController extends ChangeNotifier {
             address: data['data']['address'] ?? '',
             deliveryType: data['data']['delivery_type'] ?? '',
             paymentMethod: data['data']['payment_method'] ?? '',
-            deliveryFee: (data['data']['delivery_fee'] ?? 0.0).toDouble(),
-            totalPrice: (data['data']['total_price'] ?? 0.0).toDouble(),
+            deliveryFee: _toDouble(data['data']['delivery_fee']),
+            totalPrice: _toDouble(data['data']['total_price']),
+
             status: data['data']['status'],
             createdAt: DateTime.parse(data['data']['timestamps']['created_at']),
-            updatedAt: data['data']['timestamps']['updated_at'] != null 
-              ? DateTime.parse(data['data']['timestamps']['updated_at'])
-              : DateTime.now(),
+            updatedAt: data['data']['timestamps']['updated_at'] != null
+                ? DateTime.parse(data['data']['timestamps']['updated_at'])
+                : DateTime.now(),
             items: [],
           );
         } else {
@@ -261,14 +304,11 @@ class OrderController extends ChangeNotifier {
   Future<bool> acceptOrder(int orderId, int marketId) async {
     try {
       print('🏪 Accepting order $orderId for market $marketId');
-      
+
       final response = await http.post(
         Uri.parse('$baseUrl/accept_order'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'order_id': orderId,
-          'market_id': marketId,
-        }),
+        body: json.encode({'order_id': orderId, 'market_id': marketId}),
       );
 
       print('📡 Accept order response: ${response.statusCode}');
@@ -277,7 +317,9 @@ class OrderController extends ChangeNotifier {
       final data = json.decode(response.body);
       if (response.statusCode == 200 && data['success'] == true) {
         // Update local order status immediately for better UX
-        final orderIndex = _orders.indexWhere((order) => order.orderId == orderId);
+        final orderIndex = _orders.indexWhere(
+          (order) => order.orderId == orderId,
+        );
         if (orderIndex != -1) {
           _orders[orderIndex] = _orders[orderIndex].copyWith(
             status: 'accepted',
@@ -285,7 +327,7 @@ class OrderController extends ChangeNotifier {
           );
           notifyListeners();
         }
-        
+
         print('✅ Order $orderId accepted successfully');
         return true;
       } else {
@@ -308,10 +350,7 @@ class OrderController extends ChangeNotifier {
       final response = await http.post(
         Uri.parse('$baseUrl/assign_rider'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'order_id': orderId,
-          'rider_id': riderId,
-        }),
+        body: json.encode({'order_id': orderId, 'rider_id': riderId}),
       );
 
       final data = json.decode(response.body);
@@ -330,12 +369,16 @@ class OrderController extends ChangeNotifier {
   }
 
   // Update order status
-  Future<bool> updateOrderStatus(int orderId, String status, {Map<String, dynamic>? additionalData}) async {
+  Future<bool> updateOrderStatus(
+    int orderId,
+    String status, {
+    Map<String, dynamic>? additionalData,
+  }) async {
     try {
       print('🔄 Updating order $orderId status to $status');
-      
-      final response = await http.post(
-        Uri.parse('$baseUrl/update_status'),
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/update_order_status'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'order_id': orderId,
@@ -350,7 +393,9 @@ class OrderController extends ChangeNotifier {
       final data = json.decode(response.body);
       if (response.statusCode == 200 && data['success'] == true) {
         // Update local order status immediately for better UX
-        final orderIndex = _orders.indexWhere((order) => order.orderId == orderId);
+        final orderIndex = _orders.indexWhere(
+          (order) => order.orderId == orderId,
+        );
         if (orderIndex != -1) {
           _orders[orderIndex] = _orders[orderIndex].copyWith(
             status: status,
@@ -358,7 +403,7 @@ class OrderController extends ChangeNotifier {
           );
           notifyListeners();
         }
-        
+
         print('✅ Order $orderId status updated to $status');
         return true;
       } else {
@@ -381,10 +426,7 @@ class OrderController extends ChangeNotifier {
       final response = await http.post(
         Uri.parse('$baseUrl/cancel_order'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'order_id': orderId,
-          'reason': reason,
-        }),
+        body: json.encode({'order_id': orderId, 'reason': reason}),
       );
 
       final data = json.decode(response.body);
@@ -431,14 +473,17 @@ class OrderController extends ChangeNotifier {
 
   // Get cancelled/rejected orders
   List<Order> get rejectedOrders {
-    final rejected = _orders.where((order) => 
-      order.status == 'cancelled' || order.status == 'rejected'
-    ).toList();
+    final rejected = _orders
+        .where(
+          (order) => order.status == 'cancelled' || order.status == 'rejected',
+        )
+        .toList();
     return rejected;
   }
 
   // Get orders with riders
-  List<Order> get ordersWithRiders => _orders.where((order) => order.hasRider).toList();
+  List<Order> get ordersWithRiders =>
+      _orders.where((order) => order.hasRider).toList();
 
   @override
   void dispose() {

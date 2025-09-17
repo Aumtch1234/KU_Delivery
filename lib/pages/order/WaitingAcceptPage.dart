@@ -8,28 +8,29 @@ import 'package:provider/provider.dart';
 class OrderTrackingPage extends StatefulWidget {
   final int orderId;
 
-  const OrderTrackingPage({
-    Key? key,
-    required this.orderId,
-  }) : super(key: key);
+  const OrderTrackingPage({Key? key, required this.orderId}) : super(key: key);
 
   @override
   State<OrderTrackingPage> createState() => _OrderTrackingPageState();
 }
 
-class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProviderStateMixin {
+class _OrderTrackingPageState extends State<OrderTrackingPage>
+    with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late AnimationController _slideController;
   late Animation<double> _pulseAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   bool _isNavigating = false;
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
-    _initializeOrder();
+    // ✅ ให้เลื่อนไปหลังจาก frame แรกเสร็จแล้ว
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeOrder();
+    });
   }
 
   void _initializeAnimations() {
@@ -37,7 +38,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
       duration: const Duration(seconds: 2),
       vsync: this,
     )..repeat();
-    
+
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -47,28 +48,25 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOutCubic,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+        );
 
     _slideController.forward();
   }
 
   Future<void> _initializeOrder() async {
     final controller = context.read<OrderController>();
-    
+
     // Initialize socket connection if not connected
     if (!controller.isSocketConnected) {
       await controller.initializeSocket();
     }
-    
+
     // Watch the specific order
     controller.watchOrder(widget.orderId);
-    
+
     // Fetch initial order data
     await controller.fetchOrderById(widget.orderId);
   }
@@ -118,10 +116,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
           children: [
             Text(
               'ติดตามออเดอร์',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Text(
               '#${widget.orderId}',
@@ -186,16 +181,16 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
                 ],
               ),
             ),
-              PopupMenuItem(
-                value: 'cancel',
-                child: Row(
-                  children: [
-                    Icon(Icons.cancel, size: 20, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('ยกเลิกออเดอร์', style: TextStyle(color: Colors.red)),
-                  ],
-                ),
+            PopupMenuItem(
+              value: 'cancel',
+              child: Row(
+                children: [
+                  Icon(Icons.cancel, size: 20, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('ยกเลิกออเดอร์', style: TextStyle(color: Colors.red)),
+                ],
               ),
+            ),
           ],
         ),
       ],
@@ -224,25 +219,25 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
           // Status header
           _buildStatusHeader(order),
           const SizedBox(height: 20),
-          
+
           // Timeline
           OrderTimelineWidget(order: order),
           const SizedBox(height: 20),
-          
+
           // Status cards
           _buildStatusCards(order),
           const SizedBox(height: 20),
-          
+
           // Order details
           _buildOrderDetails(order),
           const SizedBox(height: 20),
-          
+
           // Action buttons
           _buildActionButtons(order, controller),
-          
+
           // Test buttons (for debugging)
-            const SizedBox(height: 20),
-            _buildTestButtons(controller),
+          const SizedBox(height: 20),
+          _buildTestButtons(controller),
         ],
       ),
     );
@@ -269,10 +264,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
             const SizedBox(height: 20),
             Text(
               'กำลังโหลดข้อมูลออเดอร์...',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
             ),
           ],
         ),
@@ -286,11 +278,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red.shade300,
-            ),
+            Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
             const SizedBox(height: 16),
             Text(
               'เกิดข้อผิดพลาด',
@@ -304,10 +292,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
             Text(
               controller.error ?? 'ไม่สามารถโหลดข้อมูลได้',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -334,11 +319,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Icon(
-              Icons.receipt_long,
-              size: 64,
-              color: Colors.grey.shade400,
-            ),
+            Icon(Icons.receipt_long, size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 16),
             Text(
               'ไม่พบออเดอร์',
@@ -352,10 +333,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
             Text(
               'ออเดอร์ #${widget.orderId} ไม่พบในระบบ',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 20),
             TextButton(
@@ -382,10 +360,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: order.statusColor.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: order.statusColor.withOpacity(0.3), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -440,10 +415,16 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
         Expanded(
           child: _buildStatusCard(
             '🏪 ร้านค้า',
-            order.isAccepted || order.isRiderAssigned || order.isDelivering || order.isCompleted 
-              ? 'รับออเดอร์แล้ว' 
-              : 'รอการยืนยัน',
-            order.isAccepted || order.isRiderAssigned || order.isDelivering || order.isCompleted,
+            order.isAccepted ||
+                    order.isRiderAssigned ||
+                    order.isDelivering ||
+                    order.isCompleted
+                ? 'รับออเดอร์แล้ว'
+                : 'รอการยืนยัน',
+            order.isAccepted ||
+                order.isRiderAssigned ||
+                order.isDelivering ||
+                order.isCompleted,
             Icons.store,
           ),
         ),
@@ -460,7 +441,12 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
     );
   }
 
-  Widget _buildStatusCard(String title, String subtitle, bool isCompleted, IconData icon) {
+  Widget _buildStatusCard(
+    String title,
+    String subtitle,
+    bool isCompleted,
+    IconData icon,
+  ) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       padding: const EdgeInsets.all(16),
@@ -497,10 +483,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
         ],
       ),
@@ -522,10 +505,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
           children: [
             const Text(
               'รายละเอียดออเดอร์',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             _buildDetailRow('เลขที่ออเดอร์', '#${order.orderId}'),
@@ -538,12 +518,12 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
               _buildDetailRow('ไรเดอร์', 'ID: ${order.riderId}'),
             const Divider(height: 20),
             _buildDetailRow(
-              'ค่าจัดส่ง', 
+              'ค่าจัดส่ง',
               '฿${order.deliveryFee.toStringAsFixed(2)}',
               isAmount: true,
             ),
             _buildDetailRow(
-              'ยอดรวม', 
+              'ยอดรวม',
               '฿${order.totalPrice.toStringAsFixed(2)}',
               isAmount: true,
               isBold: true,
@@ -554,7 +534,12 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
     );
   }
 
-  Widget _buildDetailRow(String label, String value, {bool isAmount = false, bool isBold = false}) {
+  Widget _buildDetailRow(
+    String label,
+    String value, {
+    bool isAmount = false,
+    bool isBold = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -564,10 +549,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
             width: 120,
             child: Text(
               label,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
             ),
           ),
           Expanded(
@@ -589,79 +571,82 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
     List<Widget> buttons = [];
 
     // Customer buttons
-      if (order.isPending || order.isAccepted) {
-        buttons.add(
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () => _showCancelDialog(order, controller),
-              icon: const Icon(Icons.cancel_outlined),
-              label: const Text('ยกเลิกออเดอร์'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red,
-                side: const BorderSide(color: Colors.red),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
+    if (order.isPending || order.isAccepted) {
+      buttons.add(
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () => _showCancelDialog(order, controller),
+            icon: const Icon(Icons.cancel_outlined),
+            label: const Text('ยกเลิกออเดอร์'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.red,
+              side: const BorderSide(color: Colors.red),
+              padding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),
-        );
-      }
+        ),
+      );
+    }
 
     // Shop buttons
-      if (order.isPending) {
-        buttons.add(
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => controller.acceptOrder(order.orderId, order.marketId),
-              icon: const Icon(Icons.check),
-              label: const Text('รับออเดอร์'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
+    if (order.isPending) {
+      buttons.add(
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: () =>
+                controller.acceptOrder(order.orderId, order.marketId),
+            icon: const Icon(Icons.check),
+            label: const Text('รับออเดอร์'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),
-        );
-      } else if (order.isAccepted && !order.hasRider) {
-        buttons.add(
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => controller.updateOrderStatus(order.orderId, 'preparing'),
-              icon: const Icon(Icons.restaurant),
-              label: const Text('เริ่มเตรียมอาหาร'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
+        ),
+      );
+    } else if (order.isAccepted && !order.hasRider) {
+      buttons.add(
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: () =>
+                controller.updateOrderStatus(order.orderId, 'preparing'),
+            icon: const Icon(Icons.restaurant),
+            label: const Text('เริ่มเตรียมอาหาร'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),
-        );
-      }
+        ),
+      );
+    }
 
     // Rider buttons
-      if (order.isAccepted && !order.hasRider) {
-        buttons.add(
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => controller.assignRider(order.orderId, 1), // Replace with actual rider ID
-              icon: const Icon(Icons.delivery_dining),
-              label: const Text('รับงาน'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
+    if (order.isAccepted && !order.hasRider) {
+      buttons.add(
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: () => controller.assignRider(
+              order.orderId,
+              1,
+            ), // Replace with actual rider ID
+            icon: const Icon(Icons.delivery_dining),
+            label: const Text('รับงาน'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),
-        );
-      }
+        ),
+      );
+    }
 
     if (buttons.isEmpty) return const SizedBox.shrink();
 
-    return Row(
-      children: buttons,
-    );
+    return Row(children: buttons);
   }
 
   Widget _buildTestButtons(OrderController controller) {
@@ -706,7 +691,10 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
                   controller.updateOrderStatus(widget.orderId, 'preparing');
                 }, Colors.orange),
                 _buildTestButton('Ready', () {
-                  controller.updateOrderStatus(widget.orderId, 'ready_for_pickup');
+                  controller.updateOrderStatus(
+                    widget.orderId,
+                    'ready_for_pickup',
+                  );
                 }, Colors.purple),
                 _buildTestButton('Delivering', () {
                   controller.updateOrderStatus(widget.orderId, 'delivering');
@@ -756,7 +744,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
 
   void _showDebugDialog(OrderController controller) {
     final connectionStatus = controller.isSocketConnected;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -770,8 +758,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
               Text('Socket Connected: $connectionStatus'),
               Text('Is Loading: ${controller.isLoading}'),
               Text('Has Error: ${controller.error != null}'),
-              if (controller.error != null)
-                Text('Error: ${controller.error}'),
+              if (controller.error != null) Text('Error: ${controller.error}'),
               if (controller.currentOrder != null) ...[
                 const Divider(),
                 Text('Current Status: ${controller.currentOrder!.status}'),
@@ -794,7 +781,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
 
   void _showCancelDialog(Order order, OrderController controller) {
     String reason = '';
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -822,7 +809,10 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> with TickerProvid
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              final success = await controller.cancelOrder(order.orderId, reason);
+              final success = await controller.cancelOrder(
+                order.orderId,
+                reason,
+              );
               if (success && mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(

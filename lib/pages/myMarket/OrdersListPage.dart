@@ -23,6 +23,7 @@ class _OrdersListPageState extends State<OrdersListPage>
     'accepted': 'กำลังทำ',      // ร้านรับแล้ว กำลังเตรียมอาหาร
     'delivering': 'กำลังส่ง',    // ไรเดอร์รับไปส่งแล้ว
     'completed': 'เสร็จแล้ว',    // ส่งเสร็จแล้ว
+    'cancelled': 'ปฏิเสธแล้ว'
   };
 
   String get userType {
@@ -840,7 +841,7 @@ class _OrdersListPageState extends State<OrdersListPage>
   }
 
   Future<void> _markReady(Order order, OrderController controller) async {
-    final success = await controller.updateOrderStatus(order.orderId, 'ready_for_pickup');
+    final success = await controller.updateOrderStatus(order.orderId, 'delivering');
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -875,7 +876,7 @@ class _OrdersListPageState extends State<OrdersListPage>
               Navigator.of(context).pop();
               final success = await controller.updateOrderStatus(
                 order.orderId, 
-                'rejected',
+                'cancelled',
               );
               if (success && mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
