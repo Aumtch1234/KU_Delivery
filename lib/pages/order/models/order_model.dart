@@ -1,6 +1,15 @@
 // models/order_model.dart
 import 'package:flutter/material.dart';
 
+
+double _toDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is double) return value;
+  if (value is int) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0.0;
+  return 0.0;
+}
+
 class Order {
   final int orderId;
   final int userId;
@@ -46,9 +55,9 @@ class Order {
       deliveryType: json['delivery_type'],
       paymentMethod: json['payment_method'],
       note: json['note'],
-      distanceKm: json['distance_km']?.toDouble(),
-      deliveryFee: json['delivery_fee'].toDouble(),
-      totalPrice: json['total_price'].toDouble(),
+      distanceKm: _toDouble(json['distance_km']),
+      deliveryFee: _toDouble(json['delivery_fee']),
+      totalPrice: _toDouble(json['total_price']),
       status: json['status'],
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
@@ -162,7 +171,7 @@ class Order {
 
 class OrderItem {
   final int itemId;
-  final int orderId;
+  final int? orderId;
   final int foodId;
   final String foodName;
   final int quantity;
@@ -188,8 +197,8 @@ class OrderItem {
       foodId: json['food_id'],
       foodName: json['food_name'],
       quantity: json['quantity'],
-      sellPrice: json['sell_price'].toDouble(),
-      subtotal: json['subtotal'].toDouble(),
+      sellPrice: _toDouble(json['sell_price']),
+      subtotal: _toDouble(json['subtotal']),
       selectedOptions: json['selected_options'] ?? [],
     );
   }

@@ -1,5 +1,6 @@
 import 'package:delivery/APIs/Markets/updateManualOverride.dart';
 import 'package:delivery/pages/bottom/MainNavigation.dart';
+import 'package:delivery/pages/myMarket/OrdersListPage.dart';
 import 'package:flutter/material.dart';
 import 'package:delivery/APIs/Markets/FetchFoodsForMarket.dart';
 import 'package:delivery/APIs/Markets/FetchMarket.dart';
@@ -374,9 +375,13 @@ class _MymarketpageState extends State<Mymarketpage> {
                 ),
                 onTap: () async {
                   Navigator.pop(context);
-                  final result = await Navigator.pushNamed(
+                  final result = await Navigator.push(
                     context,
-                    '/job',
+                    MaterialPageRoute(
+                      builder: (context) => OrdersListPage(
+                        marketId: int.tryParse(marketId),
+                      ),
+                    ),
                   );
                   if (result == true) {
                     await loadMarket(); // รีโหลดข้อมูลหลังกลับมาหน้านี้
