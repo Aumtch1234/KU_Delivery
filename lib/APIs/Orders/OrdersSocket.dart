@@ -1,13 +1,14 @@
-// controllers/order_controller.dart
+// controllers/order_controller.dart - Fixed for shop view
 import 'dart:convert';
 import 'package:delivery/APIs/SOCKET_IO/SocketService.dart';
+import 'package:delivery/APIs/api_config.dart';
 import 'package:delivery/pages/order/models/order_model.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class OrderController extends ChangeNotifier {
   final SocketService _socketService = SocketService();
-  final String baseUrl = 'http://192.168.1.119:4000/socket'; // เปลี่ยนตาม server ของคุณ
+  final String baseUrl = '${ApiConfig.SocketUrl}';
 
   List<Order> _orders = [];
   bool _isLoading = false;
@@ -105,7 +106,7 @@ class OrderController extends ChangeNotifier {
     _socketService.off('order:updated');
   }
 
-  // Fetch orders from API
+  // Fetch orders from API - Updated to use the correct endpoint
   Future<void> fetchOrders({int? userId, String? status}) async {
     _setLoading(true);
     _error = null;
@@ -125,6 +126,8 @@ class OrderController extends ChangeNotifier {
         url += '?' + queryParams.join('&');
       }
 
+      print('🔍 Fetching orders from: $url');
+
       final response = await http.get(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
@@ -133,17 +136,77 @@ class OrderController extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
-          _orders = (data['data'] as List)
-              .map((orderJson) => Order.fromJson(orderJson))
-              .toList();
+          final List<dynamic> ordersData = data['data'] ?? [];
+          _orders = ordersData.map((orderJson) => Order.fromJson(orderJson)).toList();
+          print('✅ Successfully loaded ${_orders.length} orders');
         } else {
           _error = data['error'] ?? 'Failed to fetch orders';
+          print('❌ API Error: $_error');
         }
       } else {
         _error = 'HTTP Error: ${response.statusCode}';
+        print('❌ HTTP Error: ${response.statusCode}');
       }
     } catch (e) {
       _error = 'Network error: $e';
+      print('❌ Network error: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // NEW: Fetch orders specifically for shop/market
+  Future<void> fetchOrdersByMarket({required int marketId}) async {
+    _setLoading(true);
+    _error = null;
+
+    try {
+      String url = '$baseUrl/orders?market_id=$marketId';
+      
+      print('🏪 Fetching orders for market $marketId from: $url');
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      print('📡 Response status: ${response.statusCode}');
+      print('📦 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          final List<dynamic> ordersData = data['data'] ?? [];
+          _orders = ordersData.map((orderJson) {
+            try {
+              return Order.fromJson(orderJson);
+            } catch (e) {
+              print('❌ Error parsing order: $e');
+              print('📄 Order JSON: $orderJson');
+              return null;
+            }
+          }).where((order) => order != null).cast<Order>().toList();
+          
+          print('✅ Successfully loaded ${_orders.length} orders for market $marketId');
+          
+          // Group orders by status for debugging
+          final statusGroups = <String, int>{};
+          for (var order in _orders) {
+            statusGroups[order.status] = (statusGroups[order.status] ?? 0) + 1;
+          }
+          print('📊 Orders by status: $statusGroups');
+          
+        } else {
+          _error = data['error'] ?? 'Failed to fetch orders';
+          print('❌ API Error: $_error');
+        }
+      } else {
+        _error = 'HTTP Error: ${response.statusCode} - ${response.body}';
+        print('❌ HTTP Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      _error = 'Network error: $e';
+      print('❌ Network error: $e');
     } finally {
       _setLoading(false);
     }
@@ -167,13 +230,13 @@ class OrderController extends ChangeNotifier {
           _currentOrder = Order(
             orderId: data['data']['order_id'],
             userId: 0, // Will be filled from full order data
-            marketId: data['data']['shop_id'] ?? 0,
+            marketId: data['data']['market_id'] ?? 0,
             riderId: data['data']['rider_id'],
-            address: '',
-            deliveryType: '',
-            paymentMethod: '',
-            deliveryFee: 0.0,
-            totalPrice: 0.0,
+            address: data['data']['address'] ?? '',
+            deliveryType: data['data']['delivery_type'] ?? '',
+            paymentMethod: data['data']['payment_method'] ?? '',
+            deliveryFee: (data['data']['delivery_fee'] ?? 0.0).toDouble(),
+            totalPrice: (data['data']['total_price'] ?? 0.0).toDouble(),
             status: data['data']['status'],
             createdAt: DateTime.parse(data['data']['timestamps']['created_at']),
             updatedAt: data['data']['timestamps']['updated_at'] != null 
@@ -194,9 +257,11 @@ class OrderController extends ChangeNotifier {
     }
   }
 
-  // Accept order (for shop)
+  // Accept order (for shop) - Updated to match backend API
   Future<bool> acceptOrder(int orderId, int marketId) async {
     try {
+      print('🏪 Accepting order $orderId for market $marketId');
+      
       final response = await http.post(
         Uri.parse('$baseUrl/accept_order'),
         headers: {'Content-Type': 'application/json'},
@@ -206,16 +271,32 @@ class OrderController extends ChangeNotifier {
         }),
       );
 
+      print('📡 Accept order response: ${response.statusCode}');
+      print('📦 Response body: ${response.body}');
+
       final data = json.decode(response.body);
       if (response.statusCode == 200 && data['success'] == true) {
+        // Update local order status immediately for better UX
+        final orderIndex = _orders.indexWhere((order) => order.orderId == orderId);
+        if (orderIndex != -1) {
+          _orders[orderIndex] = _orders[orderIndex].copyWith(
+            status: 'accepted',
+            updatedAt: DateTime.now(),
+          );
+          notifyListeners();
+        }
+        
+        print('✅ Order $orderId accepted successfully');
         return true;
       } else {
         _error = data['error'] ?? 'Failed to accept order';
+        print('❌ Failed to accept order: $_error');
         notifyListeners();
         return false;
       }
     } catch (e) {
       _error = 'Network error: $e';
+      print('❌ Network error: $e');
       notifyListeners();
       return false;
     }
@@ -225,7 +306,7 @@ class OrderController extends ChangeNotifier {
   Future<bool> assignRider(int orderId, int riderId) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/orders/assign-rider'),
+        Uri.parse('$baseUrl/assign_rider'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'order_id': orderId,
@@ -251,8 +332,10 @@ class OrderController extends ChangeNotifier {
   // Update order status
   Future<bool> updateOrderStatus(int orderId, String status, {Map<String, dynamic>? additionalData}) async {
     try {
+      print('🔄 Updating order $orderId status to $status');
+      
       final response = await http.post(
-        Uri.parse('$baseUrl/orders/update-status'),
+        Uri.parse('$baseUrl/update_status'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'order_id': orderId,
@@ -261,16 +344,32 @@ class OrderController extends ChangeNotifier {
         }),
       );
 
+      print('📡 Update status response: ${response.statusCode}');
+      print('📦 Response body: ${response.body}');
+
       final data = json.decode(response.body);
       if (response.statusCode == 200 && data['success'] == true) {
+        // Update local order status immediately for better UX
+        final orderIndex = _orders.indexWhere((order) => order.orderId == orderId);
+        if (orderIndex != -1) {
+          _orders[orderIndex] = _orders[orderIndex].copyWith(
+            status: status,
+            updatedAt: DateTime.now(),
+          );
+          notifyListeners();
+        }
+        
+        print('✅ Order $orderId status updated to $status');
         return true;
       } else {
         _error = data['error'] ?? 'Failed to update order status';
+        print('❌ Failed to update order status: $_error');
         notifyListeners();
         return false;
       }
     } catch (e) {
       _error = 'Network error: $e';
+      print('❌ Network error: $e');
       notifyListeners();
       return false;
     }
@@ -280,7 +379,7 @@ class OrderController extends ChangeNotifier {
   Future<bool> cancelOrder(int orderId, String reason) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/orders/cancel'),
+        Uri.parse('$baseUrl/cancel_order'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'order_id': orderId,
@@ -314,16 +413,29 @@ class OrderController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Get orders by status
+  // Get orders by status - Updated with better filtering
   List<Order> getOrdersByStatus(String status) {
-    return _orders.where((order) => order.status == status).toList();
+    final filtered = _orders.where((order) => order.status == status).toList();
+    print('🔍 getOrdersByStatus($status): found ${filtered.length} orders');
+    return filtered;
   }
 
-  // Get pending orders
+  // Get pending orders (waiting for shop confirmation)
   List<Order> get pendingOrders => getOrdersByStatus('waiting');
 
-  // Get accepted orders
+  // Get accepted orders (shop confirmed, cooking)
   List<Order> get acceptedOrders => getOrdersByStatus('accepted');
+
+  // Get completed orders
+  List<Order> get completedOrders => getOrdersByStatus('completed');
+
+  // Get cancelled/rejected orders
+  List<Order> get rejectedOrders {
+    final rejected = _orders.where((order) => 
+      order.status == 'cancelled' || order.status == 'rejected'
+    ).toList();
+    return rejected;
+  }
 
   // Get orders with riders
   List<Order> get ordersWithRiders => _orders.where((order) => order.hasRider).toList();

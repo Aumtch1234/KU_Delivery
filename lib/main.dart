@@ -15,7 +15,6 @@ import 'package:delivery/pages/myMarket/EditFoodPage.dart';
 import 'package:delivery/pages/myMarket/EditMarket.dart';
 import 'package:delivery/pages/myMarket/RegisterShopPage.dart';
 import 'package:delivery/pages/myMarket/myMarketPage.dart';
-import 'package:delivery/pages/myMarket/orderFoodPage.dart';
 import 'package:delivery/pages/my_Address/AddAddressPage.dart';
 import 'package:delivery/pages/my_Address/MyAddressPage.dart';
 import 'package:delivery/pages/order/OrderNowPage.dart';
@@ -76,7 +75,6 @@ class MyApp extends StatelessWidget {
 
         '/myaddress': (_) => AuthGuard(child: ShippingAddressPage()),
         '/add-address': (_) => AuthGuard(child: DeliveryAddressForm()),
-        '/job': (_) => AuthGuard(child: TestShopPage()),
       },
       debugShowCheckedModeBanner: false,
     );

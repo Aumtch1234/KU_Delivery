@@ -1,4 +1,5 @@
 // services/socket_service.dart
+import 'package:delivery/APIs/api_config.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 class SocketService {
@@ -10,7 +11,7 @@ class SocketService {
   bool _isConnected = false;
   
   // Server configuration
-  static const String serverUrl = 'http://192.168.1.119:4000'; // เปลี่ยนตาม server ของคุณ
+  static const String serverUrl = '${ApiConfig.HosttUrl}'; // เปลี่ยนตาม server ของคุณ
   
   bool get isConnected => _isConnected && _socket != null && _socket!.connected;
   
