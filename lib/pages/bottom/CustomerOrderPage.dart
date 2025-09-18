@@ -14,17 +14,18 @@ class CustomerOrderPage extends StatefulWidget {
   State<CustomerOrderPage> createState() => _CustomerOrderPageState();
 }
 
-class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTickerProviderStateMixin {
+class _CustomerOrderPageState extends State<CustomerOrderPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
+
   // Updated status tabs for customer workflow
   final Map<String, String> _statusTabs = {
-    'all': 'ทั้งหมด',         // แสดงออเดอร์ทั้งหมด
-    'waiting': 'รอยืนยัน',      // ออเดอร์ใหม่ที่รอร้านรับ
-    'accepted': 'กำลังทำ',      // ร้านรับแล้ว กำลังเตรียมอาหาร
-    'delivering': 'กำลังส่ง',    // ไรเดอร์รับไปส่งแล้ว
-    'completed': 'เสร็จแล้ว',    // ส่งเสร็จแล้ว
-    'cancelled': 'ยกเลิกแล้ว'
+    'all': 'ทั้งหมด', // แสดงออเดอร์ทั้งหมด
+    'waiting': 'รอยืนยัน', // ออเดอร์ใหม่ที่รอร้านรับ
+    'accepted': 'กำลังทำ', // ร้านรับแล้ว กำลังเตรียมอาหาร
+    'delivering': 'กำลังส่ง', // ไรเดอร์รับไปส่งแล้ว
+    'completed': 'เสร็จแล้ว', // ส่งเสร็จแล้ว
+    'cancelled': 'ยกเลิกแล้ว',
   };
 
   // ธีมสีหลัก
@@ -54,11 +55,11 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
 
   Future<void> _loadCustomerOrders() async {
     final controller = context.read<OrderController>();
-    
+
     if (!controller.isSocketConnected) {
       await controller.initializeSocket(userId: widget.userId);
     }
-    
+
     if (widget.userId != null) {
       await controller.fetchOrdersByCustomer(userId: widget.userId!);
     }
@@ -66,21 +67,33 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
 
   List<Order> _getFilteredOrders(OrderController controller, String status) {
     List<Order> filteredOrders;
-    
+
     if (status == 'all') {
       filteredOrders = controller.orders;
     } else {
-      filteredOrders = controller.orders.where((order) => order.status == status).toList();
+      filteredOrders = controller.orders
+          .where((order) => order.status == status)
+          .toList();
     }
 
     // เรียงออเดอร์ตาม priority: active orders ก่อน แล้วเรียงตามวันที่
     filteredOrders.sort((a, b) {
-      final aActive = ['waiting', 'accepted', 'preparing', 'delivering'].contains(a.status);
-      final bActive = ['waiting', 'accepted', 'preparing', 'delivering'].contains(b.status);
-      
+      final aActive = [
+        'waiting',
+        'accepted',
+        'preparing',
+        'delivering',
+      ].contains(a.status);
+      final bActive = [
+        'waiting',
+        'accepted',
+        'preparing',
+        'delivering',
+      ].contains(b.status);
+
       if (aActive && !bActive) return -1;
       if (!aActive && bActive) return 1;
-      
+
       return b.createdAt.compareTo(a.createdAt);
     });
 
@@ -101,10 +114,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
       appBar: AppBar(
         title: const Text(
           'ออเดอร์ของฉัน',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         backgroundColor: const Color(0xFF34C759),
         foregroundColor: Colors.white,
@@ -115,7 +125,10 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
             builder: (context, controller, child) {
               return Container(
                 margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -124,8 +137,8 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      controller.isSocketConnected 
-                          ? Icons.wifi 
+                      controller.isSocketConnected
+                          ? Icons.wifi
                           : Icons.wifi_off,
                       size: 16,
                       color: Colors.white,
@@ -151,10 +164,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
             height: 50,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF34C759),
-                  const Color(0xFF28A745),
-                ],
+                colors: [const Color(0xFF34C759), const Color(0xFF28A745)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -181,7 +191,10 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
                     final count = _getOrderCountByStatus(controller, entry.key);
                     return Tab(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -189,7 +202,10 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
                             if (count > 0) ...[
                               const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.3),
                                   borderRadius: BorderRadius.circular(10),
@@ -217,9 +233,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
       body: Consumer<OrderController>(
         builder: (context, controller, child) {
           if (controller.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (controller.error != null) {
@@ -230,7 +244,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
             controller: _tabController,
             children: _statusTabs.keys.map((status) {
               final filteredOrders = _getFilteredOrders(controller, status);
-              
+
               if (filteredOrders.isEmpty) {
                 return _buildEmptyState(status);
               }
@@ -240,9 +254,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
                 child: Column(
                   children: [
                     if (status == 'all') _buildSummaryCard(controller),
-                    Expanded(
-                      child: _buildOrdersList(filteredOrders),
-                    ),
+                    Expanded(child: _buildOrdersList(filteredOrders)),
                   ],
                 ),
               );
@@ -254,106 +266,219 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
   }
 
   Widget _buildSummaryCard(OrderController controller) {
-    final activeOrders = controller.orders.where((order) => 
-      ['waiting', 'accepted', 'delivering'].contains(order.status)
-    ).length;
-
-    final completedToday = controller.orders.where((order) {
-      final today = DateTime.now();
-      return order.status == 'completed' &&
-          order.createdAt.day == today.day &&
+    final today = DateTime.now();
+    final todayOrders = controller.orders.where((order) {
+      return order.createdAt.day == today.day &&
           order.createdAt.month == today.month &&
           order.createdAt.year == today.year;
-    }).length;
+    }).toList();
 
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    final todayEarnings = todayOrders
+        .where((order) => order.status == 'completed')
+        .fold(0.0, (sum, order) => sum + order.totalPrice);
+
+    // Count orders by status for today
+    final statusCounts = <String, int>{};
+    for (var status in _statusTabs.keys) {
+      statusCounts[status] = todayOrders
+          .where((order) => order.status == status)
+          .length;
+    }
+
+    return SliverToBoxAdapter(
+      child: Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.green.shade50, Colors.green.shade100],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: activeOrders > 0 ? Colors.orange.shade100 : primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              activeOrders > 0 ? Icons.shopping_bag : Icons.check_circle,
-              color: activeOrders > 0 ? Colors.orange.shade600 : primaryColor,
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.green.shade200),
+        ),
+        child: Column(
+          children: [
+            // Error display
+            if (controller.error != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade300),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: Colors.red.shade700,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        controller.error!,
+                        style: TextStyle(
+                          color: Colors.red.shade700,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Main summary row
+            Row(
               children: [
-                if (activeOrders > 0) ...[
-                  Text(
-                    'ออเดอร์ที่กำลังดำเนินการ',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade200,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  Text(
-                    '$activeOrders ออเดอร์',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange.shade600,
-                    ),
+                  child: Icon(
+                    Icons.restaurant_menu,
+                    color: Colors.green.shade700,
+                    size: 32,
                   ),
-                ] else ...[
-                  Text(
-                    'ออเดอร์ที่เสร็จสิ้นวันนี้',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'รายได้วันนี้',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '฿${todayEarnings.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                      Text(
+                        '${todayOrders.length} ออเดอร์ (ทั้งหมด ${controller.orders.length})',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    '$completedToday ออเดอร์',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: primaryColor,
-                    ),
+                ),
+                // Refresh button
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ],
-                Text(
-                  'ทั้งหมด ${controller.orders.length} ออเดอร์',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
+                  child: IconButton(
+                    onPressed: controller.isLoading
+                        ? null
+                        : _loadCustomerOrders,
+                    icon: controller.isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.refresh),
+                    color: Colors.blue.shade600,
                   ),
                 ),
               ],
             ),
-          ),
-          IconButton(
-            onPressed: controller.isLoading ? null : _loadCustomerOrders,
-            icon: controller.isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.refresh),
-            color: Colors.blue.shade600,
-          ),
-        ],
+
+            const SizedBox(height: 16),
+
+            // Status breakdown with real-time updates
+            Consumer<OrderController>(
+              builder: (context, controller, child) {
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: _statusTabs.entries.map((entry) {
+                      final status = entry.key;
+                      final label = entry.value;
+                      final count = controller.getOrdersByStatus(status).length;
+
+                      Color color;
+                      switch (status) {
+                        case 'waiting':
+                          color = Colors.orange;
+                          break;
+                        case 'accepted':
+                          color = Colors.blue;
+                          break;
+                        case 'delivering':
+                          color = Colors.purple;
+                          break;
+                        case 'completed':
+                          color = Colors.green;
+                          break;
+                        default:
+                          color = Colors.grey;
+                      }
+
+                      return Expanded(
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4,
+                                horizontal: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: color.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                count.toString(),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: color,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              label,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -370,14 +495,19 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
   }
 
   Widget _buildOrderCard(Order order) {
-    final isActive = ['waiting', 'accepted', 'preparing', 'delivering'].contains(order.status);
-    
+    final isActive = [
+      'waiting',
+      'accepted',
+      'preparing',
+      'delivering',
+    ].contains(order.status);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: isActive 
+        border: isActive
             ? Border.all(color: order.statusColor, width: 2)
             : null,
         boxShadow: [
@@ -440,7 +570,10 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
                 ),
                 if (isActive) ...[
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: order.statusColor,
                       borderRadius: BorderRadius.circular(12),
@@ -553,11 +686,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.access_time,
-                          size: 14,
-                          color: primaryColor,
-                        ),
+                        Icon(Icons.access_time, size: 14, color: primaryColor),
                         const SizedBox(width: 4),
                         Text(
                           'ประมาณ ${order.createdAt} นาที',
@@ -604,9 +733,15 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
   }
 
   Widget _buildProgressBar(String status) {
-    final steps = ['waiting', 'accepted', 'preparing', 'delivering', 'completed'];
+    final steps = [
+      'waiting',
+      'accepted',
+      'preparing',
+      'delivering',
+      'completed',
+    ];
     final currentIndex = steps.indexOf(status);
-    
+
     return Row(
       children: steps.asMap().entries.map((entry) {
         final index = entry.key;
@@ -620,9 +755,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
                 child: Container(
                   height: 4,
                   decoration: BoxDecoration(
-                    color: isActive 
-                        ? primaryColor 
-                        : Colors.grey.shade300,
+                    color: isActive ? primaryColor : Colors.grey.shade300,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -656,14 +789,17 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
             onPressed: () async {
               Navigator.of(context).pop();
               final controller = context.read<OrderController>();
-              final success = await controller.cancelOrder(order.orderId, "Canceled Order From Customer.");
-              
+              final success = await controller.cancelOrder(
+                order.orderId,
+                "Canceled Order From Customer.",
+              );
+
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      success 
-                          ? 'ยกเลิกออเดอร์เรียบร้อย' 
+                      success
+                          ? 'ยกเลิกออเดอร์เรียบร้อย'
                           : 'ไม่สามารถยกเลิกได้: ${controller.error}',
                     ),
                     backgroundColor: success ? Colors.green : Colors.red,
@@ -688,11 +824,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red.shade300,
-            ),
+            Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
             const SizedBox(height: 16),
             Text(
               'เกิดข้อผิดพลาด',
@@ -706,10 +838,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
             Text(
               controller.error ?? 'ไม่สามารถโหลดข้อมูลได้',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
@@ -724,7 +853,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
 
   Widget _buildEmptyState(String status) {
     String title, subtitle;
-    
+
     switch (status) {
       case 'waiting':
         title = 'ไม่มีออเดอร์ที่รอยืนยัน';
@@ -781,10 +910,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
             const SizedBox(height: 8),
             Text(
               subtitle,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade500,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -810,7 +936,15 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
     } else if (difference.inDays == 0) {
       return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     } else if (difference.inDays < 7) {
-      final weekdays = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'อาทิตย์'];
+      final weekdays = [
+        'จันทร์',
+        'อังคาร',
+        'พุธ',
+        'พฤหัสบดี',
+        'ศุกร์',
+        'เสาร์',
+        'อาทิตย์',
+      ];
       final weekday = weekdays[dateTime.weekday - 1];
       return '$weekday ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     } else {
