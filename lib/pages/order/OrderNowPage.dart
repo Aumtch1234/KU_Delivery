@@ -7,7 +7,7 @@ import 'package:delivery/APIs/Users/AddAddressAPI.dart';
 import 'package:delivery/pages/LoadingOverlay/LoadingOverlay.dart';
 import 'package:delivery/pages/basket/models/basket_item.dart';
 import 'package:delivery/pages/bottom/CustomerOrderPage.dart';
-import 'package:delivery/pages/bottom/ShopPage.dart';
+import 'package:delivery/pages/bottom/MainNavigation.dart';
 import 'package:delivery/pages/my_Address/models.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -968,7 +968,7 @@ class _OrderNowPageState extends State<OrderNowPage> {
                           // เวลากด back ออกจาก CustomerOrderPage ให้ไป ShopPage
                           Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(builder: (_) => ShopPage()),
+                            MaterialPageRoute(builder: (_) => MainNavigation()),
                           );
                         });
                       } else {

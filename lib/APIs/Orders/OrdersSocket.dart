@@ -5,6 +5,8 @@ import 'package:delivery/APIs/api_config.dart';
 import 'package:delivery/pages/order/models/order_model.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 
 class OrderController extends ChangeNotifier {
   final SocketService _socketService = SocketService();
@@ -101,10 +103,23 @@ class OrderController extends ChangeNotifier {
   }
 
   // Handle new order notification
-  void _handleNewOrderNotification(dynamic data) {
-    // Refresh orders list when new order comes in
-    fetchOrders();
+void _handleNewOrderNotification(dynamic data) {
+  // Refresh orders list when new order comes in
+  fetchOrders();
+
+  // ✅ แสดง SnackBar แจ้งเตือนออเดอร์ใหม่
+  final context = navigatorKey.currentContext;
+  if (context != null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("🔔 มีออเดอร์ใหม่! OrderID: ${data['order_id']}"),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
+}
+
 
   // Watch specific order
   void watchOrder(int orderId) {
@@ -142,7 +157,7 @@ class OrderController extends ChangeNotifier {
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
       );
-      print("📦 Order JSON: ${jsonEncode(json)}");
+      print("📦 Order JSON: ${response.body}");
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
