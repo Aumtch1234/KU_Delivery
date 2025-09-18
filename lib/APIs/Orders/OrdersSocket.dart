@@ -5,8 +5,6 @@ import 'package:delivery/APIs/api_config.dart';
 import 'package:delivery/pages/order/models/order_model.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
 
 class OrderController extends ChangeNotifier {
   final SocketService _socketService = SocketService();
@@ -36,24 +34,14 @@ class OrderController extends ChangeNotifier {
   }
 
   // Setup socket event listeners
-  // ใน order_controller.dart
   void _setupSocketListeners() {
-    _socketService.on('order:updated', (data) async {
+    _socketService.on('order:updated', (data) {
       print('📦 Order updated: $data');
-
-      // Update state
       _handleOrderUpdate(data);
-
-      // 🔄 ถ้ามี userId ให้ reload order list อัตโนมัติ
-      if (_currentOrder?.userId != null) {
-        await fetchOrdersByCustomer(userId: _currentOrder!.userId);
-      }
-
-      notifyListeners();
     });
 
-    _socketService.on('customer:newOrder', (data) {
-      print('🔔 New order for customer: $data');
+    _socketService.on('new_order_notification', (data) {
+      print('🔔 New order notification: $data');
       _handleNewOrderNotification(data);
     });
 
@@ -103,23 +91,10 @@ class OrderController extends ChangeNotifier {
   }
 
   // Handle new order notification
-void _handleNewOrderNotification(dynamic data) {
-  // Refresh orders list when new order comes in
-  fetchOrders();
-
-  // ✅ แสดง SnackBar แจ้งเตือนออเดอร์ใหม่
-  final context = navigatorKey.currentContext;
-  if (context != null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("🔔 มีออเดอร์ใหม่! OrderID: ${data['order_id']}"),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+  void _handleNewOrderNotification(dynamic data) {
+    // Refresh orders list when new order comes in
+    fetchOrders();
   }
-}
-
 
   // Watch specific order
   void watchOrder(int orderId) {
@@ -157,7 +132,7 @@ void _handleNewOrderNotification(dynamic data) {
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
       );
-      print("📦 Order JSON: ${response.body}");
+      print("📦 Order JSON: ${jsonEncode(json)}");
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -449,37 +424,28 @@ void _handleNewOrderNotification(dynamic data) {
   // Cancel order
   Future<bool> cancelOrder(int orderId, String reason) async {
     try {
-      print("🚀 เริ่มยกเลิกออเดอร์ ID: $orderId ด้วยเหตุผล: $reason");
-
       final response = await http.post(
-        Uri.parse('$baseUrl/orders/cancel'),
+        Uri.parse('$baseUrl/cancel_order'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'order_id': orderId, 'reason': reason}),
       );
 
-      print("📡 Response status: ${response.statusCode}");
-      print("📦 Response body: ${response.body}");
-
       final data = json.decode(response.body);
-
       if (response.statusCode == 200 && data['success'] == true) {
-        print("✅ ยกเลิกออเดอร์สำเร็จ: ${data.toString()}");
         return true;
       } else {
         _error = data['error'] ?? 'Failed to cancel order';
-        print("❌ ยกเลิกออเดอร์ไม่สำเร็จ: $_error");
         notifyListeners();
         return false;
       }
     } catch (e) {
       _error = 'Network error: $e';
-      print("⚠️ เกิดข้อผิดพลาดเครือข่าย: $e");
       notifyListeners();
       return false;
     }
   }
 
-  // NEW: Fetch orders by customer ID
+// NEW: Fetch orders by customer ID
   Future<void> fetchOrdersByCustomer({required int userId}) async {
     _setLoading(true);
     _error = null;
