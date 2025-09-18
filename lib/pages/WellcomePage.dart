@@ -162,13 +162,8 @@ class wellcomePage extends StatelessWidget {
                     children: [
                       ElevatedButton(
                         onPressed: () {
-                          // TODO: เพิ่มหน้าจอ login ถ้ามี
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LoginPage(),
-                            ),
-                          );
+                          // ใช้ named route แทนการสร้าง MaterialPageRoute
+                          Navigator.pushNamed(context, '/login');
                         },
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 50),
@@ -189,12 +184,7 @@ class wellcomePage extends StatelessWidget {
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const RegisterPage(),
-                            ),
-                          );
+                          Navigator.pushNamed(context, '/register');
                         },
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 50),

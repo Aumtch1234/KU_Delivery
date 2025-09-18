@@ -120,12 +120,7 @@ class _LoginPageState extends State<LoginPage> {
                 const Text('ยังไม่มีบัญชี?'),
                 TextButton(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const RegisterPage(),
-                      ),
-                    );
+                    Navigator.pushNamed(context, '/register');
                   },
                   child: const Text(
                     'สมัครสมาชิก',
