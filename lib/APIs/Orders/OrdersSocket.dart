@@ -273,6 +273,7 @@ class OrderController extends ChangeNotifier {
             orderId: data['data']['order_id'],
             userId: 0, // Will be filled from full order data
             marketId: data['data']['market_id'] ?? 0,
+            shopName: data['data']['shop_name'],
             riderId: data['data']['rider_id'],
             address: data['data']['address'] ?? '',
             deliveryType: data['data']['delivery_type'] ?? '',
@@ -423,24 +424,109 @@ class OrderController extends ChangeNotifier {
   // Cancel order
   Future<bool> cancelOrder(int orderId, String reason) async {
     try {
+      print("🚀 เริ่มยกเลิกออเดอร์ ID: $orderId ด้วยเหตุผล: $reason");
+
       final response = await http.post(
-        Uri.parse('$baseUrl/cancel_order'),
+        Uri.parse('$baseUrl/orders/cancel'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'order_id': orderId, 'reason': reason}),
       );
 
+      print("📡 Response status: ${response.statusCode}");
+      print("📦 Response body: ${response.body}");
+
       final data = json.decode(response.body);
+
       if (response.statusCode == 200 && data['success'] == true) {
+        print("✅ ยกเลิกออเดอร์สำเร็จ: ${data.toString()}");
         return true;
       } else {
         _error = data['error'] ?? 'Failed to cancel order';
+        print("❌ ยกเลิกออเดอร์ไม่สำเร็จ: $_error");
         notifyListeners();
         return false;
       }
     } catch (e) {
       _error = 'Network error: $e';
+      print("⚠️ เกิดข้อผิดพลาดเครือข่าย: $e");
       notifyListeners();
       return false;
+    }
+  }
+
+  // NEW: Fetch orders by customer ID
+  Future<void> fetchOrdersByCustomer({required int userId}) async {
+    _setLoading(true);
+    _error = null;
+
+    try {
+      String url = '$baseUrl/orders?user_id=$userId';
+
+      print('👤 Fetching orders for customer $userId from: $url');
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      print('📡 Response status: ${response.statusCode}');
+      print(
+        '📦 Response body (first 500 chars): ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}',
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['success'] == true) {
+          final List<dynamic> ordersData = data['data'] ?? [];
+
+          print('📦 Raw orders count from API: ${ordersData.length}');
+
+          // แปลงเป็น Order objects
+          final parsedOrders = ordersData
+              .map((orderJson) {
+                try {
+                  return Order.fromJson(orderJson);
+                } catch (e) {
+                  print('❌ Error parsing order: $e');
+                  print('📄 Failed Order JSON: $orderJson');
+                  return null;
+                }
+              })
+              .where((o) => o != null)
+              .cast<Order>()
+              .toList();
+
+          // เรียงตาม createdAt ใหม่สุดก่อน
+          _orders = parsedOrders
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+          print('✅ Successfully loaded ${_orders.length} customer orders');
+          for (var o in _orders) {
+            print(
+              '   ↳ OrderID: ${o.orderId}, status: ${o.status}, createdAt: ${o.createdAt}',
+            );
+          }
+
+          // Group orders by status for logging
+          final statusGroups = <String, int>{};
+          for (var order in _orders) {
+            statusGroups[order.status] = (statusGroups[order.status] ?? 0) + 1;
+          }
+          print('📊 Customer orders by status: $statusGroups');
+        } else {
+          _error = data['error'] ?? 'Failed to fetch customer orders';
+          print('❌ API Error: $_error');
+        }
+      } else {
+        _error = 'HTTP Error: ${response.statusCode} - ${response.body}';
+        print('❌ HTTP Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      _error = 'Network error: $e';
+      print('❌ Network error: $e');
+    } finally {
+      _setLoading(false);
     }
   }
 
@@ -515,6 +601,7 @@ extension OrderCopyWith on Order {
       orderId: orderId ?? this.orderId,
       userId: userId ?? this.userId,
       marketId: marketId ?? this.marketId,
+      shopName: shopName,
       riderId: riderId ?? this.riderId,
       address: address ?? this.address,
       deliveryType: deliveryType ?? this.deliveryType,

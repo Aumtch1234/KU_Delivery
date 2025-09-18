@@ -14,6 +14,7 @@ class Order {
   final int orderId;
   final int userId;
   final int marketId;
+  final String shopName;
   final int? riderId;
   final String address;
   final String deliveryType;
@@ -31,6 +32,7 @@ class Order {
     required this.orderId,
     required this.userId,
     required this.marketId,
+    required this.shopName,
     this.riderId,
     required this.address,
     required this.deliveryType,
@@ -50,6 +52,7 @@ class Order {
       orderId: json['order_id'],
       userId: json['user_id'],
       marketId: json['market_id'],
+      shopName: json['shop_name'],
       riderId: json['rider_id'],
       address: json['address'],
       deliveryType: json['delivery_type'],
@@ -72,6 +75,7 @@ class Order {
       'order_id': orderId,
       'user_id': userId,
       'market_id': marketId,
+      'shop_name': shopName,
       'rider_id': riderId,
       'address': address,
       'delivery_type': deliveryType,
