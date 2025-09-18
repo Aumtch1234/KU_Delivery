@@ -17,17 +17,33 @@ class _OrdersListPageState extends State<OrdersListPage>
     with TickerProviderStateMixin {
   late TabController _tabController;
 
+  // Updated status tabs for shop workflow
   final Map<String, String> _statusTabs = {
-    'waiting': 'รอยืนยัน',
-    'accepted': 'กำลังทำ',
-    'delivering': 'กำลังส่ง',
-    'completed': 'เสร็จแล้ว',
+    'waiting': 'รอยืนยัน',      // ออเดอร์ใหม่ที่รอร้านรับ
+    'accepted': 'กำลังทำ',      // ร้านรับแล้ว กำลังเตรียมอาหาร
+    'delivering': 'กำลังส่ง',    // ไรเดอร์รับไปส่งแล้ว
+    'completed': 'เสร็จแล้ว',    // ส่งเสร็จแล้ว
     'cancelled': 'ปฏิเสธแล้ว'
   };
+
+  String get userType {
+    if (widget.marketId != null) return 'shop';
+    return 'customer';
+  }
+
+  int? get currentUserId {
+    switch (userType) {
+      case 'shop':
+        return widget.marketId;
+      default:
+        return null;
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+
     _tabController = TabController(length: _statusTabs.length, vsync: this);
     _initializeData();
   }
@@ -35,14 +51,12 @@ class _OrdersListPageState extends State<OrdersListPage>
   Future<void> _initializeData() async {
     final controller = context.read<OrderController>();
 
-    print('🏪 Initializing shop data for market: ${widget.marketId}');
+    print('🏪 Initializing data for market: ${widget.marketId}');
 
-    // Initialize socket with market ID
-    if (!controller.isSocketConnected && widget.marketId != null) {
-      await controller.initializeSocket(marketId: widget.marketId);
+    if (!controller.isSocketConnected) {
+      await controller.initializeSocket();
     }
 
-    // Fetch orders for this market only
     if (widget.marketId != null) {
       await controller.fetchOrdersByMarket(marketId: widget.marketId!);
     }
@@ -64,451 +78,11 @@ class _OrdersListPageState extends State<OrdersListPage>
             slivers: [
               _buildAppBar(controller),
               _buildSummaryCard(controller),
-              _buildTabBar(controller),
+              _buildTabBar(),
               _buildOrdersList(controller),
             ],
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildTabBar(OrderController controller) {
-    return SliverPersistentHeader(
-      delegate: _SliverTabBarDelegate(
-        TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          labelColor: Colors.green,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: Colors.green,
-          indicatorWeight: 3,
-          labelStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-          tabs: _statusTabs.entries.map((entry) {
-            final status = entry.key;
-            final label = entry.value;
-            final count = controller.getOrdersByStatus(status).length;
-            
-            return Tab(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(label),
-                  if (count > 0) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        count.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-      pinned: true,
-    );
-  }
-
-  Widget _buildOrdersList(OrderController controller) {
-    return SliverFillRemaining(
-      child: TabBarView(
-        controller: _tabController,
-        children: _statusTabs.entries.map((entry) {
-          final status = entry.key;
-          return Consumer<OrderController>(
-            builder: (context, controller, child) {
-              return _buildOrdersForStatus(controller, status);
-            },
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildOrdersForStatus(OrderController controller, String status) {
-    if (controller.isLoading) {
-      return _buildLoadingState();
-    }
-
-    final orders = controller.getOrdersByStatus(status);
-
-    if (orders.isEmpty) {
-      return _buildEmptyState(status);
-    }
-
-    return RefreshIndicator(
-      onRefresh: () => _initializeData(),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: orders.length,
-        itemBuilder: (context, index) {
-          final order = orders[index];
-          return Consumer<OrderController>(
-            builder: (context, controller, child) {
-              // Find the most up-to-date version of this order
-              final currentOrder = controller.orders.firstWhere(
-                (o) => o.orderId == order.orderId,
-                orElse: () => order,
-              );
-              
-              return _buildOrderCard(currentOrder, controller);
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildOrderCard(Order order, OrderController controller) {
-    return Container(
-      key: ValueKey(order.orderId), // Add key for better rebuilds
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        border: Border.all(color: order.statusColor.withOpacity(0.3)),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          children: [
-            // Status header
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: order.statusColor.withOpacity(0.1),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: order.statusColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    order.statusText,
-                    style: TextStyle(
-                      color: order.statusColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    'อัปเดต: ${_formatDateTime(order.updatedAt)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Order content
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Order ID and Amount
-                  Row(
-                    children: [
-                      Text(
-                        'ออเดอร์ #${order.orderId}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '฿${order.totalPrice.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Action Buttons - ใช้ Consumer เพื่อ real-time updates
-                  Consumer<OrderController>(
-                    builder: (context, controller, child) {
-                      // Get the latest version of this order
-                      final latestOrder = controller.orders.firstWhere(
-                        (o) => o.orderId == order.orderId,
-                        orElse: () => order,
-                      );
-                      
-                      return _buildActionButtons(latestOrder, controller);
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(Order order, OrderController controller) {
-    return Row(
-      children: [
-        // Reject button (only for waiting orders)
-        if (order.status == 'waiting') ...[
-          Expanded(
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.red),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onPressed: controller.isLoading 
-                  ? null 
-                  : () => _showRejectDialog(order, controller),
-              child: controller.isLoading 
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text(
-                      'ปฏิเสธ',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-            ),
-          ),
-          const SizedBox(width: 12),
-        ],
-        
-        // Main action button
-        Expanded(
-          flex: order.status == 'waiting' ? 2 : 1,
-          child: _buildMainActionButton(order, controller),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMainActionButton(Order order, OrderController controller) {
-    String buttonText;
-    Color buttonColor;
-    VoidCallback? onPressed;
-    
-    switch (order.status) {
-      case 'waiting':
-        buttonText = 'รับออเดอร์';
-        buttonColor = Colors.green;
-        onPressed = controller.isLoading 
-            ? null 
-            : () => _acceptOrder(order, controller);
-        break;
-      case 'accepted':
-        buttonText = 'พร้อมส่ง';
-        buttonColor = Colors.blue;
-        onPressed = controller.isLoading 
-            ? null 
-            : () => _markReady(order, controller);
-        break;
-      case 'delivering':
-        buttonText = 'กำลังส่ง...';
-        buttonColor = Colors.purple;
-        onPressed = null;
-        break;
-      case 'completed':
-        buttonText = 'เสร็จแล้ว';
-        buttonColor = Colors.grey;
-        onPressed = null;
-        break;
-      default:
-        buttonText = order.status;
-        buttonColor = Colors.grey;
-        onPressed = null;
-    }
-
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: buttonColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        elevation: onPressed != null ? 2 : 0,
-      ),
-      onPressed: onPressed,
-      child: controller.isLoading && onPressed != null
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            )
-          : Text(
-              buttonText,
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-    );
-  }
-
-  Future<void> _acceptOrder(Order order, OrderController controller) async {
-    print('🏪 Shop accepting order ${order.orderId}');
-    
-    final success = await controller.acceptOrder(order.orderId, widget.marketId!);
-    
-    if (success && mounted) {
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: 8),
-              Text('รับออเดอร์ #${order.orderId} เรียบร้อย'),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      
-      // Debug: Print current state
-      controller.debugPrintOrdersState();
-      
-    } else if (mounted) {
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error, color: Colors.white),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text('เกิดข้อผิดพลาด: ${controller.error ?? "Unknown error"}'),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
-  }
-
-  Future<void> _markReady(Order order, OrderController controller) async {
-    print('🏪 Shop marking order ${order.orderId} ready');
-    
-    final success = await controller.updateOrderStatus(order.orderId, 'delivering');
-    
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.delivery_dining, color: Colors.white),
-              const SizedBox(width: 8),
-              Text('แจ้งพร้อมส่งออเดอร์ #${order.orderId}'),
-            ],
-          ),
-          backgroundColor: Colors.blue,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      
-      controller.debugPrintOrdersState();
-      
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('เกิดข้อผิดพลาด: ${controller.error ?? "Unknown error"}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  void _showRejectDialog(Order order, OrderController controller) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('ปฏิเสธออเดอร์'),
-        content: Text('คุณต้องการปฏิเสธออเดอร์ #${order.orderId} หรือไม่?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('ยกเลิก'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () async {
-              Navigator.of(context).pop();
-              
-              print('🏪 Shop rejecting order ${order.orderId}');
-              
-              final success = await controller.updateOrderStatus(
-                order.orderId, 
-                'cancelled',
-              );
-              
-              if (success && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        const Icon(Icons.cancel, color: Colors.white),
-                        const SizedBox(width: 8),
-                        Text('ปฏิเสธออเดอร์ #${order.orderId} เรียบร้อย'),
-                      ],
-                    ),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            child: const Text('ปฏิเสธ', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }
@@ -531,10 +105,10 @@ class _OrdersListPageState extends State<OrdersListPage>
               ),
               Expanded(
                 child: Text(
-                  'ออเดอร์ร้านอาหาร (Market ${widget.marketId})',
+                  userType == 'shop' ? 'ออเดอร์ร้านอาหาร' : 'ออเดอร์ของฉัน',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -717,77 +291,605 @@ class _OrdersListPageState extends State<OrdersListPage>
 
             const SizedBox(height: 16),
             
-            // Status breakdown with real-time updates
-            Consumer<OrderController>(
-              builder: (context, controller, child) {
-                return Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: _statusTabs.entries.map((entry) {
-                      final status = entry.key;
-                      final label = entry.value;
-                      final count = controller.getOrdersByStatus(status).length;
-                      
-                      Color color;
-                      switch (status) {
-                        case 'waiting':
-                          color = Colors.orange;
-                          break;
-                        case 'accepted':
-                          color = Colors.blue;
-                          break;
-                        case 'delivering':
-                          color = Colors.purple;
-                          break;
-                        case 'completed':
-                          color = Colors.green;
-                          break;
-                        default:
-                          color = Colors.grey;
-                      }
+            // Status breakdown
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: _statusTabs.entries.map((entry) {
+                  final status = entry.key;
+                  final label = entry.value;
+                  final count = statusCounts[status] ?? 0;
+                  
+                  Color color;
+                  switch (status) {
+                    case 'waiting':
+                      color = Colors.orange;
+                      break;
+                    case 'accepted':
+                      color = Colors.blue;
+                      break;
+                    case 'delivering':
+                      color = Colors.purple;
+                      break;
+                    case 'completed':
+                      color = Colors.green;
+                      break;
+                    default:
+                      color = Colors.grey;
+                  }
 
-                      return Expanded(
-                        child: Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                              decoration: BoxDecoration(
-                                color: color.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                count.toString(),
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: color,
-                                ),
-                              ),
+                  return Expanded(
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            count.toString(),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: color,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              label,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey.shade700,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
+                          ),
                         ),
-                      );
-                    }).toList(),
-                  ),
-                );
-              },
+                        const SizedBox(height: 4),
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTabBar() {
+    return SliverPersistentHeader(
+      delegate: _SliverTabBarDelegate(
+        TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          labelColor: Colors.green,
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: Colors.green,
+          indicatorWeight: 3,
+          labelStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.normal,
+          ),
+          tabs: _statusTabs.entries.map((entry) {
+            final status = entry.key;
+            final label = entry.value;
+            
+            return Consumer<OrderController>(
+              builder: (context, controller, child) {
+                final count = controller.getOrdersByStatus(status).length;
+                return Tab(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(label),
+                      if (count > 0) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            count.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
+            );
+          }).toList(),
+        ),
+      ),
+      pinned: true,
+    );
+  }
+
+  Widget _buildOrdersList(OrderController controller) {
+    return SliverFillRemaining(
+      child: TabBarView(
+        controller: _tabController,
+        children: _statusTabs.entries.map((entry) {
+          final status = entry.key;
+          return _buildOrdersForStatus(controller, status);
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildOrdersForStatus(OrderController controller, String status) {
+    if (controller.isLoading) {
+      return _buildLoadingState();
+    }
+
+    if (controller.error != null) {
+      return _buildErrorState(controller);
+    }
+
+    final orders = controller.getOrdersByStatus(status);
+
+    if (orders.isEmpty) {
+      return _buildEmptyState(status);
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => _initializeData(),
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: orders.length,
+        itemBuilder: (context, index) {
+          final order = orders[index];
+          return _buildOrderCard(order, controller);
+        },
+      ),
+    );
+  }
+
+  Widget _buildOrderCard(Order order, OrderController controller) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: order.statusColor.withOpacity(0.3)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          children: [
+            // Status header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: order.statusColor.withOpacity(0.1),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: order.statusColor,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    order.statusText,
+                    style: TextStyle(
+                      color: order.statusColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      order.paymentMethod,
+                      style: const TextStyle(
+                        color: Colors.blue,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _formatDateTime(order.createdAt),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Order content
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Order ID and Amount
+                  Row(
+                    children: [
+                      Text(
+                        'ออเดอร์ #${order.orderId}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '฿${order.totalPrice.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Customer Address
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade100,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.location_on,
+                          color: Colors.red,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'ที่อยู่ลูกค้า',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              order.address.isNotEmpty 
+                                  ? order.address 
+                                  : 'กำลังโหลดที่อยู่...',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: order.address.isNotEmpty
+                                    ? Colors.grey.shade700
+                                    : Colors.orange.shade600,
+                                fontStyle: order.address.isNotEmpty
+                                    ? FontStyle.normal
+                                    : FontStyle.italic,
+                              ),
+                            ),
+                            if (order.distanceKm != null && order.distanceKm! > 0) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                'ระยะทาง: ${order.distanceKm!.toStringAsFixed(1)} กม. | ค่าส่ง: ฿${order.deliveryFee.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Order Items
+                  if (order.items.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.restaurant_menu,
+                                size: 16,
+                                color: Colors.green,
+                              ),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'รายการอาหาร',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                '${order.items.length} รายการ',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          ...order.items.take(3).map(
+                            (item) => Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.shade100,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '${item.quantity}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.green.shade700,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      item.foodName,
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                  ),
+                                  Text(
+                                    '฿${item.subtotal.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (order.items.length > 3)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                'และอีก ${order.items.length - 3} รายการ...',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 16),
+
+                  // Action Buttons
+                  _buildActionButtons(order, controller),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(Order order, OrderController controller) {
+    return Row(
+      children: [
+        // Reject button (only for waiting orders)
+        if (order.status == 'waiting') ...[
+          Expanded(
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.red),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () => _showRejectDialog(order, controller),
+              child: const Text(
+                'ปฏิเสธ',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+        ],
+        
+        // Main action button
+        Expanded(
+          flex: order.status == 'waiting' ? 2 : 1,
+          child: _buildMainActionButton(order, controller),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMainActionButton(Order order, OrderController controller) {
+    String buttonText;
+    Color buttonColor;
+    VoidCallback? onPressed;
+    
+    switch (order.status) {
+      case 'waiting':
+        buttonText = 'รับออเดอร์';
+        buttonColor = Colors.green;
+        onPressed = () => _acceptOrder(order, controller);
+        break;
+      case 'accepted':
+        buttonText = 'พร้อมส่ง';
+        buttonColor = Colors.blue;
+        onPressed = () => _markReady(order, controller);
+        break;
+      case 'delivering':
+        buttonText = 'กำลังส่ง...';
+        buttonColor = Colors.purple;
+        onPressed = null; // Read only
+        break;
+      case 'completed':
+        buttonText = 'เสร็จแล้ว';
+        buttonColor = Colors.grey;
+        onPressed = null; // Read only
+        break;
+      default:
+        buttonText = order.status;
+        buttonColor = Colors.grey;
+        onPressed = null;
+    }
+
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: buttonColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        elevation: onPressed != null ? 2 : 0,
+      ),
+      onPressed: onPressed,
+      child: Text(
+        buttonText,
+        style: const TextStyle(
+          fontSize: 16,
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _acceptOrder(Order order, OrderController controller) async {
+    final success = await controller.acceptOrder(order.orderId, widget.marketId!);
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('รับออเดอร์เรียบร้อย ✅'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('เกิดข้อผิดพลาด: ${controller.error}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _markReady(Order order, OrderController controller) async {
+    final success = await controller.updateOrderStatus(order.orderId, 'delivering');
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('แจ้งพร้อมส่งเรียบร้อย 🚀'),
+          backgroundColor: Colors.blue,
+        ),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('เกิดข้อผิดพลาด: ${controller.error}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _showRejectDialog(Order order, OrderController controller) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('ปฏิเสธออเดอร์'),
+        content: Text('คุณต้องการปฏิเสธออเดอร์ #${order.orderId} หรือไม่?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('ยกเลิก'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final success = await controller.updateOrderStatus(
+                order.orderId, 
+                'cancelled',
+              );
+              if (success && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('ปฏิเสธออเดอร์เรียบร้อย'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text('ปฏิเสธ', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
@@ -797,6 +899,40 @@ class _OrdersListPageState extends State<OrdersListPage>
       child: Padding(
         padding: EdgeInsets.all(40),
         child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(OrderController controller) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+            const SizedBox(height: 16),
+            Text(
+              'เกิดข้อผิดพลาด',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.red.shade700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              controller.error ?? 'ไม่สามารถโหลดข้อมูลได้',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => _initializeData(),
+              child: const Text('ลองใหม่'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -855,12 +991,12 @@ class _OrdersListPageState extends State<OrdersListPage>
     final now = DateTime.now();
     final difference = now.difference(dateTime);
 
-    if (difference.inMinutes < 1) {
-      return 'เมื่อสักครู่';
-    } else if (difference.inHours < 1) {
-      return '${difference.inMinutes} นาทีที่แล้ว';
-    } else if (difference.inDays == 0) {
+    if (difference.inDays == 0) {
       return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    } else if (difference.inDays < 7) {
+      final weekdays = ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'];
+      final weekday = weekdays[dateTime.weekday - 1];
+      return '$weekday ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     } else {
       return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
     }
