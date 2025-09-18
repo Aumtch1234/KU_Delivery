@@ -1,12 +1,17 @@
+import 'dart:convert';
+
 import 'package:delivery/APIs/GoogleMap/DistanceAPI.dart';
 import 'package:delivery/APIs/Orders/OrdersAPI.dart';
 import 'package:delivery/APIs/SOCKET_IO/SocketService.dart';
 import 'package:delivery/APIs/Users/AddAddressAPI.dart';
+import 'package:delivery/pages/LoadingOverlay/LoadingOverlay.dart';
 import 'package:delivery/pages/basket/models/basket_item.dart';
+import 'package:delivery/pages/bottom/CustomerOrderPage.dart';
+import 'package:delivery/pages/bottom/ShopPage.dart';
 import 'package:delivery/pages/my_Address/models.dart';
-import 'package:delivery/pages/order/WaitingAcceptPage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../basket/providers/basket_provider.dart';
 
 class OrderNowPage extends StatefulWidget {
@@ -18,6 +23,9 @@ class OrderNowPage extends StatefulWidget {
 }
 
 class _OrderNowPageState extends State<OrderNowPage> {
+  int? userId;
+  bool isLoading = true; // 🔥 state สำหรับโหลด
+
   String deliveryType = 'แบบ/วางไว้จุดที่ระบุ';
   String paymentMethod = 'เงินสด';
   TextEditingController noteController = TextEditingController();
@@ -28,11 +36,17 @@ class _OrderNowPageState extends State<OrderNowPage> {
   @override
   void initState() {
     super.initState();
-    _loadDefaultAddress().then((_) {
-      final basket = Provider.of<BasketProvider>(context, listen: false);
-      final selectedItems = basket.items.where((e) => e.selected).toList();
-      _calculateDistances(selectedItems);
-    });
+    _initData();
+  }
+
+  Future<void> _initData() async {
+    setState(() => isLoading = true);
+    await _loadUserId();
+    await _loadDefaultAddress();
+    final basket = Provider.of<BasketProvider>(context, listen: false);
+    final selectedItems = basket.items.where((e) => e.selected).toList();
+    await _calculateDistances(selectedItems);
+    setState(() => isLoading = false); // ✅ เสร็จแล้วค่อยปิดโหลด
   }
 
   Map<int, double> distanceMap = {}; // marketId -> distance
@@ -73,6 +87,17 @@ class _OrderNowPageState extends State<OrderNowPage> {
       print("⏱ Duration by store: $durationMap");
     } catch (e) {
       print("❌ Error calculating distances: $e");
+    }
+  }
+
+  Future<void> _loadUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userStr = prefs.getString('user');
+    if (userStr != null) {
+      final userData = jsonDecode(userStr);
+      setState(() {
+        userId = userData['user_id'];
+      });
     }
   }
 
@@ -120,43 +145,46 @@ class _OrderNowPageState extends State<OrderNowPage> {
     final items = basket.items.where((e) => e.selected).toList();
     final total = basket.totalSelectedPrice;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Custom App Bar
-            _buildCustomAppBar(),
+    return LoadingOverlay(
+      isLoading: isLoading, // ✅ ใช้ state
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Custom App Bar
+              _buildCustomAppBar(),
 
-            // Main Content
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    // ส่วนที่อยู่จัดส่ง
-                    _buildAddressSection(),
+              // Main Content
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      // ส่วนที่อยู่จัดส่ง
+                      _buildAddressSection(),
 
-                    // ส่วนรูปแบบการจัดส่ง
-                    _buildDeliveryTypeSection(),
+                      // ส่วนรูปแบบการจัดส่ง
+                      _buildDeliveryTypeSection(),
 
-                    // ส่วนรายการอาหาร
-                    _buildFoodItemsSection(items),
+                      // ส่วนรายการอาหาร
+                      _buildFoodItemsSection(items),
 
-                    // ส่วนการชำระเงิน
-                    _buildPaymentSection(),
+                      // ส่วนการชำระเงิน
+                      _buildPaymentSection(),
 
-                    //
-                    _buildOrderReceipt(items),
+                      //
+                      _buildOrderReceipt(items),
 
-                    const SizedBox(height: 8),
-                  ],
+                      const SizedBox(height: 8),
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            // Bottom Bar
-            _buildBottomBar(items, total),
-          ],
+              // Bottom Bar
+              _buildBottomBar(items, total),
+            ],
+          ),
         ),
       ),
     );
@@ -934,9 +962,15 @@ class _OrderNowPageState extends State<OrderNowPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => OrderTrackingPage(orderId: orderId),
+                            builder: (_) => CustomerOrderPage(userId: userId),
                           ),
-                        );
+                        ).then((_) {
+                          // เวลากด back ออกจาก CustomerOrderPage ให้ไป ShopPage
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (_) => ShopPage()),
+                          );
+                        });
                       } else {
                         print("❌ Failed to create order: ${result['message']}");
                       }

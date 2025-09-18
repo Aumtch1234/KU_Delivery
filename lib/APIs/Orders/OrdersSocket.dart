@@ -34,14 +34,24 @@ class OrderController extends ChangeNotifier {
   }
 
   // Setup socket event listeners
+  // ใน order_controller.dart
   void _setupSocketListeners() {
-    _socketService.on('order:updated', (data) {
+    _socketService.on('order:updated', (data) async {
       print('📦 Order updated: $data');
+
+      // Update state
       _handleOrderUpdate(data);
+
+      // 🔄 ถ้ามี userId ให้ reload order list อัตโนมัติ
+      if (_currentOrder?.userId != null) {
+        await fetchOrdersByCustomer(userId: _currentOrder!.userId);
+      }
+
+      notifyListeners();
     });
 
-    _socketService.on('new_order_notification', (data) {
-      print('🔔 New order notification: $data');
+    _socketService.on('customer:newOrder', (data) {
+      print('🔔 New order for customer: $data');
       _handleNewOrderNotification(data);
     });
 
