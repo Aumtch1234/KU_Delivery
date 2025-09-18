@@ -56,7 +56,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage> with SingleTicker
     final controller = context.read<OrderController>();
     
     if (!controller.isSocketConnected) {
-      await controller.initializeSocket();
+      await controller.initializeSocket(userId: widget.userId);
     }
     
     if (widget.userId != null) {

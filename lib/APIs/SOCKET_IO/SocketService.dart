@@ -9,12 +9,13 @@ class SocketService {
 
   IO.Socket? _socket;
   bool _isConnected = false;
-  
+
   // Server configuration
-  static const String serverUrl = '${ApiConfig.HosttUrl}'; // เปลี่ยนตาม server ของคุณ
-  
+  static const String serverUrl =
+      '${ApiConfig.HosttUrl}'; // เปลี่ยนตาม server ของคุณ
+
   bool get isConnected => _isConnected && _socket != null && _socket!.connected;
-  
+
   Future<void> connect() async {
     if (_socket != null && _socket!.connected) {
       print('✅ Socket already connected');
@@ -23,12 +24,15 @@ class SocketService {
 
     try {
       print('🔄 Attempting to connect to $serverUrl');
-      
-      _socket = IO.io(serverUrl, IO.OptionBuilder()
-          .setTransports(['websocket'])
-          .disableAutoConnect()
-          .setExtraHeaders({'Connection': 'upgrade'})
-          .build());
+
+      _socket = IO.io(
+        serverUrl,
+        IO.OptionBuilder()
+            .setTransports(['websocket'])
+            .disableAutoConnect()
+            .setExtraHeaders({'Connection': 'upgrade'})
+            .build(),
+      );
 
       _socket!.onConnect((data) {
         print('✅ Socket connected: ${_socket!.id}');
@@ -50,10 +54,10 @@ class SocketService {
       });
 
       _socket!.connect();
-      
+
       // Wait for connection with timeout
       await Future.delayed(Duration(seconds: 2));
-      
+
       if (!isConnected) {
         throw Exception('Failed to establish socket connection');
       }
@@ -107,7 +111,7 @@ class SocketService {
         default:
           event = 'customer:watchOrder';
       }
-      
+
       _socket!.emit(event, orderId);
       print('👁️ Watching order $orderId');
     } else {
@@ -170,10 +174,15 @@ class SocketService {
   }
 
   // Emit custom event
-  void emit(String event, dynamic data) {
+  void emit(String event, [dynamic data]) {
     if (isConnected) {
-      _socket!.emit(event, data);
-      print('📡 Emitted event: $event with data: $data');
+      if (data != null) {
+        _socket!.emit(event, data);
+        print('📡 Emitted event: $event with data: $data');
+      } else {
+        _socket!.emit(event);
+        print('📡 Emitted event: $event (no data)');
+      }
     } else {
       print('❌ Cannot emit $event: Socket not connected');
     }
@@ -194,7 +203,10 @@ class SocketService {
   void testConnection() {
     if (isConnected) {
       print('🧪 Testing connection...');
-      _socket!.emit('test', {'message': 'Connection test', 'timestamp': DateTime.now().toIso8601String()});
+      _socket!.emit('test', {
+        'message': 'Connection test',
+        'timestamp': DateTime.now().toIso8601String(),
+      });
     } else {
       print('❌ Cannot test connection: Socket not connected');
       print('Connection status: ${getConnectionStatus()}');
