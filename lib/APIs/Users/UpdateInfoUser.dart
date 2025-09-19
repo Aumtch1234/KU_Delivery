@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:delivery/APIs/middleware/authService.dart';
+import 'package:delivery/APIs/api_config.dart';
 
 class UpdateInfoUser {
-  static const String baseUrl = 'http://10.90.92.44:4000/client';
+  // static const String baseUrl = 'http://10.90.92.44:4000/client';
+  static const String baseUrl = '${ApiConfig.baseUrl}';
 
   static Future<Map<String, dynamic>> updateVerify({
     required String displayName,
@@ -47,20 +49,18 @@ class UpdateInfoUser {
       };
     }
   }
-  static Future<Map<String, dynamic>> sendOtp(String email) async {
-  final response = await http.post(
-    Uri.parse('$baseUrl/send-otp'),
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({'email': email}),
-  );
 
-  if (response.statusCode == 200) {
-    return jsonDecode(response.body);
-  } else {
-    return {'success': false, 'message': 'ส่ง OTP ไม่สำเร็จ'};
+  static Future<Map<String, dynamic>> sendOtp(String email) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/send-otp'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      return {'success': false, 'message': 'ส่ง OTP ไม่สำเร็จ'};
+    }
   }
 }
-
-}
-
-

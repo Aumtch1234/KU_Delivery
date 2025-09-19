@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:delivery/APIs/middleware/authService.dart';
 import 'package:path/path.dart';
+import 'package:delivery/APIs/api_config.dart';
 
 Future<Map<String, dynamic>> UpdateProfileAPI({
   required String displayName,
@@ -15,7 +16,8 @@ Future<Map<String, dynamic>> UpdateProfileAPI({
 }) async {
   final token = await AuthService().getToken();
 
-  final uri = Uri.parse('http://10.90.92.44:4000/client/update-profile');
+  // final uri = Uri.parse('http://10.90.92.44:4000/client/update-profile');
+  final uri = Uri.parse('${ApiConfig.baseUrl}/update-profile');
   final request = http.MultipartRequest('PUT', uri)
     ..headers['Authorization'] = 'Bearer $token'
     ..fields['display_name'] = displayName
@@ -27,7 +29,13 @@ Future<Map<String, dynamic>> UpdateProfileAPI({
 
   if (imageFile != null) {
     final fileName = basename(imageFile.path);
-    request.files.add(await http.MultipartFile.fromPath('Profile', imageFile.path, filename: fileName));
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'Profile',
+        imageFile.path,
+        filename: fileName,
+      ),
+    );
   }
 
   final streamedResponse = await request.send();
@@ -36,6 +44,8 @@ Future<Map<String, dynamic>> UpdateProfileAPI({
   if (response.statusCode == 200) {
     return jsonDecode(response.body);
   } else {
-    throw Exception('อัปเดตข้อมูลไม่สำเร็จ: ${response.statusCode} - ${response.body}');
+    throw Exception(
+      'อัปเดตข้อมูลไม่สำเร็จ: ${response.statusCode} - ${response.body}',
+    );
   }
 }
