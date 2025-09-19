@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:delivery/APIs/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
 import 'dart:convert';
@@ -12,7 +13,7 @@ Future<Map<String, dynamic>> registerUserAPI({
   required String birthdate,
   File? imageFile, // รูปภาพที่ผู้ใช้เลือก (File)
 }) async {
-  final uri = Uri.parse('http://10.90.92.44:4000/client/register');
+  final uri = Uri.parse('${ApiConfig.baseUrl}/register');
 
   var request = http.MultipartRequest('POST', uri);
 

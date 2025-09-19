@@ -1,9 +1,17 @@
+import 'dart:convert';
+
 import 'package:delivery/APIs/GoogleMap/DistanceAPI.dart';
+import 'package:delivery/APIs/Orders/OrdersAPI.dart';
+import 'package:delivery/APIs/SOCKET_IO/SocketService.dart';
 import 'package:delivery/APIs/Users/AddAddressAPI.dart';
+import 'package:delivery/pages/LoadingOverlay/LoadingOverlay.dart';
 import 'package:delivery/pages/basket/models/basket_item.dart';
+import 'package:delivery/pages/bottom/CustomerOrderPage.dart';
+import 'package:delivery/pages/bottom/MainNavigation.dart';
 import 'package:delivery/pages/my_Address/models.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../basket/providers/basket_provider.dart';
 
 class OrderNowPage extends StatefulWidget {
@@ -15,6 +23,9 @@ class OrderNowPage extends StatefulWidget {
 }
 
 class _OrderNowPageState extends State<OrderNowPage> {
+  int? userId;
+  bool isLoading = true; // 🔥 state สำหรับโหลด
+
   String deliveryType = 'แบบ/วางไว้จุดที่ระบุ';
   String paymentMethod = 'เงินสด';
   TextEditingController noteController = TextEditingController();
@@ -25,11 +36,17 @@ class _OrderNowPageState extends State<OrderNowPage> {
   @override
   void initState() {
     super.initState();
-    _loadDefaultAddress().then((_) {
-      final basket = Provider.of<BasketProvider>(context, listen: false);
-      final selectedItems = basket.items.where((e) => e.selected).toList();
-      _calculateDistances(selectedItems);
-    });
+    _initData();
+  }
+
+  Future<void> _initData() async {
+    setState(() => isLoading = true);
+    await _loadUserId();
+    await _loadDefaultAddress();
+    final basket = Provider.of<BasketProvider>(context, listen: false);
+    final selectedItems = basket.items.where((e) => e.selected).toList();
+    await _calculateDistances(selectedItems);
+    setState(() => isLoading = false); // ✅ เสร็จแล้วค่อยปิดโหลด
   }
 
   Map<int, double> distanceMap = {}; // marketId -> distance
@@ -70,6 +87,17 @@ class _OrderNowPageState extends State<OrderNowPage> {
       print("⏱ Duration by store: $durationMap");
     } catch (e) {
       print("❌ Error calculating distances: $e");
+    }
+  }
+
+  Future<void> _loadUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userStr = prefs.getString('user');
+    if (userStr != null) {
+      final userData = jsonDecode(userStr);
+      setState(() {
+        userId = userData['user_id'];
+      });
     }
   }
 
@@ -117,43 +145,46 @@ class _OrderNowPageState extends State<OrderNowPage> {
     final items = basket.items.where((e) => e.selected).toList();
     final total = basket.totalSelectedPrice;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Custom App Bar
-            _buildCustomAppBar(),
+    return LoadingOverlay(
+      isLoading: isLoading, // ✅ ใช้ state
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Custom App Bar
+              _buildCustomAppBar(),
 
-            // Main Content
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    // ส่วนที่อยู่จัดส่ง
-                    _buildAddressSection(),
+              // Main Content
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      // ส่วนที่อยู่จัดส่ง
+                      _buildAddressSection(),
 
-                    // ส่วนรูปแบบการจัดส่ง
-                    _buildDeliveryTypeSection(),
+                      // ส่วนรูปแบบการจัดส่ง
+                      _buildDeliveryTypeSection(),
 
-                    // ส่วนรายการอาหาร
-                    _buildFoodItemsSection(items),
+                      // ส่วนรายการอาหาร
+                      _buildFoodItemsSection(items),
 
-                    // ส่วนการชำระเงิน
-                    _buildPaymentSection(),
+                      // ส่วนการชำระเงิน
+                      _buildPaymentSection(),
 
-                    //
-                    _buildOrderReceipt(items),
+                      //
+                      _buildOrderReceipt(items),
 
-                    const SizedBox(height: 8),
-                  ],
+                      const SizedBox(height: 8),
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            // Bottom Bar
-            _buildBottomBar(items, total),
-          ],
+              // Bottom Bar
+              _buildBottomBar(items, total),
+            ],
+          ),
         ),
       ),
     );
@@ -805,7 +836,6 @@ class _OrderNowPageState extends State<OrderNowPage> {
       final km = distanceMap[marketId] ?? 0.0;
       totalDeliveryFee += calculateDeliveryFee(km);
     });
-
     final totalAll = totalFood + totalDeliveryFee;
 
     return Container(
@@ -844,9 +874,116 @@ class _OrderNowPageState extends State<OrderNowPage> {
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(18),
-                  onTap: () {
-                    Navigator.pushNamed(context, '/status');
+
+                  // Replace the order creation logic in your _buildBottomBar onTap method:
+                  onTap: () async {
+                    try {
+                      // Group items by market and calculate totals per market
+                      Map<int, List<BasketItem>> itemsByMarket = {};
+                      Map<String, double> distancesByMarket = {};
+                      Map<String, double> deliveryFeesByMarket = {};
+                      Map<String, double> totalPricesByMarket = {};
+
+                      // Group items by market
+                      for (var item in items) {
+                        itemsByMarket.putIfAbsent(item.marketId, () => []);
+                        itemsByMarket[item.marketId]!.add(item);
+                      }
+
+                      // Calculate per-market data
+                      itemsByMarket.forEach((marketId, marketItems) {
+                        final km = distanceMap[marketId] ?? 0.0;
+                        final deliveryFee = calculateDeliveryFee(km);
+                        final foodTotal = marketItems.fold<double>(
+                          0,
+                          (sum, item) => sum + item.total,
+                        );
+
+                        distancesByMarket[marketId.toString()] = km;
+                        deliveryFeesByMarket[marketId.toString()] = deliveryFee;
+                        totalPricesByMarket[marketId.toString()] =
+                            foodTotal + deliveryFee;
+                      });
+
+                      final basketForAPI = items.map((item) {
+                        return {
+                          "cart_id": item.cartId,
+                          "food_id": item.foodId,
+                          "food_name": item.foodName,
+                          "market_id": item.marketId,
+                          "shop_name": item.storeName,
+                          "quantity": item.quantity,
+                          "sell_price": item.sell_price,
+                          "total": item.total, // Keep individual item total
+                          "selected_options": item.selectedOptions,
+                          "note": item.note,
+                        };
+                      }).toList();
+
+                      final result = await OrdersAPI.createOrder(
+                        basket: basketForAPI,
+                        address: defaultAddress!.address,
+                        note: noteController.text,
+                        paymentMethod: paymentMethod,
+                        deliveryType: deliveryType,
+                        distances:
+                            distancesByMarket, // Object with marketId keys
+                        deliveryFees:
+                            deliveryFeesByMarket, // Object with marketId keys
+                        totalPrices:
+                            totalPricesByMarket, // Object with marketId keys
+                      );
+
+                      print("✅ Order created: $result");
+                      print("🛒 basketForAPI: $basketForAPI");
+                      print("📍 distancesByMarket: $distancesByMarket");
+                      print("🚚 deliveryFeesByMarket: $deliveryFeesByMarket");
+                      print("💰 totalPricesByMarket: $totalPricesByMarket");
+
+                      if (result['success'] == true &&
+                          result['orders'] != null &&
+                          result['orders'].isNotEmpty) {
+                        final orderId = result['orders'][0]['order_id'];
+                        print("✅ Order created with ID: $orderId");
+
+                        // เรียก getOrderStatus ด้วย orderId จริง
+                        await OrdersAPI.getOrderStatus(orderId);
+
+                        SocketService().emitNewOrder(result);
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              "สั่งอาหารเรียบร้อย! รอร้านค้ารับงาน...",
+                            ),
+                          ),
+                        );
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CustomerOrderPage(userId: userId),
+                          ),
+                        ).then((_) {
+                          // เวลากด back ออกจาก CustomerOrderPage ให้ไป ShopPage
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (_) => MainNavigation()),
+                          );
+                        });
+                      } else {
+                        print("❌ Failed to create order: ${result['message']}");
+                      }
+                    } catch (e) {
+                      print("❌ Order error: $e");
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("เกิดข้อผิดพลาดในการสั่งซื้อ"),
+                        ),
+                      );
+                    }
                   },
+
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 20),
                     child: Row(

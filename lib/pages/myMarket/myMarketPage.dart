@@ -1,5 +1,6 @@
 import 'package:delivery/APIs/Markets/updateManualOverride.dart';
 import 'package:delivery/pages/bottom/MainNavigation.dart';
+import 'package:delivery/pages/myMarket/OrdersListPage.dart';
 import 'package:flutter/material.dart';
 import 'package:delivery/APIs/Markets/FetchFoodsForMarket.dart';
 import 'package:delivery/APIs/Markets/FetchMarket.dart';
@@ -361,6 +362,26 @@ class _MymarketpageState extends State<Mymarketpage> {
                   final result = await Navigator.pushNamed(
                     context,
                     '/myMarket/edit',
+                  );
+                  if (result == true) {
+                    await loadMarket(); // รีโหลดข้อมูลหลังกลับมาหน้านี้
+                  }
+                },
+              ), ListTile(
+                leading: const Icon(Icons.work_off_outlined, color: Colors.white),
+                title: const Text(
+                  'รับงาน',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => OrdersListPage(
+                        marketId: int.tryParse(marketId),
+                      ),
+                    ),
                   );
                   if (result == true) {
                     await loadMarket(); // รีโหลดข้อมูลหลังกลับมาหน้านี้

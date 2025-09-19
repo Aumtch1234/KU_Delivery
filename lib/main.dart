@@ -1,3 +1,4 @@
+import 'package:delivery/APIs/Orders/OrdersSocket.dart';
 import 'package:delivery/SplashScreens/SplashScreen.dart';
 import 'package:delivery/APIs/middleware/AuthGuard.dart';
 import 'package:delivery/APIs/middleware/authService.dart';
@@ -34,7 +35,13 @@ void main() async {
   await initializeDateFormatting('th', null); // โหลด locale "th"
 
   runApp(
-    ChangeNotifierProvider(create: (_) => BasketProvider(), child: MyApp()),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => BasketProvider()),
+        ChangeNotifierProvider(create: (_) => OrderController()),
+      ],
+      child: MyApp(),
+    ),
   );
 }
 
