@@ -330,6 +330,24 @@ class _MymarketpageState extends State<Mymarketpage> {
               ),
               const Divider(color: Colors.white24),
               ListTile(
+                leading: const Icon(Icons.bar_chart, color: Colors.white),
+                title: const Text(
+                  'สรุปยอดขาย',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final result = await Navigator.pushNamed(
+                    context,
+                    '/dashboard-sales',
+                    arguments: {'marketId': int.tryParse(marketId) ?? 0},
+                  );
+                  if (result == true) {
+                    await loadMarket(); // รีโหลดข้อมูลหลังกลับมาหน้านี้
+                  }
+                },
+              ),
+              ListTile(
                 leading: const Icon(Icons.add, color: Colors.white),
                 title: const Text(
                   'เพิ่มอาหาร',
@@ -367,8 +385,12 @@ class _MymarketpageState extends State<Mymarketpage> {
                     await loadMarket(); // รีโหลดข้อมูลหลังกลับมาหน้านี้
                   }
                 },
-              ), ListTile(
-                leading: const Icon(Icons.work_off_outlined, color: Colors.white),
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.work_off_outlined,
+                  color: Colors.white,
+                ),
                 title: const Text(
                   'รับงาน',
                   style: TextStyle(color: Colors.white),
@@ -378,9 +400,8 @@ class _MymarketpageState extends State<Mymarketpage> {
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => OrdersListPage(
-                        marketId: int.tryParse(marketId),
-                      ),
+                      builder: (context) =>
+                          OrdersListPage(marketId: int.tryParse(marketId)),
                     ),
                   );
                   if (result == true) {

@@ -13,6 +13,7 @@ import 'package:delivery/pages/bottom/MainNavigation.dart';
 import 'package:delivery/pages/bottom/ShopPage.dart';
 import 'package:delivery/pages/WellcomePage.dart';
 import 'package:delivery/pages/myMarket/AddFoodPage.dart';
+import 'package:delivery/pages/myMarket/Dashboard_salesPage.dart';
 import 'package:delivery/pages/myMarket/EditFoodPage.dart';
 import 'package:delivery/pages/myMarket/EditMarket.dart';
 import 'package:delivery/pages/myMarket/RegisterShopPage.dart';
@@ -25,6 +26,7 @@ import 'package:delivery/pages/status/TakingStatusPage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'pages/basket/providers/basket_provider.dart';
+import 'APIs/Analytics_Dashboard/Market/Dashboard_salesAPIs.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'AssistiveButton.dart';
 
@@ -39,6 +41,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => BasketProvider()),
         ChangeNotifierProvider(create: (_) => OrderController()),
+        ChangeNotifierProvider(create: (_) => DashboardSalesController()),
       ],
       child: MyApp(),
     ),
@@ -107,6 +110,17 @@ class MyApp extends StatelessWidget {
           child: DeliveryAddressForm(),
           routeName: '/add-address',
         ),
+        '/dashboard-sales': (context) {
+          // รับ marketId จาก arguments
+          final args =
+              ModalRoute.of(context)?.settings.arguments
+                  as Map<String, dynamic>?;
+          final marketId = args?['marketId'] as int?;
+          return RouteWrapper(
+            child: DashboardSalesPage(marketId: marketId),
+            routeName: '/dashboard-sales',
+          );
+        },
       },
       debugShowCheckedModeBanner: false,
       // builder: (context, child) {
