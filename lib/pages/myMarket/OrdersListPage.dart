@@ -19,11 +19,11 @@ class _OrdersListPageState extends State<OrdersListPage>
 
   // Updated status tabs for shop workflow
   final Map<String, String> _statusTabs = {
-    'waiting': 'รอยืนยัน',      // ออเดอร์ใหม่ที่รอร้านรับ
-    'accepted': 'กำลังทำ',      // ร้านรับแล้ว กำลังเตรียมอาหาร
-    'delivering': 'กำลังส่ง',    // ไรเดอร์รับไปส่งแล้ว
-    'completed': 'เสร็จแล้ว',    // ส่งเสร็จแล้ว
-    'cancelled': 'ปฏิเสธแล้ว'
+    'waiting': 'รอยืนยัน', // ออเดอร์ใหม่ที่รอร้านรับ
+    'accepted': 'กำลังทำ', // ร้านรับแล้ว กำลังเตรียมอาหาร
+    'delivering': 'กำลังส่ง', // ไรเดอร์รับไปส่งแล้ว
+    'completed': 'เสร็จแล้ว', // ส่งเสร็จแล้ว
+    'cancelled': 'ปฏิเสธ',
   };
 
   String get userType {
@@ -166,7 +166,9 @@ class _OrdersListPageState extends State<OrdersListPage>
     // Count orders by status for today
     final statusCounts = <String, int>{};
     for (var status in _statusTabs.keys) {
-      statusCounts[status] = todayOrders.where((order) => order.status == status).length;
+      statusCounts[status] = todayOrders
+          .where((order) => order.status == status)
+          .length;
     }
 
     return SliverToBoxAdapter(
@@ -216,7 +218,7 @@ class _OrdersListPageState extends State<OrdersListPage>
               ),
               const SizedBox(height: 16),
             ],
-            
+
             // Main summary row
             Row(
               children: [
@@ -290,7 +292,7 @@ class _OrdersListPageState extends State<OrdersListPage>
             ),
 
             const SizedBox(height: 16),
-            
+
             // Status breakdown
             Container(
               padding: const EdgeInsets.all(12),
@@ -303,7 +305,7 @@ class _OrdersListPageState extends State<OrdersListPage>
                   final status = entry.key;
                   final label = entry.value;
                   final count = statusCounts[status] ?? 0;
-                  
+
                   Color color;
                   switch (status) {
                     case 'waiting':
@@ -326,7 +328,10 @@ class _OrdersListPageState extends State<OrdersListPage>
                     child: Column(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 4,
+                            horizontal: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: color.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
@@ -383,7 +388,7 @@ class _OrdersListPageState extends State<OrdersListPage>
           tabs: _statusTabs.entries.map((entry) {
             final status = entry.key;
             final label = entry.value;
-            
+
             return Consumer<OrderController>(
               builder: (context, controller, child) {
                 final count = controller.getOrdersByStatus(status).length;
@@ -395,7 +400,10 @@ class _OrdersListPageState extends State<OrdersListPage>
                       if (count > 0) ...[
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.red,
                             borderRadius: BorderRadius.circular(10),
@@ -464,29 +472,29 @@ class _OrdersListPageState extends State<OrdersListPage>
 
   Widget _buildOrderCard(Order order, OrderController controller) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
+            blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
-        border: Border.all(color: order.statusColor.withOpacity(0.3)),
+        border: Border.all(color: order.statusColor.withOpacity(0.2)),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: Column(
           children: [
-            // Status header
+            // Status header - simplified
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: order.statusColor.withOpacity(0.1),
+                color: order.statusColor.withOpacity(0.08),
               ),
               child: Row(
                 children: [
@@ -508,56 +516,133 @@ class _OrdersListPageState extends State<OrdersListPage>
                     ),
                   ),
                   const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      order.paymentMethod,
-                      style: const TextStyle(
-                        color: Colors.blue,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
                   Text(
                     _formatDateTime(order.createdAt),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                   ),
                 ],
               ),
             ),
 
-            // Order content
+            // Main content
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Order ID and Amount
+                  // Order ID and Total - simplified
                   Row(
                     children: [
-                      Text(
-                        'ออเดอร์ #${order.orderId}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'ออเดอร์ #${order.orderId}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.store_outlined,
+                                  size: 12,
+                                  color: Colors.grey.shade500,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  order.shopName,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                      const Spacer(),
-                      Text(
-                        '฿${order.totalPrice.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '฿${order.totalPrice.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
+                          Text(
+                            'รวมค่าส่ง ฿${order.deliveryFee.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Payment & Delivery info - compact
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              order.paymentMethod.toLowerCase().contains(
+                                    'เงินสด',
+                                  )
+                                  ? Icons.money
+                                  : Icons.credit_card,
+                              size: 10,
+                              color: Colors.blue,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              order.paymentMethod,
+                              style: const TextStyle(
+                                color: Colors.blue,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          order.deliveryType,
+                          style: const TextStyle(
+                            color: Colors.purple,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],
@@ -565,163 +650,321 @@ class _OrdersListPageState extends State<OrdersListPage>
 
                   const SizedBox(height: 12),
 
-                  // Customer Address
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade100,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.location_on,
-                          color: Colors.red,
-                          size: 18,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'ที่อยู่ลูกค้า',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              order.address.isNotEmpty 
-                                  ? order.address 
-                                  : 'กำลังโหลดที่อยู่...',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: order.address.isNotEmpty
-                                    ? Colors.grey.shade700
-                                    : Colors.orange.shade600,
-                                fontStyle: order.address.isNotEmpty
-                                    ? FontStyle.normal
-                                    : FontStyle.italic,
-                              ),
-                            ),
-                            if (order.distanceKm != null && order.distanceKm! > 0) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                'ระยะทาง: ${order.distanceKm!.toStringAsFixed(1)} กม. | ค่าส่ง: ฿${order.deliveryFee.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // Order Items
+                  // Order Items - more compact
                   if (order.items.isNotEmpty) ...[
-                    const SizedBox(height: 16),
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: Colors.grey.shade50,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Header
                           Row(
                             children: [
-                              const Icon(
-                                Icons.restaurant_menu,
-                                size: 16,
-                                color: Colors.green,
+                              Icon(
+                                Icons.restaurant_menu_outlined,
+                                size: 14,
+                                color: Colors.green.shade600,
                               ),
                               const SizedBox(width: 6),
-                              const Text(
+                              Text(
                                 'รายการอาหาร',
                                 style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                  color: Colors.green.shade700,
                                 ),
                               ),
                               const Spacer(),
-                              Text(
-                                '${order.items.length} รายการ',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade100,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  '${order.items.length} รายการ • ${order.items.fold(0, (sum, item) => sum + item.quantity)} ชิ้น',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue.shade700,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
+
                           const SizedBox(height: 8),
-                          ...order.items.take(3).map(
-                            (item) => Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
+
+                          // Items - more compact
+                          ...order.items.map(
+                            (item) => Container(
+                              margin: const EdgeInsets.only(bottom: 6),
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: Colors.grey.shade200,
+                                  width: 0.5,
+                                ),
+                              ),
                               child: Row(
                                 children: [
+                                  // Quantity badge - smaller
                                   Container(
                                     width: 24,
                                     height: 24,
                                     decoration: BoxDecoration(
-                                      color: Colors.green.shade100,
-                                      borderRadius: BorderRadius.circular(4),
+                                      color: Colors.green.shade500,
+                                      borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Center(
                                       child: Text(
                                         '${item.quantity}',
-                                        style: TextStyle(
-                                          fontSize: 12,
+                                        style: const TextStyle(
+                                          fontSize: 11,
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.green.shade700,
+                                          color: Colors.white,
                                         ),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: 10),
+
+                                  // Food details
                                   Expanded(
-                                    child: Text(
-                                      item.foodName,
-                                      style: const TextStyle(fontSize: 12),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.foodName,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        // Show options in a better format
+                                        if (item.selectedOptions.isEmpty &&
+                                            item
+                                                .selectedOptions
+                                                .isNotEmpty) ...[
+                                          const SizedBox(height: 6),
+                                          Wrap(
+                                            spacing: 6,
+                                            runSpacing: -6,
+                                            children: item.selectedOptions
+                                                .map<Widget>((option) {
+                                                  if (option is Map) {
+                                                    final label =
+                                                        option['label']
+                                                            ?.toString() ??
+                                                        '';
+                                                    final extraPrice =
+                                                        option['extraPrice']
+                                                            ?.toString() ??
+                                                        '0';
+
+                                                    final displayText =
+                                                        (extraPrice != '0')
+                                                        ? '$label (+฿$extraPrice)'
+                                                        : label;
+
+                                                    return Chip(
+                                                      label: Text(
+                                                        displayText,
+                                                        style: const TextStyle(
+                                                          fontSize: 11,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                      backgroundColor:
+                                                          Colors.blue.shade50,
+                                                      side: BorderSide(
+                                                        color: Colors
+                                                            .blue
+                                                            .shade200,
+                                                      ),
+                                                      visualDensity:
+                                                          VisualDensity.compact,
+                                                    );
+                                                  }
+                                                  return const SizedBox.shrink();
+                                                })
+                                                .toList(),
+                                          ),
+                                        ],
+                                      ],
                                     ),
                                   ),
+
+                                  // Price
                                   Text(
                                     '฿${item.subtotal.toStringAsFixed(2)}',
                                     style: const TextStyle(
                                       fontSize: 12,
-                                      fontWeight: FontWeight.w500,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
                           ),
-                          if (order.items.length > 3)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                'และอีก ${order.items.length - 3} รายการ...',
+
+                          // Total food amount
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade50,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'ยอดอาหาร',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.green.shade700,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  '฿${(order.totalPrice - order.deliveryFee).toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Address - simplified
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade500,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.location_on,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'ที่อยู่จัดส่ง',
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                  fontStyle: FontStyle.italic,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11,
+                                  color: Colors.red.shade700,
                                 ),
                               ),
+                              const SizedBox(height: 3),
+                              Text(
+                                order.address.isNotEmpty
+                                    ? order.address
+                                    : 'กำลังโหลดที่อยู่...',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade700,
+                                  height: 1.2,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (order.distanceKm != null &&
+                                  order.distanceKm! > 0) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  'ระยะทาง ${order.distanceKm!.toStringAsFixed(1)} กม.',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Note - if exists
+                  if (order.note != null && order.note!.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: Colors.orange.shade200,
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.note_outlined,
+                            size: 14,
+                            color: Colors.orange.shade600,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'หมายเหตุ: ${order.note!}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade700,
+                                height: 1.2,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
+                          ),
                         ],
                       ),
                     ),
                   ],
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
                   // Action Buttons
                   _buildActionButtons(order, controller),
@@ -759,7 +1002,7 @@ class _OrdersListPageState extends State<OrdersListPage>
           ),
           const SizedBox(width: 12),
         ],
-        
+
         // Main action button
         Expanded(
           flex: order.status == 'waiting' ? 2 : 1,
@@ -773,7 +1016,7 @@ class _OrdersListPageState extends State<OrdersListPage>
     String buttonText;
     Color buttonColor;
     VoidCallback? onPressed;
-    
+
     switch (order.status) {
       case 'waiting':
         buttonText = 'รับออเดอร์';
@@ -804,9 +1047,7 @@ class _OrdersListPageState extends State<OrdersListPage>
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
         backgroundColor: buttonColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         elevation: onPressed != null ? 2 : 0,
       ),
       onPressed: onPressed,
@@ -822,7 +1063,10 @@ class _OrdersListPageState extends State<OrdersListPage>
   }
 
   Future<void> _acceptOrder(Order order, OrderController controller) async {
-    final success = await controller.acceptOrder(order.orderId, widget.marketId!);
+    final success = await controller.acceptOrder(
+      order.orderId,
+      widget.marketId!,
+    );
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -841,7 +1085,10 @@ class _OrdersListPageState extends State<OrdersListPage>
   }
 
   Future<void> _markReady(Order order, OrderController controller) async {
-    final success = await controller.updateOrderStatus(order.orderId, 'delivering');
+    final success = await controller.updateOrderStatus(
+      order.orderId,
+      'delivering',
+    );
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -875,7 +1122,7 @@ class _OrdersListPageState extends State<OrdersListPage>
             onPressed: () async {
               Navigator.of(context).pop();
               final success = await controller.updateOrderStatus(
-                order.orderId, 
+                order.orderId,
                 'cancelled',
               );
               if (success && mounted) {
