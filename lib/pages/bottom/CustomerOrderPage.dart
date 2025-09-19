@@ -81,8 +81,8 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
 
     // เรียงออเดอร์ตาม priority: active orders ก่อน แล้วเรียงตามวันที่
     filteredOrders.sort((a, b) {
-      final aActive = ['waiting', 'accepted', 'preparing', 'delivering'].contains(a.status);
-      final bActive = ['waiting', 'accepted', 'preparing', 'delivering'].contains(b.status);
+      final aActive = ['waiting', 'accepted', 'delivering'].contains(a.status);
+      final bActive = ['waiting', 'accepted', 'delivering'].contains(b.status);
 
       if (aActive && !bActive) return -1;
       if (!aActive && bActive) return 1;
@@ -281,7 +281,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
   }
 
   Widget _buildOrderCard(Order order) {
-    final isActive = ['waiting', 'accepted', 'preparing', 'delivering'].contains(order.status);
+    final isActive = ['waiting', 'accepted', 'delivering'].contains(order.status);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -564,8 +564,8 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
   }
 
   Widget _buildProgressBar(String status) {
-    final steps = ['waiting', 'accepted', 'preparing', 'delivering', 'completed'];
-    final stepNames = ['รับออเดอร์', 'ยืนยัน', 'เตรียม', 'จัดส่ง', 'เสร็จสิ้น'];
+    final steps = ['waiting', 'accepted', 'delivering', 'completed'];
+    final stepNames = ['รับออเดอร์', 'ยืนยัน', 'จัดส่ง', 'เสร็จสิ้น'];
     final currentIndex = steps.indexOf(status);
 
     return Column(

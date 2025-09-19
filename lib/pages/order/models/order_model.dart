@@ -1,4 +1,3 @@
-// models/order_model.dart
 import 'package:flutter/material.dart';
 
 
@@ -16,6 +15,7 @@ class Order {
   final int marketId;
   final String shopName;
   final int? riderId;
+  final String? foodName;
   final String address;
   final String deliveryType;
   final String paymentMethod;
@@ -34,6 +34,7 @@ class Order {
     required this.marketId,
     required this.shopName,
     this.riderId,
+    this.foodName,
     required this.address,
     required this.deliveryType,
     required this.paymentMethod,
@@ -54,6 +55,7 @@ class Order {
       marketId: json['market_id'],
       shopName: json['shop_name'],
       riderId: json['rider_id'],
+      foodName: json['food_name'],
       address: json['address'],
       deliveryType: json['delivery_type'],
       paymentMethod: json['payment_method'],
