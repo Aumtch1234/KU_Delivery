@@ -28,19 +28,13 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
     'cancelled': {'name': 'ยกเลิก', 'icon': Icons.cancel},
   };
 
-  // Green theme colors
-  static const Color primaryColor = Color(0xFF4CAF50);
-  static const Color primaryLight = Color(0xFF81C784);
-  // static const Color primaryDark = Color(0xFF388E3C);
-  // static const Color accentColor = Color(0xFF66BB6A);
+  // Modern color scheme
+  static const Color primaryColor = Color(0xFF1976D2);
+  static const Color primaryLight = Color(0xFF42A5F5);
   static const Color successColor = Color(0xFF4CAF50);
   static const Color warningColor = Color(0xFFFF9800);
   static const Color errorColor = Color(0xFFF44336);
-  static const Color backgroundColor = Color(0xFFF1F8E9);
-  static const Color cardColor = Colors.white;
-  static const Color textPrimary = Color(0xFF1B5E20);
-  static const Color textSecondary = Color(0xFF4A5568);
-  static const Color surfaceColor = Color(0xFFE8F5E8);
+  static const Color backgroundColor = Color(0xFFF8FAFB);
 
   String _currentStatus = 'all';
 
@@ -112,48 +106,30 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
         title: const Text(
           'ออเดอร์ของฉัน',
           style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 24,
-            color: textPrimary,
+            fontWeight: FontWeight.w600,
+            fontSize: 22,
           ),
         ),
-        backgroundColor: cardColor,
-        foregroundColor: textPrimary,
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF1A1A1A),
         elevation: 0,
         systemOverlayStyle: SystemUiOverlayStyle.dark,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                cardColor,
-                primaryColor.withOpacity(0.05),
-              ],
-            ),
-          ),
-        ),
         actions: [
           Consumer<OrderController>(
             builder: (context, controller, child) {
               return Container(
                 margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: controller.isSocketConnected 
-                      ? [successColor, primaryLight]
-                      : [errorColor, errorColor.withOpacity(0.8)],
+                  color: controller.isSocketConnected 
+                    ? successColor.withOpacity(0.1)
+                    : errorColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: controller.isSocketConnected 
+                      ? successColor.withOpacity(0.3)
+                      : errorColor.withOpacity(0.3),
                   ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (controller.isSocketConnected ? successColor : errorColor)
-                          .withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -161,14 +137,14 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                     Icon(
                       controller.isSocketConnected ? Icons.wifi : Icons.wifi_off,
                       size: 16,
-                      color: Colors.white,
+                      color: controller.isSocketConnected ? successColor : errorColor,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     Text(
-                      '${controller.orders.length} ออเดอร์',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
+                      '${controller.orders.length}',
+                      style: TextStyle(
+                        color: controller.isSocketConnected ? successColor : errorColor,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -179,53 +155,31 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(70),
+          preferredSize: const Size.fromHeight(60),
           child: Container(
-            height: 70,
-            decoration: BoxDecoration(
-              color: cardColor,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
+            height: 60,
+            color: Colors.white,
             child: Consumer<OrderController>(
               builder: (context, controller, child) {
                 return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: surfaceColor,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: primaryColor.withOpacity(0.2),
-                      width: 1,
-                    ),
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: TabBar(
                     controller: _tabController,
                     isScrollable: true,
                     tabAlignment: TabAlignment.start,
                     indicator: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [primaryColor, primaryLight],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: primaryColor.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      color: primaryColor,
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     indicatorPadding: const EdgeInsets.all(4),
                     labelColor: Colors.white,
-                    unselectedLabelColor: textSecondary,
+                    unselectedLabelColor: Colors.grey.shade600,
                     labelStyle: const TextStyle(
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
                     unselectedLabelStyle: const TextStyle(
@@ -236,7 +190,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                       final count = _getOrderCountByStatus(controller, entry.key);
                       return Tab(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -244,17 +198,17 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                                 entry.value['icon'],
                                 size: 16,
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
                               Text(entry.value['name']),
                               if (count > 0) ...[
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: _currentStatus == entry.key 
-                                      ? Colors.white.withOpacity(0.25)
-                                      : primaryColor.withOpacity(0.15),
-                                    borderRadius: BorderRadius.circular(10),
+                                      ? Colors.white.withOpacity(0.3)
+                                      : primaryColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
                                     '$count',
@@ -283,31 +237,9 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
       body: Consumer<OrderController>(
         builder: (context, controller, child) {
           if (controller.isLoading) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: primaryColor.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
-                      strokeWidth: 3,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'กำลังโหลดข้อมูลออเดอร์...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+            return const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
               ),
             );
           }
@@ -328,7 +260,6 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
               return RefreshIndicator(
                 onRefresh: _loadCustomerOrders,
                 color: primaryColor,
-                backgroundColor: cardColor,
                 child: _buildOrdersList(filteredOrders),
               );
             }).toList(),
@@ -353,35 +284,34 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
     final isActive = ['waiting', 'accepted', 'delivering'].contains(order.status);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-            spreadRadius: 0,
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
         border: isActive 
-          ? Border.all(color: primaryColor.withOpacity(0.3), width: 1.5)
+          ? Border.all(color: order.statusColor.withOpacity(0.3), width: 1)
           : null,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: Column(
           children: [
-            // Enhanced Status Header with gradient
+            // Status Header
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    order.statusColor.withOpacity(0.15),
-                    order.statusColor.withOpacity(0.08),
+                    order.statusColor.withOpacity(0.1),
+                    order.statusColor.withOpacity(0.05),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -390,27 +320,18 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          order.statusColor.withOpacity(0.2),
-                          order.statusColor.withOpacity(0.1),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: order.statusColor.withOpacity(0.3),
-                        width: 1,
-                      ),
+                      color: order.statusColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       order.statusIcon,
                       color: order.statusColor,
-                      size: 28,
+                      size: 24,
                     ),
                   ),
-                  const SizedBox(width: 20),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -421,7 +342,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                               child: Text(
                                 order.statusText,
                                 style: TextStyle(
-                                  fontSize: 20,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: order.statusColor,
                                 ),
@@ -429,38 +350,29 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                             ),
                             if (isActive) 
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [order.statusColor, order.statusColor.withOpacity(0.8)],
-                                  ),
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: order.statusColor.withOpacity(0.3),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
+                                  color: order.statusColor,
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Text(
                                   'กำลังดำเนินการ',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 11,
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
                           ],
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         Text(
                           'ออเดอร์ #${order.orderId}',
                           style: TextStyle(
-                            fontSize: 15,
-                            color: textSecondary,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -470,240 +382,105 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
               ),
             ),
 
-            // Enhanced Order Details
+            // Order Details
             Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  // Shop Info with enhanced design
-                  if (order.shopName.isNotEmpty) ...[
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: surfaceColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: primaryColor.withOpacity(0.2),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: primaryColor.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              Icons.restaurant,
-                              size: 20,
-                              color: primaryColor,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'ร้านอาหาร',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: textSecondary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  order.shopName,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    color: textPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Order Items Details
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: surfaceColor,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: primaryColor.withOpacity(0.2),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                  // Shop and Time Info
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: primaryColor.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                Icons.shopping_cart,
-                                size: 18,
-                                color: primaryColor,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'รายการอาหาร (${order.items.length} รายการ)',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: textPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        ...order.items.map((item) => _buildOrderItem(item)).toList(),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Delivery & Payment Info
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildInfoCard(
-                          icon: Icons.location_on,
-                          title: 'ที่อยู่จัดส่ง',
-                          subtitle: _getShortAddress(order.address),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildInfoCard(
-                          icon: Icons.payment,
-                          title: 'ชำระเงิน',
-                          subtitle: order.paymentMethod,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Distance & Delivery Type
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildInfoCard(
-                          icon: Icons.directions,
-                          title: 'ระยะทาง',
-                          subtitle: '${order.distanceKm?.toStringAsFixed(1) ?? 'N/A'} กม.',
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildInfoCard(
-                          icon: Icons.delivery_dining,
-                          title: 'ประเภทจัดส่ง',
-                          subtitle: order.deliveryType,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Time and Total Section
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [primaryColor.withOpacity(0.1), primaryColor.withOpacity(0.05)],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: primaryColor.withOpacity(0.2),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+                            if (order.shopName.isNotEmpty) ...[
                               Row(
                                 children: [
-                                  Icon(
-                                    Icons.access_time,
-                                    size: 16,
-                                    color: textSecondary,
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Icon(
+                                      Icons.restaurant,
+                                      size: 16,
+                                      color: Colors.grey.shade600,
+                                    ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'เวลาสั่ง',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: textSecondary,
-                                      fontWeight: FontWeight.w500,
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      order.shopName,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _formatDateTime(order.createdAt),
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: textPrimary,
-                                ),
-                              ),
+                              const SizedBox(height: 12),
                             ],
-                          ),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.access_time,
+                                    size: 16,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  _formatDateTime(order.createdAt),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade700,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              'ยอดรวม',
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '฿${order.totalPrice.toStringAsFixed(0)}',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A1A1A),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '${order.items.length} รายการ',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: textSecondary,
+                                color: Colors.grey.shade600,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '฿${order.totalPrice.toStringAsFixed(0)}',
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: primaryColor,
-                              ),
-                            ),
-                            if (order.deliveryFee > 0)
-                              Text(
-                                'รวมค่าส่ง ฿${order.deliveryFee.toStringAsFixed(0)}',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: textSecondary,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
 
                   // Progress Bar for Active Orders
@@ -716,83 +493,29 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                   if (isActive) ...[
                     const SizedBox(height: 16),
                     Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [successColor.withOpacity(0.15), successColor.withOpacity(0.1)],
-                        ),
+                        color: successColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: successColor.withOpacity(0.3),
+                          color: successColor.withOpacity(0.2),
                         ),
                       ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             Icons.schedule,
-                            size: 20,
+                            size: 18,
                             color: successColor,
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 8),
                           Text(
-                            'เวลาโดยประมาณ: 25-30 นาที',
+                            'ประมาณ 25-30 นาที',
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: 14,
                               color: successColor,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-
-                  // Note if available
-                  if (order.note != null && order.note!.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: warningColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: warningColor.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.note,
-                            size: 18,
-                            color: warningColor,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'หมายเหตุ',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: warningColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  order.note!,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: textPrimary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -802,7 +525,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
 
                   // Action Button for Waiting Orders
                   if (order.status == 'waiting') ...[
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -810,9 +533,9 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: errorColor,
-                          side: BorderSide(color: errorColor.withOpacity(0.3), width: 1.5),
+                          side: BorderSide(color: errorColor.withOpacity(0.3)),
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -820,14 +543,11 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: const [
-                            Icon(Icons.cancel_outlined, size: 20),
-                            SizedBox(width: 10),
+                            Icon(Icons.cancel_outlined, size: 18),
+                            SizedBox(width: 8),
                             Text(
                               'ยกเลิกออเดอร์',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                              ),
+                              style: TextStyle(fontWeight: FontWeight.w600),
                             ),
                           ],
                         ),
@@ -843,211 +563,56 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
     );
   }
 
-  Widget _buildOrderItem(OrderItem item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: primaryColor.withOpacity(0.1),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Center(
-              child: Text(
-                '${item.quantity}x',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: primaryColor,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.foodName,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: textPrimary,
-                  ),
-                ),
-                if (item.selectedOptions.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    'ตัวเลือก: ${item.selectedOptions.join(", ")}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          Text(
-            '฿${item.subtotal.toStringAsFixed(0)}',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: primaryColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: surfaceColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: primaryColor.withOpacity(0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: primaryColor,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: textPrimary,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _getShortAddress(String address) {
-    final parts = address.split(' ');
-    if (parts.length > 6) {
-      return '${parts.take(6).join(' ')}...';
-    }
-    return address;
-  }
-
   Widget _buildProgressBar(String status) {
     final steps = ['waiting', 'accepted', 'delivering', 'completed'];
     final stepNames = ['รับออเดอร์', 'ยืนยัน', 'จัดส่ง', 'เสร็จสิ้น'];
     final currentIndex = steps.indexOf(status);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: surfaceColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: primaryColor.withOpacity(0.2),
+    return Column(
+      children: [
+        Row(
+          children: steps.asMap().entries.map((entry) {
+            final index = entry.key;
+            final isActive = index <= currentIndex;
+            final isCurrent = index == currentIndex;
+
+            return Expanded(
+              child: Container(
+                height: 6,
+                margin: EdgeInsets.only(
+                  right: index < steps.length - 1 ? 4 : 0,
+                ),
+                decoration: BoxDecoration(
+                  color: isActive 
+                    ? (isCurrent ? primaryColor : successColor)
+                    : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+            );
+          }).toList(),
         ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: steps.asMap().entries.map((entry) {
-              final index = entry.key;
-              final isActive = index <= currentIndex;
-              final isCurrent = index == currentIndex;
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: stepNames.asMap().entries.map((entry) {
+            final index = entry.key;
+            final isActive = index <= currentIndex;
+            final isCurrent = index == currentIndex;
 
-              return Expanded(
-                child: Container(
-                  height: 8,
-                  margin: EdgeInsets.only(
-                    right: index < steps.length - 1 ? 6 : 0,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: isActive 
-                      ? LinearGradient(
-                          colors: isCurrent 
-                            ? [primaryColor, primaryLight]
-                            : [successColor, successColor.withOpacity(0.8)],
-                        )
-                      : null,
-                    color: !isActive ? Colors.grey.shade300 : null,
-                    borderRadius: BorderRadius.circular(4),
-                    boxShadow: isActive ? [
-                      BoxShadow(
-                        color: (isCurrent ? primaryColor : successColor).withOpacity(0.3),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ] : null,
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: stepNames.asMap().entries.map((entry) {
-              final index = entry.key;
-              final isActive = index <= currentIndex;
-              final isCurrent = index == currentIndex;
-
-              return Expanded(
-                child: Text(
-                  entry.value,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
-                    color: isActive 
-                      ? (isCurrent ? primaryColor : successColor)
-                      : Colors.grey.shade500,
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
+            return Text(
+              entry.value,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+                color: isActive 
+                  ? (isCurrent ? primaryColor : successColor)
+                  : Colors.grey.shade500,
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
@@ -1056,49 +621,32 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
         ),
         title: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: errorColor.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(Icons.cancel_outlined, color: errorColor, size: 24),
-            ),
+            Icon(Icons.cancel_outlined, color: errorColor, size: 24),
             const SizedBox(width: 12),
             const Text(
               'ยกเลิกออเดอร์',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: textPrimary,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ],
         ),
-        content: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(
-            'คุณต้องการยกเลิกออเดอร์ #${order.orderId} หรือไม่?\n\nหมายเหตุ: หากร้านยืนยันออเดอร์แล้ว อาจจะไม่สามารถยกเลิกได้',
-            style: TextStyle(
-              fontSize: 14,
-              color: textSecondary,
-              height: 1.5,
-            ),
+        content: Text(
+          'คุณต้องการยกเลิกออเดอร์ #${order.orderId} หรือไม่?\n\nหมายเหตุ: หากร้านยืนยันออเดอร์แล้ว อาจจะไม่สามารถยกเลิกได้',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade700,
+            height: 1.5,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            style: TextButton.styleFrom(
-              foregroundColor: textSecondary,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            ),
-            child: const Text(
+            child: Text(
               'ไม่ยกเลิก',
-              style: TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(color: Colors.grey.shade600),
             ),
           ),
           ElevatedButton(
@@ -1106,9 +654,8 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
               backgroundColor: errorColor,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             ),
             onPressed: () async {
               Navigator.of(context).pop();
@@ -1121,33 +668,16 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Row(
-                      children: [
-                        Icon(
-                          success ? Icons.check_circle : Icons.error,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            success
-                                ? 'ยกเลิกออเดอร์เรียบร้อยแล้ว'
-                                : 'ไม่สามารถยกเลิกได้: ${controller.error}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ],
+                    content: Text(
+                      success
+                          ? 'ยกเลิกออเดอร์เรียบร้อย'
+                          : 'ไม่สามารถยกเลิกได้: ${controller.error}',
                     ),
                     backgroundColor: success ? successColor : errorColor,
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    margin: const EdgeInsets.all(16),
                   ),
                 );
                 if (success) {
@@ -1155,10 +685,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                 }
               }
             },
-            child: const Text(
-              'ยกเลิก',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
+            child: const Text('ยกเลิก'),
           ),
         ],
       ),
@@ -1173,14 +700,9 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    errorColor.withOpacity(0.15),
-                    errorColor.withOpacity(0.1),
-                  ],
-                ),
+                color: errorColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -1189,47 +711,43 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                 color: errorColor,
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
             const Text(
               'เกิดข้อผิดพลาด',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: textPrimary,
+                color: Color(0xFF1A1A1A),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Text(
               controller.error ?? 'ไม่สามารถโหลดข้อมูลได้',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
-                color: textSecondary,
+                color: Colors.grey.shade600,
                 height: 1.5,
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: _loadCustomerOrders,
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
+                  horizontal: 24,
+                  vertical: 12,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                elevation: 2,
               ),
               icon: const Icon(Icons.refresh, size: 20),
               label: const Text(
-                'ลองใหม่อีกครั้ง',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
+                'ลองใหม่',
+                style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -1281,19 +799,14 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(40),
+              padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.grey.shade100,
-                    Colors.grey.shade50,
-                  ],
-                ),
+                color: Colors.grey.shade100,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 iconData,
-                size: 80,
+                size: 72,
                 color: Colors.grey.shade400,
               ),
             ),
@@ -1301,9 +814,9 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
             Text(
               title,
               style: TextStyle(
-                fontSize: 22,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: textPrimary,
+                color: Colors.grey.shade700,
               ),
               textAlign: TextAlign.center,
             ),
@@ -1312,21 +825,21 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
               subtitle,
               style: TextStyle(
                 fontSize: 16,
-                color: textSecondary,
+                color: Colors.grey.shade500,
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: _loadCustomerOrders,
               style: ElevatedButton.styleFrom(
-                backgroundColor: cardColor,
+                backgroundColor: Colors.white,
                 foregroundColor: primaryColor,
                 side: BorderSide(color: primaryColor.withOpacity(0.3)),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 14,
+                  horizontal: 20,
+                  vertical: 12,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1336,10 +849,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text(
                 'รีเฟรช',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -1357,7 +867,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
     } else if (difference.inHours < 1) {
       return '${difference.inMinutes} นาทีที่แล้ว';
     } else if (difference.inDays == 0) {
-      return 'วันนี้ ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+      return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     } else if (difference.inDays < 7) {
       final weekdays = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'อาทิตย์'];
       final weekday = weekdays[dateTime.weekday - 1];
