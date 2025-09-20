@@ -234,6 +234,7 @@ class _OrderNowPageState extends State<OrderNowPage> {
 
   Widget _buildAddressSection() {
     if (defaultAddress != null) {
+      print("📦 Address_id: ${defaultAddress!.id}");
       print("📦 Address: ${defaultAddress!.address}");
       print("👤 Name: ${defaultAddress!.name}");
       print("📞 Phone: ${defaultAddress!.phone}");
@@ -922,6 +923,7 @@ class _OrderNowPageState extends State<OrderNowPage> {
 
                       final result = await OrdersAPI.createOrder(
                         basket: basketForAPI,
+                        address_id: defaultAddress!.id,
                         address: defaultAddress!.address,
                         note: noteController.text,
                         paymentMethod: paymentMethod,
