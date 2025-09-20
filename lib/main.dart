@@ -148,33 +148,34 @@ class RouteWrapper extends StatelessWidget {
   final String routeName;
 
   const RouteWrapper({Key? key, required this.child, required this.routeName})
-    : super(key: key);
+      : super(key: key);
 
-  // ฟังก์ชันตรวจสอบว่าควรแสดง AssistiveButton หรือไม่
   bool _shouldShowAssistiveButton(String routeName) {
-    // รายการหน้าที่ไม่ต้องการแสดง AssistiveButton
+    // ซ่อนปุ่มในบาง route เช่น login, register
     final hiddenRoutes = ['/', '/wellcome', '/login', '/register'];
     return !hiddenRoutes.contains(routeName);
   }
 
   @override
   Widget build(BuildContext context) {
-    final shouldShow = _shouldShowAssistiveButton(routeName);
-    print('Route: $routeName, Show Button: $shouldShow'); // สำหรับ debug
+    final auth = AuthService(); 
+    final user = auth.currentUser;
+    final isSeller = (user != null && (user['is_seller'] == true));
+
+    final shouldShow = _shouldShowAssistiveButton(routeName) && isSeller;
+
+    print('Route: $routeName, Show Button: $shouldShow, isSeller: $isSeller');
 
     return Stack(
       children: [
-        // หน้าเพจปกติ
         GestureDetector(
           onTap: () {
-            // แสดงปุ่มช่วยเหลือกลับมาเมื่อแตะที่หน้าจอ
             if (shouldShow) {
               AssistiveButton.showButton(context);
             }
           },
           child: child,
         ),
-        // ปุ่มช่วยเหลือลอยอยู่ด้านบน (แสดงเฉพาะหน้าที่กำหนด)
         if (shouldShow) const AssistiveButton(),
       ],
     );
