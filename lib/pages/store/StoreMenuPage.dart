@@ -1,4 +1,5 @@
 import 'package:delivery/APIs/Foods/FoodSelectAPI.dart';
+import 'package:delivery/main.dart';
 import 'package:delivery/pages/store/models/Food_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -175,8 +176,10 @@ class _StoreMenuPageState extends State<StoreMenuPage> {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        StoreDetailPage(marketID: widget.marketID),
+                    builder: (context) => RouteWrapper(
+                      child: StoreDetailPage(marketID: widget.marketID),
+                      routeName: '/store_detail',
+                    ),
                   ),
                 ),
                 child: Row(
@@ -287,8 +290,9 @@ class _StoreMenuPageState extends State<StoreMenuPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => OrderFoodPage(
-                foodId: food.foodId,
+              builder: (context) => RouteWrapper(
+                child: OrderFoodPage(foodId: food.foodId),
+                routeName: '/order_food',
               ),
             ),
           );

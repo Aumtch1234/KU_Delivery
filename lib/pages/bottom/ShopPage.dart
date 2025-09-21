@@ -1,6 +1,7 @@
 import 'package:delivery/APIs/Foods/FoodsMenuAPI.dart';
 import 'package:delivery/APIs/Foods/MaketsAllAPI.dart';
 import 'package:delivery/APIs/middleware/authService.dart';
+import 'package:delivery/main.dart';
 import 'package:delivery/pages/store/StoreMenuPage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -42,9 +43,9 @@ class _ShopPageState extends State<ShopPage> {
       // ✅ รีเฟรช token ถ้าหมดอายุ
       final refreshed = await auth.refreshUserToken();
       if (!refreshed) {
-        print("❌ refresh token ไม่สำเร็จ → กลับไปหน้า login");
+        print("❌ refresh token ไม่สำเร็จ → กลับไปหน้า wellcome");
         if (mounted) {
-          Navigator.pushReplacementNamed(context, '/login');
+          Navigator.pushReplacementNamed(context, '/wellcome');
         }
         return;
       }
@@ -631,7 +632,10 @@ class _ShopPageState extends State<ShopPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => StoreMenuPage(marketID: marketID),
+            builder: (context) => RouteWrapper(
+              child: StoreMenuPage(marketID: marketID),
+              routeName: '/storeMenu',
+            ),
           ),
         );
         print("Navigating to StoreMenuPage with marketID: $marketID");
@@ -699,7 +703,10 @@ class _ShopPageState extends State<ShopPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => OrderFoodPage(foodId: foodId),
+              builder: (context) => RouteWrapper(
+                child: OrderFoodPage(foodId: foodId),
+                routeName: '/order_food',
+              ),
             ),
           );
         },

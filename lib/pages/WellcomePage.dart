@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:delivery/APIs/middleware/authService.dart';
-import 'package:delivery/pages/LoginPage.dart';
-import 'package:delivery/pages/RegisterPage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -162,13 +160,8 @@ class wellcomePage extends StatelessWidget {
                     children: [
                       ElevatedButton(
                         onPressed: () {
-                          // TODO: เพิ่มหน้าจอ login ถ้ามี
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LoginPage(),
-                            ),
-                          );
+                          // ใช้ named route แทนการสร้าง MaterialPageRoute
+                          Navigator.pushNamed(context, '/login');
                         },
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 50),
@@ -189,12 +182,7 @@ class wellcomePage extends StatelessWidget {
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const RegisterPage(),
-                            ),
-                          );
+                          Navigator.pushNamed(context, '/register');
                         },
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 50),

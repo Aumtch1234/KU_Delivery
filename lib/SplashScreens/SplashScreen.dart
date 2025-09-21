@@ -11,7 +11,6 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-
   @override
   void initState() {
     print('SplashScreen loaded'); // 🐞 เพิ่ม log
@@ -19,19 +18,18 @@ class _SplashScreenState extends State<SplashScreen> {
     checkLoginStatus();
   }
 
-Future<void> checkLoginStatus() async {
-  await Future.delayed(Duration(seconds: 1)); // splash time
-  final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString('token');
+  Future<void> checkLoginStatus() async {
+    await Future.delayed(Duration(seconds: 1)); // splash time
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
 
-  if (token != null) {
-    Navigator.pushReplacementNamed(context, '/main');
-  } else {
-    Navigator.pushReplacementNamed(context, '/login');
+    if (token != null) {
+      Navigator.pushReplacementNamed(context, '/main');
+    } else {
+      Navigator.pushReplacementNamed(context, '/wellcome');
+    }
   }
-}
 
-  
   @override
   Widget build(BuildContext context) {
     const String motorbike = 'assets/svg/motorcycle.svg';

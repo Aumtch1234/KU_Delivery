@@ -3,6 +3,8 @@ import 'package:delivery/SplashScreens/SplashScreen.dart';
 import 'package:delivery/APIs/middleware/AuthGuard.dart';
 import 'package:delivery/APIs/middleware/authService.dart';
 import 'package:delivery/pages/EditProfilePage.dart';
+import 'package:delivery/pages/LoginPage.dart';
+import 'package:delivery/pages/RegisterPage.dart';
 import 'package:delivery/pages/Verify-OTP-Page.dart';
 import 'package:delivery/pages/VerifyPage.dart';
 import 'package:delivery/pages/basket/MyBasket.dart';
@@ -11,6 +13,7 @@ import 'package:delivery/pages/bottom/MainNavigation.dart';
 import 'package:delivery/pages/bottom/ShopPage.dart';
 import 'package:delivery/pages/WellcomePage.dart';
 import 'package:delivery/pages/myMarket/AddFoodPage.dart';
+import 'package:delivery/pages/myMarket/Dashboard_salesPage.dart';
 import 'package:delivery/pages/myMarket/EditFoodPage.dart';
 import 'package:delivery/pages/myMarket/EditMarket.dart';
 import 'package:delivery/pages/myMarket/RegisterShopPage.dart';
@@ -23,7 +26,9 @@ import 'package:delivery/pages/status/TakingStatusPage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'pages/basket/providers/basket_provider.dart';
+import 'APIs/Analytics_Dashboard/Market/Dashboard_salesAPIs.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'AssistiveButton.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +41,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => BasketProvider()),
         ChangeNotifierProvider(create: (_) => OrderController()),
+        ChangeNotifierProvider(create: (_) => DashboardSalesController()),
       ],
       child: MyApp(),
     ),
@@ -54,29 +60,124 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       initialRoute: '/', // ✅ ใช้แค่นี้ก็พอ
       routes: {
-        '/': (_) => SplashScreen(), // ตรวจสอบ token ที่นี่
-        '/login': (_) => wellcomePage(),
-        '/verify': (_) => AuthGuard(child: VerifyPage()),
-        '/verify-otp': (_) => AuthGuard(child: OtpVerifyPage()),
+        '/': (_) => const RouteWrapper(
+          child: SplashScreen(),
+          routeName: '/',
+        ), // ตรวจสอบ token ที่นี่
+        '/wellcome': (_) =>
+            RouteWrapper(child: wellcomePage(), routeName: '/wellcome'),
+        '/login': (_) =>
+            const RouteWrapper(child: LoginPage(), routeName: '/login'),
+        '/register': (_) =>
+            const RouteWrapper(child: RegisterPage(), routeName: '/register'),
 
-        '/dashboard': (_) => AuthGuard(child: DashboardPage()),
-        '/shop': (_) => AuthGuard(child: ShopPage()),
-        '/main': (_) => AuthGuard(child: MainNavigation()),
-        '/add/market': (_) => AuthGuard(child: RegisterShopPage()),
-        '/myMarket': (_) => AuthGuard(child: Mymarketpage()),
-        '/editprofile': (_) => AuthGuard(child: EditProfilePage()),
-        '/myMarket/edit': (_) => AuthGuard(child: EditShopPage()),
-        '/addFood': (_) => AuthGuard(child: AddFoodPage()),
-        '/editFood': (_) => AuthGuard(child: EditFoodPage()),
-        '/basket': (context) => MyBasketPage(),
-        '/order-now': (context) => const OrderNowPage(),
-        '/recipient-address': (context) => const RecipientAddressPage(),
-        '/status': (_) => AuthGuard(child: TakingStatusPage()),
+        '/verify': (_) =>
+            const RouteWrapper(child: VerifyPage(), routeName: '/verify'),
+        '/verify-otp': (_) =>
+            RouteWrapper(child: OtpVerifyPage(), routeName: '/verify-otp'),
 
-        '/myaddress': (_) => AuthGuard(child: ShippingAddressPage()),
-        '/add-address': (_) => AuthGuard(child: DeliveryAddressForm()),
+        '/dashboard': (_) =>
+            RouteWrapper(child: DashboardPage(), routeName: '/dashboard'),
+        '/shop': (_) => RouteWrapper(child: ShopPage(), routeName: '/shop'),
+        '/main': (_) =>
+            RouteWrapper(child: MainNavigation(), routeName: '/main'),
+        '/add/market': (_) =>
+            RouteWrapper(child: RegisterShopPage(), routeName: '/add/market'),
+        '/myMarket': (_) =>
+            RouteWrapper(child: Mymarketpage(), routeName: '/myMarket'),
+        '/editprofile': (_) =>
+            RouteWrapper(child: EditProfilePage(), routeName: '/editprofile'),
+        '/myMarket/edit': (_) =>
+            RouteWrapper(child: EditShopPage(), routeName: '/myMarket/edit'),
+        '/addFood': (_) =>
+            RouteWrapper(child: AddFoodPage(), routeName: '/addFood'),
+        '/editFood': (_) =>
+            RouteWrapper(child: EditFoodPage(), routeName: '/editFood'),
+        '/basket': (context) =>
+            RouteWrapper(child: MyBasketPage(), routeName: '/basket'),
+        '/order-now': (context) =>
+            RouteWrapper(child: OrderNowPage(), routeName: '/order-now'),
+        '/recipient-address': (context) => RouteWrapper(
+          child: RecipientAddressPage(),
+          routeName: '/recipient-address',
+        ),
+        '/status': (_) =>
+            RouteWrapper(child: TakingStatusPage(), routeName: '/status'),
+
+        '/myaddress': (_) =>
+            RouteWrapper(child: ShippingAddressPage(), routeName: '/myaddress'),
+        '/add-address': (_) => RouteWrapper(
+          child: DeliveryAddressForm(),
+          routeName: '/add-address',
+        ),
+        '/dashboard-sales': (context) {
+          // รับ marketId จาก arguments
+          final args =
+              ModalRoute.of(context)?.settings.arguments
+                  as Map<String, dynamic>?;
+          final marketId = args?['marketId'] as int?;
+          return RouteWrapper(
+            child: DashboardSalesPage(marketId: marketId),
+            routeName: '/dashboard-sales',
+          );
+        },
       },
       debugShowCheckedModeBanner: false,
+      // builder: (context, child) {
+      //   return Stack(
+      //     children: [
+      //       // แอพปกติเป็นชั้นล่างสุด พร้อมกับการจับการแตะ
+      //       GestureDetector(
+      //         onTap: () {
+      //           // แสดงปุ่มช่วยเหลือกลับมาเมื่อแตะที่หน้าจอ
+      //           AssistiveButton.showButton(context);
+      //         },
+      //         child: child,
+      //       ),
+      //       // ปุ่มช่วยเหลือลอยอยู่ด้านบน
+      //       const AssistiveButton(),
+      //     ],
+      //   );
+      // },
+    );
+  }
+}
+
+class RouteWrapper extends StatelessWidget {
+  final Widget child;
+  final String routeName;
+
+  const RouteWrapper({Key? key, required this.child, required this.routeName})
+      : super(key: key);
+
+  bool _shouldShowAssistiveButton(String routeName) {
+    // ซ่อนปุ่มในบาง route เช่น login, register
+    final hiddenRoutes = ['/', '/wellcome', '/login', '/register'];
+    return !hiddenRoutes.contains(routeName);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = AuthService(); 
+    final user = auth.currentUser;
+    final isSeller = (user != null && (user['is_seller'] == true));
+
+    final shouldShow = _shouldShowAssistiveButton(routeName) && isSeller;
+
+    print('Route: $routeName, Show Button: $shouldShow, isSeller: $isSeller');
+
+    return Stack(
+      children: [
+        GestureDetector(
+          onTap: () {
+            if (shouldShow) {
+              AssistiveButton.showButton(context);
+            }
+          },
+          child: child,
+        ),
+        if (shouldShow) const AssistiveButton(),
+      ],
     );
   }
 }
