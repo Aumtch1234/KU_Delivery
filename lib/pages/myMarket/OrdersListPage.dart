@@ -1,4 +1,3 @@
-// pages/orders_list_page.dart - Fixed for Shop Categories
 import 'package:delivery/APIs/Orders/OrdersSocket.dart';
 import 'package:delivery/pages/order/models/order_model.dart';
 import 'package:flutter/material.dart';
@@ -19,11 +18,11 @@ class _OrdersListPageState extends State<OrdersListPage>
 
   // Updated status tabs for shop workflow
   final Map<String, String> _statusTabs = {
-    'waiting': 'รอยืนยัน',      // ออเดอร์ใหม่ที่รอร้านรับ
-    'accepted': 'กำลังทำ',      // ร้านรับแล้ว กำลังเตรียมอาหาร
-    'delivering': 'กำลังส่ง',    // ไรเดอร์รับไปส่งแล้ว
-    'completed': 'เสร็จแล้ว',    // ส่งเสร็จแล้ว
-    'cancelled': 'ปฏิเสธแล้ว'
+    'waiting': 'รอยืนยัน', // ออเดอร์ใหม่ที่รอร้านรับ
+    'accepted': 'กำลังทำ', // ร้านรับแล้ว กำลังเตรียมอาหาร
+    'delivering': 'กำลังส่ง', // ไรเดอร์รับไปส่งแล้ว
+    'completed': 'เสร็จแล้ว', // ส่งเสร็จแล้ว
+    'cancelled': 'ปฏิเสธ',
   };
 
   String get userType {
@@ -166,7 +165,9 @@ class _OrdersListPageState extends State<OrdersListPage>
     // Count orders by status for today
     final statusCounts = <String, int>{};
     for (var status in _statusTabs.keys) {
-      statusCounts[status] = todayOrders.where((order) => order.status == status).length;
+      statusCounts[status] = todayOrders
+          .where((order) => order.status == status)
+          .length;
     }
 
     return SliverToBoxAdapter(
@@ -216,7 +217,7 @@ class _OrdersListPageState extends State<OrdersListPage>
               ),
               const SizedBox(height: 16),
             ],
-            
+
             // Main summary row
             Row(
               children: [
@@ -290,7 +291,7 @@ class _OrdersListPageState extends State<OrdersListPage>
             ),
 
             const SizedBox(height: 16),
-            
+
             // Status breakdown
             Container(
               padding: const EdgeInsets.all(12),
@@ -303,7 +304,7 @@ class _OrdersListPageState extends State<OrdersListPage>
                   final status = entry.key;
                   final label = entry.value;
                   final count = statusCounts[status] ?? 0;
-                  
+
                   Color color;
                   switch (status) {
                     case 'waiting':
@@ -326,7 +327,10 @@ class _OrdersListPageState extends State<OrdersListPage>
                     child: Column(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 4,
+                            horizontal: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: color.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
@@ -383,7 +387,7 @@ class _OrdersListPageState extends State<OrdersListPage>
           tabs: _statusTabs.entries.map((entry) {
             final status = entry.key;
             final label = entry.value;
-            
+
             return Consumer<OrderController>(
               builder: (context, controller, child) {
                 final count = controller.getOrdersByStatus(status).length;
@@ -395,7 +399,10 @@ class _OrdersListPageState extends State<OrdersListPage>
                       if (count > 0) ...[
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.red,
                             borderRadius: BorderRadius.circular(10),
@@ -464,264 +471,667 @@ class _OrdersListPageState extends State<OrdersListPage>
 
   Widget _buildOrderCard(Order order, OrderController controller) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
           ),
         ],
-        border: Border.all(color: order.statusColor.withOpacity(0.3)),
+        border: Border.all(
+          color: order.statusColor.withOpacity(0.15),
+          width: 1,
+        ),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Column(
           children: [
-            // Status header
+            // Status Header - Clean design
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: order.statusColor.withOpacity(0.1),
+                color: order.statusColor.withOpacity(0.08),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
               ),
               child: Row(
                 children: [
+                  // Status indicator
                   Container(
-                    width: 8,
-                    height: 8,
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: order.statusColor,
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      order.statusIcon,
+                      size: 20,
+                      color: Colors.white,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    order.statusText,
-                    style: TextStyle(
-                      color: order.statusColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          order.statusText,
+                          style: TextStyle(
+                            color: order.statusColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.access_time,
+                              size: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _formatDateTime(order.createdAt),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const Spacer(),
+                  // Payment method badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
                     ),
-                    child: Text(
-                      order.paymentMethod,
-                      style: const TextStyle(
-                        color: Colors.blue,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _formatDateTime(order.createdAt),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          order.paymentMethod.toLowerCase().contains('เงินสด')
+                              ? Icons.payments
+                              : Icons.credit_card,
+                          size: 16,
+                          color: Colors.grey.shade700,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          order.paymentMethod,
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
 
-            // Order content
+            // Order Content
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Order ID and Amount
-                  Row(
-                    children: [
-                      Text(
-                        'ออเดอร์ #${order.orderId}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '฿${order.totalPrice.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Customer Address
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade100,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.location_on,
-                          color: Colors.red,
-                          size: 18,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'ที่อยู่ลูกค้า',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              order.address.isNotEmpty 
-                                  ? order.address 
-                                  : 'กำลังโหลดที่อยู่...',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: order.address.isNotEmpty
-                                    ? Colors.grey.shade700
-                                    : Colors.orange.shade600,
-                                fontStyle: order.address.isNotEmpty
-                                    ? FontStyle.normal
-                                    : FontStyle.italic,
-                              ),
-                            ),
-                            if (order.distanceKm != null && order.distanceKm! > 0) ...[
-                              const SizedBox(height: 2),
+                  // Order Header: ID and Total
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                               Text(
-                                'ระยะทาง: ${order.distanceKm!.toStringAsFixed(1)} กม. | ค่าส่ง: ฿${order.deliveryFee.toStringAsFixed(2)}',
+                                'หมายเลขออเดอร์',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: 12,
                                   color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '#${order.orderId}',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                order.shopName,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.blue.shade700,
                                 ),
                               ),
                             ],
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.green.shade500,
+                                Colors.green.shade600,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            children: [
+                              const Icon(
+                                Icons.receipt_long,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '฿${order.totalPrice.toStringAsFixed(0)}',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const Text(
+                                'ยอดรวม',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
 
-                  // Order Items
+                  const SizedBox(height: 20),
+
+                  // Order Items Section - Redesigned
                   if (order.items.isNotEmpty) ...[
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Column(
+                        children: [
+                          // Items Header
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(12),
+                                topRight: Radius.circular(12),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.restaurant_menu,
+                                    size: 20,
+                                    color: Colors.blue.shade700,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'รายการอาหาร',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: Colors.blue.shade700,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.shade100,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    '${order.items.length} รายการ',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.orange.shade700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Items List
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              children: order.items.asMap().entries.map((
+                                entry,
+                              ) {
+                                int index = entry.key;
+                                OrderItem item = entry.value;
+
+                                return Container(
+                                  margin: EdgeInsets.only(
+                                    bottom: index < order.items.length - 1
+                                        ? 16
+                                        : 0,
+                                  ),
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.grey.shade200,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.04),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Food Name and Quantity
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          // Quantity Badge
+                                          Container(
+                                            width: 32,
+                                            height: 32,
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                colors: [
+                                                  Colors.green.shade500,
+                                                  Colors.green.shade600,
+                                                ],
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                '${item.quantity}',
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          // Food Details
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  item.foodName,
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.black87,
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 8),
+                                                // Price breakdown
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 6,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.grey.shade100,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8,
+                                                        ),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Text(
+                                                        '฿${item.sellPrice.toStringAsFixed(0)}',
+                                                        style: const TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color: Colors.black87,
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        ' × ${item.quantity} = ',
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          color: Colors
+                                                              .grey
+                                                              .shade600,
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        '฿${item.subtotal.toStringAsFixed(0)}',
+                                                        style: const TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: Colors.green,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+
+                                      // Selected Options - Enhanced display
+                                      if (item.selectedOptions.isNotEmpty) ...[
+                                        const SizedBox(height: 12),
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.amber.shade50,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.amber.shade200,
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.tune,
+                                                    size: 16,
+                                                    color:
+                                                        Colors.amber.shade700,
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Text(
+                                                    'ตัวเลือกเพิ่มเติม:',
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color:
+                                                          Colors.amber.shade800,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 8),
+                                              ..._buildFormattedOptions(
+                                                item.selectedOptions,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+                  ],
+
+                  // Delivery Address Section - Cleaner design
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.location_on,
+                                color: Colors.red.shade700,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'ที่อยู่จัดส่ง',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Colors.red.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Text(
+                            order.address.isNotEmpty
+                                ? order.address
+                                : 'กำลังโหลดที่อยู่...',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: order.address.isNotEmpty
+                                  ? Colors.grey.shade700
+                                  : Colors.orange.shade600,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+
+                        // Distance and Delivery Fee
+                        if (order.distanceKm != null &&
+                            order.distanceKm! > 0) ...[
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.grey.shade200,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.straighten,
+                                        size: 16,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '${order.distanceKm!.toStringAsFixed(1)} กม.',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey.shade700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.blue.shade200,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.local_shipping,
+                                      size: 16,
+                                      color: Colors.blue.shade600,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '฿${order.deliveryFee.toStringAsFixed(0)}',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  // Special Note Section
+                  if (order.note != null && order.note!.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.purple.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.purple.shade200),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              const Icon(
-                                Icons.restaurant_menu,
-                                size: 16,
-                                color: Colors.green,
+                              Icon(
+                                Icons.sticky_note_2,
+                                size: 18,
+                                color: Colors.purple.shade600,
                               ),
-                              const SizedBox(width: 6),
-                              const Text(
-                                'รายการอาหาร',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const Spacer(),
+                              const SizedBox(width: 8),
                               Text(
-                                '${order.items.length} รายการ',
+                                'หมายเหตุพิเศษ',
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.purple.shade700,
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 8),
-                          ...order.items.take(3).map(
-                            (item) => Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 24,
-                                    height: 24,
-                                    decoration: BoxDecoration(
-                                      color: Colors.green.shade100,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '${item.quantity}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.green.shade700,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      item.foodName,
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                  ),
-                                  Text(
-                                    '฿${item.subtotal.toStringAsFixed(2)}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              order.note!,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade700,
+                                height: 1.4,
                               ),
                             ),
                           ),
-                          if (order.items.length > 3)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                'และอีก ${order.items.length - 3} รายการ...',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                            ),
                         ],
                       ),
                     ),
                   ],
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
                   // Action Buttons
                   _buildActionButtons(order, controller),
@@ -732,6 +1142,124 @@ class _OrdersListPageState extends State<OrdersListPage>
         ),
       ),
     );
+  }
+
+  // Enhanced function to format selected options
+  List<Widget> _buildFormattedOptions(List<dynamic> options) {
+    if (options.isEmpty) return [];
+
+    return options.map((option) {
+      if (option is Map) {
+        String name =
+            option['label']?.toString() ?? option['name']?.toString() ?? '';
+        String value = option['value']?.toString() ?? '';
+        String price =
+            option['extraPrice']?.toString() ??
+            option['price']?.toString() ??
+            '';
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          child: Row(
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade600,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: name,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade800,
+                        ),
+                      ),
+                      if (value.isNotEmpty)
+                        TextSpan(
+                          text: ': $value',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      if (price.isNotEmpty)
+                        TextSpan(
+                          text: ' (+฿$price)',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade600,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      return Container(
+        margin: const EdgeInsets.only(bottom: 6),
+        child: Row(
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: Colors.amber.shade600,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                option.toString(),
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+              ),
+            ),
+          ],
+        ),
+      );
+    }).toList();
+  }
+
+  // Keep the original _formatSelectedOptions for backward compatibility
+  String _formatSelectedOptions(List<dynamic> options) {
+    if (options.isEmpty) return '';
+
+    return options
+        .map((option) {
+          if (option is Map) {
+            String name =
+                option['label']?.toString() ?? option['name']?.toString() ?? '';
+            String value = option['value']?.toString() ?? '';
+            String price =
+                option['extraPrice']?.toString() ??
+                option['price']?.toString() ??
+                '';
+
+            if (name.isNotEmpty) {
+              if (price.isNotEmpty) {
+                return '$name${value.isNotEmpty ? ": $value" : ""} (+฿$price)';
+              }
+              return '$name${value.isNotEmpty ? ": $value" : ""}';
+            }
+            return option.toString();
+          }
+          return option.toString();
+        })
+        .join(', ');
   }
 
   Widget _buildActionButtons(Order order, OrderController controller) {
@@ -759,7 +1287,7 @@ class _OrdersListPageState extends State<OrdersListPage>
           ),
           const SizedBox(width: 12),
         ],
-        
+
         // Main action button
         Expanded(
           flex: order.status == 'waiting' ? 2 : 1,
@@ -773,7 +1301,7 @@ class _OrdersListPageState extends State<OrdersListPage>
     String buttonText;
     Color buttonColor;
     VoidCallback? onPressed;
-    
+
     switch (order.status) {
       case 'waiting':
         buttonText = 'รับออเดอร์';
@@ -804,9 +1332,7 @@ class _OrdersListPageState extends State<OrdersListPage>
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
         backgroundColor: buttonColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         elevation: onPressed != null ? 2 : 0,
       ),
       onPressed: onPressed,
@@ -822,7 +1348,10 @@ class _OrdersListPageState extends State<OrdersListPage>
   }
 
   Future<void> _acceptOrder(Order order, OrderController controller) async {
-    final success = await controller.acceptOrder(order.orderId, widget.marketId!);
+    final success = await controller.acceptOrder(
+      order.orderId,
+      widget.marketId!,
+    );
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -841,7 +1370,10 @@ class _OrdersListPageState extends State<OrdersListPage>
   }
 
   Future<void> _markReady(Order order, OrderController controller) async {
-    final success = await controller.updateOrderStatus(order.orderId, 'delivering');
+    final success = await controller.updateOrderStatus(
+      order.orderId,
+      'delivering',
+    );
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -875,7 +1407,7 @@ class _OrdersListPageState extends State<OrdersListPage>
             onPressed: () async {
               Navigator.of(context).pop();
               final success = await controller.updateOrderStatus(
-                order.orderId, 
+                order.orderId,
                 'cancelled',
               );
               if (success && mounted) {
