@@ -157,6 +157,8 @@ class _RegisterShopPageState extends State<RegisterShopPage> {
 
       if (result['statusCode'] == 200) {
         await AuthService().refreshUserToken();
+        // หลังรีเฟรช token แล้ว กระตุ้น UI ให้กลับไปหน้าหลักที่จะแสดง AssistiveButton ทันที
+        // หากต้องการให้กลับไป MyMarket หรือ MainNavigation สามารถแก้ route ได้
         _showSuccessDialog();
       } else {
         _showErrorDialog(
@@ -176,10 +178,13 @@ class _RegisterShopPageState extends State<RegisterShopPage> {
       context: context,
       dialogType: DialogType.success,
       animType: AnimType.scale,
-      title: 'สมัครร้านค้าสำเร็จ',
-      desc: 'ระบบจะพาคุณกลับหน้าหลัก',
+      title: 'ส่งคำขอสมัครร้านค้าแล้ว',
+      desc:
+          'กรุณารอการอนุมัติจากแอดมิน หลังได้รับการอนุมัติแล้วจึงจะสามารถใช้งานเครื่องมือร้านค้าได้',
       btnOkColor: primaryColor,
-      btnOkOnPress: () => Navigator.pop(context),
+      btnOkOnPress: () {
+        Navigator.pop(context);
+      },
     ).show();
   }
 

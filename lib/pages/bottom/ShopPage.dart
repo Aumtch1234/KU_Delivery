@@ -1,5 +1,6 @@
 import 'package:delivery/APIs/Foods/FoodsMenuAPI.dart';
 import 'package:delivery/APIs/Foods/MaketsAllAPI.dart';
+import 'package:delivery/APIs/Markets/FetchMarket.dart';
 import 'package:delivery/APIs/middleware/authService.dart';
 import 'package:delivery/main.dart';
 import 'package:delivery/pages/store/StoreMenuPage.dart';
@@ -28,12 +29,25 @@ class _ShopPageState extends State<ShopPage> {
   void initState() {
     super.initState();
     fetchAllFoods();
+    loadMarketData(); // ✅ เพิ่มการโหลด market data
 
     // ✅ โหลดตะกร้าทันที
     Future.microtask(() {
       final basket = Provider.of<BasketProvider>(context, listen: false);
       basket.loadCartFromAPI();
     });
+  }
+
+  /// ✅ โหลดข้อมูลร้านค้าของผู้ใช้เพื่อแสดง AssistiveButton
+  Future<void> loadMarketData() async {
+    try {
+      final marketData = await fetchMyMarket();
+      // อัปเดต market data ใน AuthService
+      AuthService().updateMarketData(marketData);
+    } catch (e) {
+      print('Error loading market data in ShopPage: $e');
+      AuthService().updateMarketData(null);
+    }
   }
 
   Future<void> fetchAllFoods() async {
