@@ -4,12 +4,28 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 
-class AuthService {
+class AuthService extends ChangeNotifier {
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   AuthService._internal();
 
   Map<String, dynamic>? currentUser;
+  Map<String, dynamic>? marketData;
+
+  /// ✅ ตรวจสอบว่าเป็นผู้ขายที่ได้รับการอนุมัติแล้วหรือไม่
+  bool get isSellerApproved {
+    return marketData != null && marketData!['approve'] == true;
+  }
+
+  /// ✅ ตรวจสอบว่าเป็นผู้ขายที่รออนุมัติหรือไม่
+  bool get isPendingSeller {
+    return marketData != null && marketData!['approve'] == false;
+  }
+
+  /// ✅ ตรวจสอบว่ามีร้านค้าหรือไม่ (ไม่ว่าจะอนุมัติหรือไม่)
+  bool get hasSeller {
+    return marketData != null;
+  }
 
   /// ✅ Login แบบ Manual (อีเมล + รหัสผ่าน)
   Future<Map<String, dynamic>> loginWithEmail(
@@ -58,32 +74,31 @@ class AuthService {
   }
 
   /// ✅ รีเฟรช Token/// ✅ รีเฟรช Token แล้ว return true/false
-Future<bool> refreshUserToken() async {
-  final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString('token') ?? '';
+  Future<bool> refreshUserToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
 
-  final response = await http.post(
-    Uri.parse('${ApiConfig.baseUrl}/refresh-token'),
-    headers: {'Authorization': 'Bearer $token'},
-  );
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/refresh-token'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
 
-  if (response.statusCode == 200) {
-    final data = jsonDecode(response.body);
-    await prefs.setString('token', data['token']);
-    await prefs.setString('user', jsonEncode(data['user']));
-    currentUser = data['user'];
-    return true;  // ✅ สำเร็จ
-  } else {
-    print('Refresh token failed: ${response.body}');
-    // ลบ token เก่า ถ้า refresh ไม่สำเร็จ
-    print('Refresh token failed: ${response.body}');
-    await prefs.remove('token');
-    await prefs.remove('user');
-    currentUser = null;
-    return false; // ❌ ไม่สำเร็จ
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      await prefs.setString('token', data['token']);
+      await prefs.setString('user', jsonEncode(data['user']));
+      currentUser = data['user'];
+      notifyListeners(); // 🔔 แจ้ง UI ให้ rebuild
+      return true; // ✅ สำเร็จ
+    } else {
+      print('Refresh token failed: ${response.body}');
+      await prefs.remove('token');
+      await prefs.remove('user');
+      currentUser = null;
+      notifyListeners();
+      return false; // ❌ ไม่สำเร็จ
+    }
   }
-}
-
 
   /// ✅ โหลดผู้ใช้จาก local
   Future<void> loadUser() async {
@@ -91,6 +106,7 @@ Future<bool> refreshUserToken() async {
     final userStr = prefs.getString('user');
     if (userStr != null) {
       currentUser = jsonDecode(userStr);
+      notifyListeners();
     }
   }
 
@@ -100,6 +116,7 @@ Future<bool> refreshUserToken() async {
     await prefs.remove('token');
     await prefs.remove('user');
     currentUser = null;
+    notifyListeners();
   }
 
   Future<void> confirmLogout(BuildContext context) async {
@@ -133,11 +150,19 @@ Future<bool> refreshUserToken() async {
     await prefs.setString('token', data['token']);
     await prefs.setString('user', jsonEncode(data['user']));
     currentUser = data['user'];
+    notifyListeners();
   }
 
   /// ✅ ดึง token จาก local storage
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('token');
+  }
+
+  /// ✅ อัปเดตข้อมูลร้านค้า (เรียกจาก DashboardPage หรือหน้าอื่นที่โหลด market data)
+  void updateMarketData(Map<String, dynamic>? data) {
+    marketData = data;
+    notifyListeners();
+    print('✅ Market data updated: $marketData');
   }
 }

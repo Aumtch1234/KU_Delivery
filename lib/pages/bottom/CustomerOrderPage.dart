@@ -18,12 +18,19 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // Updated status tabs with better naming
+  // Updated status tabs with all 11 statuses
   final Map<String, Map<String, dynamic>> _statusTabs = {
     'all': {'name': 'ทั้งหมด', 'icon': Icons.list_alt},
     'waiting': {'name': 'รอยืนยัน', 'icon': Icons.schedule},
-    'accepted': {'name': 'กำลังทำ', 'icon': Icons.restaurant_menu},
+    'confirmed': {'name': 'ยืนยันแล้ว', 'icon': Icons.check_circle},
+    'preparing': {'name': 'กำลังทำ', 'icon': Icons.restaurant_menu},
+    'ready_for_pickup': {'name': 'พร้อมส่ง', 'icon': Icons.shopping_bag},
+    'rider_assigned': {'name': 'มีไรเดอร์', 'icon': Icons.motorcycle},
+    'going_to_shop': {'name': 'ไปร้าน', 'icon': Icons.directions},
+    'arrived_at_shop': {'name': 'ถึงร้าน', 'icon': Icons.store},
+    'picked_up': {'name': 'รับแล้ว', 'icon': Icons.takeout_dining},
     'delivering': {'name': 'กำลังส่ง', 'icon': Icons.delivery_dining},
+    'arrived_at_customer': {'name': 'ถึงแล้ว', 'icon': Icons.home},
     'completed': {'name': 'เสร็จแล้ว', 'icon': Icons.check_circle},
     'cancelled': {'name': 'ยกเลิก', 'icon': Icons.cancel},
   };
@@ -87,8 +94,30 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
 
     // เรียงออเดอร์ตาม priority: active orders ก่อน แล้วเรียงตามวันที่
     filteredOrders.sort((a, b) {
-      final aActive = ['waiting', 'accepted', 'delivering'].contains(a.status);
-      final bActive = ['waiting', 'accepted', 'delivering'].contains(b.status);
+      final aActive = [
+        'waiting',
+        'confirmed',
+        'preparing',
+        'ready_for_pickup',
+        'rider_assigned',
+        'going_to_shop',
+        'arrived_at_shop',
+        'picked_up',
+        'delivering',
+        'arrived_at_customer',
+      ].contains(a.status);
+      final bActive = [
+        'waiting',
+        'confirmed',
+        'preparing',
+        'ready_for_pickup',
+        'rider_assigned',
+        'going_to_shop',
+        'arrived_at_shop',
+        'picked_up',
+        'delivering',
+        'arrived_at_customer',
+      ].contains(b.status);
 
       if (aActive && !bActive) return -1;
       if (!aActive && bActive) return 1;
@@ -126,10 +155,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                cardColor,
-                primaryColor.withOpacity(0.05),
-              ],
+              colors: [cardColor, primaryColor.withOpacity(0.05)],
             ),
           ),
         ),
@@ -138,18 +164,24 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
             builder: (context, controller, child) {
               return Container(
                 margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: controller.isSocketConnected 
-                      ? [successColor, primaryLight]
-                      : [errorColor, errorColor.withOpacity(0.8)],
+                    colors: controller.isSocketConnected
+                        ? [successColor, primaryLight]
+                        : [errorColor, errorColor.withOpacity(0.8)],
                   ),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: (controller.isSocketConnected ? successColor : errorColor)
-                          .withOpacity(0.3),
+                      color:
+                          (controller.isSocketConnected
+                                  ? successColor
+                                  : errorColor)
+                              .withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -159,7 +191,9 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      controller.isSocketConnected ? Icons.wifi : Icons.wifi_off,
+                      controller.isSocketConnected
+                          ? Icons.wifi
+                          : Icons.wifi_off,
                       size: 16,
                       color: Colors.white,
                     ),
@@ -195,7 +229,10 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
             child: Consumer<OrderController>(
               builder: (context, controller, child) {
                 return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: surfaceColor,
                     borderRadius: BorderRadius.circular(16),
@@ -233,27 +270,30 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                       fontSize: 13,
                     ),
                     tabs: _statusTabs.entries.map((entry) {
-                      final count = _getOrderCountByStatus(controller, entry.key);
+                      final count = _getOrderCountByStatus(
+                        controller,
+                        entry.key,
+                      );
                       return Tab(
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                entry.value['icon'],
-                                size: 16,
-                              ),
+                              Icon(entry.value['icon'], size: 16),
                               const SizedBox(width: 8),
                               Text(entry.value['name']),
                               if (count > 0) ...[
                                 const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: _currentStatus == entry.key 
-                                      ? Colors.white.withOpacity(0.25)
-                                      : primaryColor.withOpacity(0.15),
+                                    color: _currentStatus == entry.key
+                                        ? Colors.white.withOpacity(0.25)
+                                        : primaryColor.withOpacity(0.15),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
@@ -261,9 +301,9 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
-                                      color: _currentStatus == entry.key 
-                                        ? Colors.white
-                                        : primaryColor,
+                                      color: _currentStatus == entry.key
+                                          ? Colors.white
+                                          : primaryColor,
                                     ),
                                   ),
                                 ),
@@ -350,7 +390,18 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
   }
 
   Widget _buildOrderCard(Order order) {
-    final isActive = ['waiting', 'accepted', 'delivering'].contains(order.status);
+    final isActive = [
+      'waiting',
+      'confirmed',
+      'preparing',
+      'ready_for_pickup',
+      'rider_assigned',
+      'going_to_shop',
+      'arrived_at_shop',
+      'picked_up',
+      'delivering',
+      'arrived_at_customer',
+    ].contains(order.status);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -365,9 +416,9 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
             spreadRadius: 0,
           ),
         ],
-        border: isActive 
-          ? Border.all(color: primaryColor.withOpacity(0.3), width: 1.5)
-          : null,
+        border: isActive
+            ? Border.all(color: primaryColor.withOpacity(0.3), width: 1.5)
+            : null,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
@@ -427,12 +478,18 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                                 ),
                               ),
                             ),
-                            if (isActive) 
+                            if (isActive)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
-                                    colors: [order.statusColor, order.statusColor.withOpacity(0.8)],
+                                    colors: [
+                                      order.statusColor,
+                                      order.statusColor.withOpacity(0.8),
+                                    ],
                                   ),
                                   borderRadius: BorderRadius.circular(16),
                                   boxShadow: [
@@ -537,9 +594,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                     decoration: BoxDecoration(
                       color: surfaceColor,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: primaryColor.withOpacity(0.2),
-                      ),
+                      border: Border.all(color: primaryColor.withOpacity(0.2)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -570,7 +625,9 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                           ],
                         ),
                         const SizedBox(height: 12),
-                        ...order.items.map((item) => _buildOrderItem(item)).toList(),
+                        ...order.items
+                            .map((item) => _buildOrderItem(item))
+                            .toList(),
                       ],
                     ),
                   ),
@@ -607,7 +664,8 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                         child: _buildInfoCard(
                           icon: Icons.directions,
                           title: 'ระยะทาง',
-                          subtitle: '${order.distanceKm?.toStringAsFixed(1) ?? 'N/A'} กม.',
+                          subtitle:
+                              '${order.distanceKm?.toStringAsFixed(1) ?? 'N/A'} กม.',
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -628,12 +686,13 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [primaryColor.withOpacity(0.1), primaryColor.withOpacity(0.05)],
+                        colors: [
+                          primaryColor.withOpacity(0.1),
+                          primaryColor.withOpacity(0.05),
+                        ],
                       ),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: primaryColor.withOpacity(0.2),
-                      ),
+                      border: Border.all(color: primaryColor.withOpacity(0.2)),
                     ),
                     child: Row(
                       children: [
@@ -720,7 +779,10 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [successColor.withOpacity(0.15), successColor.withOpacity(0.1)],
+                          colors: [
+                            successColor.withOpacity(0.15),
+                            successColor.withOpacity(0.1),
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
@@ -730,11 +792,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.schedule,
-                            size: 20,
-                            color: successColor,
-                          ),
+                          Icon(Icons.schedule, size: 20, color: successColor),
                           const SizedBox(width: 10),
                           Text(
                             'เวลาโดยประมาณ: 25-30 นาที',
@@ -765,11 +823,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.note,
-                            size: 18,
-                            color: warningColor,
-                          ),
+                          Icon(Icons.note, size: 18, color: warningColor),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -810,7 +864,10 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: errorColor,
-                          side: BorderSide(color: errorColor.withOpacity(0.3), width: 1.5),
+                          side: BorderSide(
+                            color: errorColor.withOpacity(0.3),
+                            width: 1.5,
+                          ),
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
@@ -850,9 +907,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: primaryColor.withOpacity(0.1),
-        ),
+        border: Border.all(color: primaryColor.withOpacity(0.1)),
       ),
       child: Row(
         children: [
@@ -924,20 +979,14 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
       decoration: BoxDecoration(
         color: surfaceColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: primaryColor.withOpacity(0.2),
-        ),
+        border: Border.all(color: primaryColor.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                size: 16,
-                color: primaryColor,
-              ),
+              Icon(icon, size: 16, color: primaryColor),
               const SizedBox(width: 6),
               Text(
                 title,
@@ -974,18 +1023,45 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
   }
 
   Widget _buildProgressBar(String status) {
-    final steps = ['waiting', 'accepted', 'delivering', 'completed'];
-    final stepNames = ['รับออเดอร์', 'ยืนยัน', 'จัดส่ง', 'เสร็จสิ้น'];
-    final currentIndex = steps.indexOf(status);
+    final steps = [
+      'waiting',
+      'confirmed',
+      'preparing',
+      'ready_for_pickup',
+      'rider_assigned',
+      'going_to_shop',
+      'arrived_at_shop',
+      'picked_up',
+      'delivering',
+      'arrived_at_customer',
+      'completed',
+    ];
+    final stepNames = [
+      'รอยืนยัน',
+      'ยืนยัน',
+      'เตรียม',
+      'พร้อม',
+      'มีไรเดอร์',
+      'ไปร้าน',
+      'ถึงร้าน',
+      'รับแล้ว',
+      'ส่ง',
+      'ถึงแล้ว',
+      'เสร็จ',
+    ];
+
+    // หาตำแหน่งปัจจุบัน
+    int currentIndex = steps.indexOf(status);
+    if (currentIndex == -1) {
+      currentIndex = 0; // default to first step if status not found
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: surfaceColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: primaryColor.withOpacity(0.2),
-        ),
+        border: Border.all(color: primaryColor.withOpacity(0.2)),
       ),
       child: Column(
         children: [
@@ -999,25 +1075,28 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                 child: Container(
                   height: 8,
                   margin: EdgeInsets.only(
-                    right: index < steps.length - 1 ? 6 : 0,
+                    right: index < steps.length - 1 ? 2 : 0,
                   ),
                   decoration: BoxDecoration(
-                    gradient: isActive 
-                      ? LinearGradient(
-                          colors: isCurrent 
-                            ? [primaryColor, primaryLight]
-                            : [successColor, successColor.withOpacity(0.8)],
-                        )
-                      : null,
+                    gradient: isActive
+                        ? LinearGradient(
+                            colors: isCurrent
+                                ? [primaryColor, primaryLight]
+                                : [successColor, successColor.withOpacity(0.8)],
+                          )
+                        : null,
                     color: !isActive ? Colors.grey.shade300 : null,
                     borderRadius: BorderRadius.circular(4),
-                    boxShadow: isActive ? [
-                      BoxShadow(
-                        color: (isCurrent ? primaryColor : successColor).withOpacity(0.3),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ] : null,
+                    boxShadow: isActive
+                        ? [
+                            BoxShadow(
+                              color: (isCurrent ? primaryColor : successColor)
+                                  .withOpacity(0.3),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ]
+                        : null,
                   ),
                 ),
               );
@@ -1036,11 +1115,11 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                   entry.value,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 9,
                     fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
-                    color: isActive 
-                      ? (isCurrent ? primaryColor : successColor)
-                      : Colors.grey.shade500,
+                    color: isActive
+                        ? (isCurrent ? primaryColor : successColor)
+                        : Colors.grey.shade500,
                   ),
                 ),
               );
@@ -1055,9 +1134,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
             Container(
@@ -1071,10 +1148,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
             const SizedBox(width: 12),
             const Text(
               'ยกเลิกออเดอร์',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: textPrimary,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, color: textPrimary),
             ),
           ],
         ),
@@ -1082,11 +1156,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
             'คุณต้องการยกเลิกออเดอร์ #${order.orderId} หรือไม่?\n\nหมายเหตุ: หากร้านยืนยันออเดอร์แล้ว อาจจะไม่สามารถยกเลิกได้',
-            style: TextStyle(
-              fontSize: 14,
-              color: textSecondary,
-              height: 1.5,
-            ),
+            style: TextStyle(fontSize: 14, color: textSecondary, height: 1.5),
           ),
         ),
         actions: [
@@ -1183,11 +1253,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                 ),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.error_outline,
-                size: 64,
-                color: errorColor,
-              ),
+              child: Icon(Icons.error_outline, size: 64, color: errorColor),
             ),
             const SizedBox(height: 32),
             const Text(
@@ -1202,11 +1268,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
             Text(
               controller.error ?? 'ไม่สามารถโหลดข้อมูลได้',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: textSecondary,
-                height: 1.5,
-              ),
+              style: TextStyle(fontSize: 16, color: textSecondary, height: 1.5),
             ),
             const SizedBox(height: 40),
             ElevatedButton.icon(
@@ -1226,10 +1288,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
               icon: const Icon(Icons.refresh, size: 20),
               label: const Text(
                 'ลองใหม่อีกครั้ง',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
               ),
             ),
           ],
@@ -1248,15 +1307,50 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
         subtitle = 'ออเดอร์ใหม่ที่รอร้านยืนยันจะปรากฏที่นี่';
         iconData = Icons.schedule;
         break;
-      case 'accepted':
+      case 'confirmed':
+        title = 'ไม่มีออเดอร์ที่ยืนยันแล้ว';
+        subtitle = 'ออเดอร์ที่ร้านยืนยันรับแล้วจะปรากฏที่นี่';
+        iconData = Icons.check_circle;
+        break;
+      case 'preparing':
         title = 'ไม่มีออเดอร์ที่กำลังทำ';
         subtitle = 'ออเดอร์ที่ร้านกำลังเตรียมจะปรากฏที่นี่';
         iconData = Icons.restaurant_menu;
+        break;
+      case 'ready_for_pickup':
+        title = 'ไม่มีออเดอร์ที่พร้อมส่ง';
+        subtitle = 'ออเดอร์ที่พร้อมให้ไรเดอร์รับจะปรากฏที่นี่';
+        iconData = Icons.shopping_bag;
+        break;
+      case 'rider_assigned':
+        title = 'ไม่มีออเดอร์ที่มีไรเดอร์';
+        subtitle = 'ออเดอร์ที่มีไรเดอร์รับงานแล้วจะปรากฏที่นี่';
+        iconData = Icons.motorcycle;
+        break;
+      case 'going_to_shop':
+        title = 'ไม่มีไรเดอร์ที่กำลังไปร้าน';
+        subtitle = 'ไรเดอร์ที่กำลังไปรับอาหารจะปรากฏที่นี่';
+        iconData = Icons.directions;
+        break;
+      case 'arrived_at_shop':
+        title = 'ไม่มีไรเดอร์ที่ถึงร้านแล้ว';
+        subtitle = 'ไรเดอร์ที่ถึงร้านแล้วจะปรากฏที่นี่';
+        iconData = Icons.store;
+        break;
+      case 'picked_up':
+        title = 'ไม่มีออเดอร์ที่รับแล้ว';
+        subtitle = 'ออเดอร์ที่ไรเดอร์รับจากร้านแล้วจะปรากฏที่นี่';
+        iconData = Icons.takeout_dining;
         break;
       case 'delivering':
         title = 'ไม่มีออเดอร์ที่กำลังส่ง';
         subtitle = 'ออเดอร์ที่กำลังส่งจะปรากฏที่นี่';
         iconData = Icons.delivery_dining;
+        break;
+      case 'arrived_at_customer':
+        title = 'ไม่มีไรเดอร์ที่ถึงแล้ว';
+        subtitle = 'ไรเดอร์ที่มาถึงที่จัดส่งแล้วจะปรากฏที่นี่';
+        iconData = Icons.home;
         break;
       case 'completed':
         title = 'ไม่มีออเดอร์ที่เสร็จแล้ว';
@@ -1284,18 +1378,11 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
               padding: const EdgeInsets.all(40),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    Colors.grey.shade100,
-                    Colors.grey.shade50,
-                  ],
+                  colors: [Colors.grey.shade100, Colors.grey.shade50],
                 ),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                iconData,
-                size: 80,
-                color: Colors.grey.shade400,
-              ),
+              child: Icon(iconData, size: 80, color: Colors.grey.shade400),
             ),
             const SizedBox(height: 32),
             Text(
@@ -1310,11 +1397,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
             const SizedBox(height: 12),
             Text(
               subtitle,
-              style: TextStyle(
-                fontSize: 16,
-                color: textSecondary,
-                height: 1.5,
-              ),
+              style: TextStyle(fontSize: 16, color: textSecondary, height: 1.5),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 40),
@@ -1336,10 +1419,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text(
                 'รีเฟรช',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
               ),
             ),
           ],
@@ -1359,7 +1439,15 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
     } else if (difference.inDays == 0) {
       return 'วันนี้ ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     } else if (difference.inDays < 7) {
-      final weekdays = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'อาทิตย์'];
+      final weekdays = [
+        'จันทร์',
+        'อังคาร',
+        'พุธ',
+        'พฤหัสบดี',
+        'ศุกร์',
+        'เสาร์',
+        'อาทิตย์',
+      ];
       final weekday = weekdays[dateTime.weekday - 1];
       return '$weekday ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     } else {

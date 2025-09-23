@@ -44,13 +44,19 @@ class _DashboardPageState extends State<DashboardPage> {
       if (marketDataResult != null) {
         loadedUser['is_seller'] = marketDataResult['approve'] == true;
         marketData = marketDataResult;
+        // ✅ อัปเดต marketData ใน AuthService
+        AuthService().updateMarketData(marketDataResult);
       } else {
         loadedUser['is_seller'] = false;
         marketData = null;
+        // ✅ อัปเดต marketData เป็น null ใน AuthService
+        AuthService().updateMarketData(null);
       }
     } catch (e) {
       loadedUser['is_seller'] = false;
       marketData = null;
+      // ✅ อัปเดต marketData เป็น null ใน AuthService เมื่อ error
+      AuthService().updateMarketData(null);
       debugPrint('Error fetching my-market: $e');
     }
 

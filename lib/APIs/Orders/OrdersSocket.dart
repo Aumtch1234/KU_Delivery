@@ -32,18 +32,18 @@ class OrderController extends ChangeNotifier {
   }) async {
     try {
       print('🔌 Initializing socket connection...');
-      
+
       // เก็บข้อมูลปัจจุบัน
       _currentUserId = userId;
       _currentMarketId = marketId;
-      
+
       await _socketService.connect();
       _setupSocketListeners();
 
       // Register user with comprehensive data
       Map<String, dynamic> registrationData = {};
       String userType = 'customer';
-      
+
       if (userId != null) {
         registrationData['userId'] = userId;
         userType = 'customer';
@@ -56,9 +56,9 @@ class OrderController extends ChangeNotifier {
         registrationData['riderId'] = riderId;
         userType = 'rider';
       }
-      
+
       registrationData['userType'] = userType;
-      
+
       print('📝 Registering user with data: $registrationData');
       _socketService.emit("register_user", registrationData);
 
@@ -68,13 +68,13 @@ class OrderController extends ChangeNotifier {
         _socketService.emit("join_room", {"room": customerRoom});
         print('📍 Joined customer room: $customerRoom');
       }
-      
+
       if (marketId != null) {
         final shopRoom = "shop:$marketId";
         _socketService.emit("join_room", {"room": shopRoom});
         print('📍 Joined shop room: $shopRoom');
       }
-      
+
       if (riderId != null) {
         final riderRoom = "rider:$riderId";
         _socketService.emit("join_room", {"room": riderRoom});
@@ -82,10 +82,9 @@ class OrderController extends ChangeNotifier {
       }
 
       print('✅ Socket initialization complete');
-      
+
       // ⭐ Force UI update after socket connection
       notifyListeners();
-      
     } catch (e) {
       _error = 'Failed to connect to socket: $e';
       print('❌ Socket initialization failed: $e');
@@ -96,7 +95,7 @@ class OrderController extends ChangeNotifier {
   // แก้ไข _setupSocketListeners ให้ครบถ้วน
   void _setupSocketListeners() {
     print('🎧 Setting up socket listeners...');
-    
+
     // Clear existing listeners first
     _socketService.off('connect');
     _socketService.off('disconnect');
@@ -106,7 +105,7 @@ class OrderController extends ChangeNotifier {
     _socketService.off('order_status_update');
     _socketService.off('error');
     _socketService.off('pong');
-    
+
     // Connection status
     _socketService.on('connect', (data) {
       print('✅ Socket connected successfully');
@@ -161,7 +160,7 @@ class OrderController extends ChangeNotifier {
     }
 
     print('🔄 Processing order update: $data');
-    
+
     final orderId = data['order_id'];
     if (orderId == null) {
       print('⚠️ Order update missing order_id');
@@ -171,14 +170,18 @@ class OrderController extends ChangeNotifier {
     // ⭐ กรองเฉพาะออเดอร์ที่เกี่ยวข้อง
     if (_currentMarketId != null && data['market_id'] != null) {
       if (data['market_id'] != _currentMarketId) {
-        print('🚫 Filtered out order from different market: ${data['market_id']} (current: $_currentMarketId)');
+        print(
+          '🚫 Filtered out order from different market: ${data['market_id']} (current: $_currentMarketId)',
+        );
         return;
       }
     }
 
     if (_currentUserId != null && data['user_id'] != null) {
       if (data['user_id'] != _currentUserId) {
-        print('🚫 Filtered out order from different user: ${data['user_id']} (current: $_currentUserId)');
+        print(
+          '🚫 Filtered out order from different user: ${data['user_id']} (current: $_currentUserId)',
+        );
         return;
       }
     }
@@ -190,8 +193,9 @@ class OrderController extends ChangeNotifier {
       if (_currentOrder?.orderId == orderId) {
         final newStatus = data['status'] ?? _currentOrder!.status;
         final newRiderId = data['rider_id'] ?? _currentOrder!.riderId;
-        
-        if (_currentOrder!.status != newStatus || _currentOrder!.riderId != newRiderId) {
+
+        if (_currentOrder!.status != newStatus ||
+            _currentOrder!.riderId != newRiderId) {
           _currentOrder = _currentOrder?.copyWith(
             status: newStatus,
             riderId: newRiderId,
@@ -210,7 +214,7 @@ class OrderController extends ChangeNotifier {
         final oldStatus = _orders[index].status;
         final newStatus = data['status'] ?? _orders[index].status;
         final newRiderId = data['rider_id'] ?? _orders[index].riderId;
-        
+
         if (oldStatus != newStatus || _orders[index].riderId != newRiderId) {
           _orders[index] = _orders[index].copyWith(
             status: newStatus,
@@ -220,7 +224,9 @@ class OrderController extends ChangeNotifier {
                 : DateTime.now(),
           );
           hasChanges = true;
-          print('📝 Updated order in list: $orderId ($oldStatus -> ${_orders[index].status})');
+          print(
+            '📝 Updated order in list: $orderId ($oldStatus -> ${_orders[index].status})',
+          );
         }
       } else {
         print('⚠️ Order $orderId not found in local list for update');
@@ -234,7 +240,6 @@ class OrderController extends ChangeNotifier {
         print('🔄 Notifying listeners of order update');
         notifyListeners();
       }
-      
     } catch (e) {
       print('❌ Error handling order update: $e');
       _error = 'Error processing order update: $e';
@@ -304,8 +309,10 @@ class OrderController extends ChangeNotifier {
           _orders = parsedOrders
             ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-          print('✅ Successfully loaded ${_orders.length} orders for market $marketId');
-          
+          print(
+            '✅ Successfully loaded ${_orders.length} orders for market $marketId',
+          );
+
           // Group orders by status for logging
           final statusGroups = <String, int>{};
           for (var order in _orders) {
@@ -422,13 +429,60 @@ class OrderController extends ChangeNotifier {
         }
 
         print('✅ Order $orderId accepted successfully');
-        
+
         // ⭐ Force UI update
         notifyListeners();
         return true;
       } else {
         _error = data['error'] ?? 'Failed to accept order';
         print('❌ Failed to accept order: $_error');
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = 'Network error: $e';
+      print('❌ Network error: $e');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // เพิ่ม method สำหรับ updatePreparationStatus
+  Future<bool> updatePreparationStatus(
+    int orderId,
+    String status, // 'preparing' หรือ 'ready_for_pickup'
+  ) async {
+    try {
+      print('🔄 Updating preparation status for order $orderId to $status');
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/update_preparation_status'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'order_id': orderId, 'status': status}),
+      );
+
+      final data = json.decode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        // ⭐ Update local order status ทันทีพร้อม force UI update
+        final orderIndex = _orders.indexWhere(
+          (order) => order.orderId == orderId,
+        );
+        if (orderIndex != -1) {
+          _orders[orderIndex] = _orders[orderIndex].copyWith(
+            status: status,
+            updatedAt: DateTime.now(),
+          );
+          print('✅ Local preparation status updated immediately');
+        }
+
+        print('✅ Order $orderId preparation status updated to $status');
+
+        // ⭐ Force UI update
+        notifyListeners();
+        return true;
+      } else {
+        _error = data['error'] ?? 'Failed to update preparation status';
+        print('❌ Failed to update preparation status: $_error');
         notifyListeners();
         return false;
       }
@@ -474,7 +528,7 @@ class OrderController extends ChangeNotifier {
         }
 
         print('✅ Order $orderId status updated to $status');
-        
+
         // ⭐ Force UI update
         notifyListeners();
         return true;
@@ -514,7 +568,7 @@ class OrderController extends ChangeNotifier {
           );
           print('✅ Local order cancelled immediately');
         }
-        
+
         // ⭐ Force UI update
         notifyListeners();
         return true;
@@ -546,10 +600,68 @@ class OrderController extends ChangeNotifier {
     }
   }
 
-  // Get orders by status - ปรับปรุงการกรอง
-  List<Order> getOrdersByStatus(String status) {
-    final filtered = _orders.where((order) => order.status == status).toList();
-    print('🔍 getOrdersByStatus($status): found ${filtered.length} orders');
+  // Get orders by status - ปรับปรุงการกรองสำหรับ Shop Categories
+  List<Order> getOrdersByStatus(String statusCategory) {
+    List<Order> filtered;
+
+    switch (statusCategory) {
+      case 'waiting':
+        // รอยืนยัน - ออเดอร์ใหม่ที่รอร้านรับ
+        filtered = _orders.where((order) => order.status == 'waiting').toList();
+        break;
+
+      case 'confirmed':
+        // กำลังทำ - ร้านยืนยันแล้ว, กำลังเตรียม, พร้อมส่ง
+        filtered = _orders
+            .where(
+              (order) =>
+                  order.status == 'confirmed' ||
+                  order.status == 'preparing' ||
+                  order.status == 'ready_for_pickup',
+            )
+            .toList();
+        break;
+
+      case 'delivering':
+        // กำลังส่ง - ไรเดอร์รับงานแล้วจนถึงกำลังส่ง
+        filtered = _orders
+            .where(
+              (order) =>
+                  order.status == 'rider_assigned' ||
+                  order.status == 'going_to_shop' ||
+                  order.status == 'arrived_at_shop' ||
+                  order.status == 'picked_up' ||
+                  order.status == 'delivering' ||
+                  order.status == 'arrived_at_customer',
+            )
+            .toList();
+        break;
+
+      case 'completed':
+        // เสร็จแล้ว
+        filtered = _orders
+            .where((order) => order.status == 'completed')
+            .toList();
+        break;
+
+      case 'cancelled':
+        // ปฏิเสธ/ยกเลิก
+        filtered = _orders
+            .where((order) => order.status == 'cancelled')
+            .toList();
+        break;
+
+      default:
+        // Fallback สำหรับ exact match
+        filtered = _orders
+            .where((order) => order.status == statusCategory)
+            .toList();
+        break;
+    }
+
+    print(
+      '🔍 getOrdersByStatus($statusCategory): found ${filtered.length} orders',
+    );
     return filtered;
   }
 
@@ -562,7 +674,7 @@ class OrderController extends ChangeNotifier {
     print('   Socket connected: $isSocketConnected');
     print('   Loading: $_isLoading');
     print('   Error: $_error');
-    
+
     final statusGroups = <String, int>{};
     for (var order in _orders) {
       statusGroups[order.status] = (statusGroups[order.status] ?? 0) + 1;

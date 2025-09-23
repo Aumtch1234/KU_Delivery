@@ -21,8 +21,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage>
   late Animation<double> _pulseAnimation;
   late Animation<Offset> _slideAnimation;
 
-  bool _isNavigating = false;
-
   @override
   void initState() {
     super.initState();
@@ -415,14 +413,18 @@ class _OrderTrackingPageState extends State<OrderTrackingPage>
         Expanded(
           child: _buildStatusCard(
             '🏪 ร้านค้า',
-            order.isAccepted ||
-                    order.isRiderAssigned ||
+            order.isConfirmed ||
+                    order.isPreparing ||
+                    order.isReadyForPickup ||
+                    order.isPickedUp ||
                     order.isDelivering ||
                     order.isCompleted
-                ? 'รับออเดอร์แล้ว'
+                ? 'ยืนยันแล้ว'
                 : 'รอการยืนยัน',
-            order.isAccepted ||
-                order.isRiderAssigned ||
+            order.isConfirmed ||
+                order.isPreparing ||
+                order.isReadyForPickup ||
+                order.isPickedUp ||
                 order.isDelivering ||
                 order.isCompleted,
             Icons.store,
@@ -571,7 +573,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage>
     List<Widget> buttons = [];
 
     // Customer buttons
-    if (order.isPending || order.isAccepted) {
+    if (order.isPending || order.isConfirmed) {
       buttons.add(
         Expanded(
           child: OutlinedButton.icon(
@@ -605,7 +607,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage>
           ),
         ),
       );
-    } else if (order.isAccepted && !order.hasRider) {
+    } else if (order.isConfirmed && !order.hasRider) {
       buttons.add(
         Expanded(
           child: ElevatedButton.icon(
@@ -624,7 +626,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage>
     }
 
     // Rider buttons
-    if (order.isAccepted && !order.hasRider) {
+    if (order.isConfirmed && !order.hasRider) {
       buttons.add(
         Expanded(
           child: ElevatedButton.icon(

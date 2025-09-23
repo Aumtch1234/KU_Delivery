@@ -1,6 +1,5 @@
 import 'package:delivery/APIs/Orders/OrdersSocket.dart';
 import 'package:delivery/SplashScreens/SplashScreen.dart';
-import 'package:delivery/APIs/middleware/AuthGuard.dart';
 import 'package:delivery/APIs/middleware/authService.dart';
 import 'package:delivery/pages/EditProfilePage.dart';
 import 'package:delivery/pages/LoginPage.dart';
@@ -39,6 +38,7 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => BasketProvider()),
         ChangeNotifierProvider(create: (_) => OrderController()),
         ChangeNotifierProvider(create: (_) => DashboardSalesController()),
@@ -148,7 +148,7 @@ class RouteWrapper extends StatelessWidget {
   final String routeName;
 
   const RouteWrapper({Key? key, required this.child, required this.routeName})
-      : super(key: key);
+    : super(key: key);
 
   bool _shouldShowAssistiveButton(String routeName) {
     // ซ่อนปุ่มในบาง route เช่น login, register
@@ -158,26 +158,29 @@ class RouteWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final auth = AuthService(); 
-    final user = auth.currentUser;
-    final isSeller = (user != null && (user['is_seller'] == true));
+    return Consumer<AuthService>(
+      builder: (context, auth, _) {
+        final shouldShow =
+            _shouldShowAssistiveButton(routeName) && auth.isSellerApproved;
 
-    final shouldShow = _shouldShowAssistiveButton(routeName) && isSeller;
+        print(
+          'Route: $routeName, Show Button: $shouldShow, isSellerApproved: ${auth.isSellerApproved}, isPending: ${auth.isPendingSeller}',
+        );
 
-    print('Route: $routeName, Show Button: $shouldShow, isSeller: $isSeller');
-
-    return Stack(
-      children: [
-        GestureDetector(
-          onTap: () {
-            if (shouldShow) {
-              AssistiveButton.showButton(context);
-            }
-          },
-          child: child,
-        ),
-        if (shouldShow) const AssistiveButton(),
-      ],
+        return Stack(
+          children: [
+            GestureDetector(
+              onTap: () {
+                if (shouldShow) {
+                  AssistiveButton.showButton(context);
+                }
+              },
+              child: child,
+            ),
+            if (shouldShow) const AssistiveButton(),
+          ],
+        );
+      },
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:delivery/APIs/GoogleMap/DistanceAPI.dart';
 import 'package:delivery/APIs/Orders/OrdersAPI.dart';
 import 'package:delivery/APIs/SOCKET_IO/SocketService.dart';
 import 'package:delivery/APIs/Users/AddAddressAPI.dart';
+import 'package:delivery/main.dart';
 import 'package:delivery/pages/LoadingOverlay/LoadingOverlay.dart';
 import 'package:delivery/pages/basket/models/basket_item.dart';
 import 'package:delivery/pages/bottom/CustomerOrderPage.dart';
@@ -967,13 +968,21 @@ class _OrderNowPageState extends State<OrderNowPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => CustomerOrderPage(userId: userId),
+                            builder: (_) => RouteWrapper(
+                              child: CustomerOrderPage(userId: userId),
+                              routeName: 'customer_order',
+                            ),
                           ),
                         ).then((_) {
                           // เวลากด back ออกจาก CustomerOrderPage ให้ไป ShopPage
                           Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(builder: (_) => MainNavigation()),
+                            MaterialPageRoute(
+                              builder: (_) => RouteWrapper(
+                                child: MainNavigation(),
+                                routeName: 'main_navigation',
+                              ),
+                            ),
                           );
                         });
                       } else {
