@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 double _toDouble(dynamic value) {
   if (value == null) return 0.0;
   if (value is double) return value;
@@ -63,9 +62,11 @@ class Order {
       status: json['status'],
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
-      items: (json['items'] as List<dynamic>?)
-          ?.map((item) => OrderItem.fromJson(item))
-          .toList() ?? [],
+      items:
+          (json['items'] as List<dynamic>?)
+              ?.map((item) => OrderItem.fromJson(item))
+              .toList() ??
+          [],
     );
   }
 
@@ -92,33 +93,52 @@ class Order {
 
   // Helper methods for status checking
   bool get isPending => status == 'waiting';
-  bool get isAccepted => status == 'accepted';
-  bool get hasRider => riderId != null;
+  bool get isConfirmed => status == 'confirmed';
+  bool get hasRider =>
+      riderId != null ||
+      status == 'rider_assigned' ||
+      status == 'going_to_shop' ||
+      status == 'arrived_at_shop' ||
+      status == 'picked_up' ||
+      status == 'delivering' ||
+      status == 'arrived_at_customer';
   bool get isRiderAssigned => status == 'rider_assigned';
+  bool get isGoingToShop => status == 'going_to_shop';
+  bool get isArrivedAtShop => status == 'arrived_at_shop';
+  bool get isPreparing => status == 'preparing';
+  bool get isReadyForPickup => status == 'ready_for_pickup';
+  bool get isPickedUp => status == 'picked_up';
   bool get isDelivering => status == 'delivering';
+  bool get isArrivedAtCustomer => status == 'arrived_at_customer';
   bool get isCompleted => status == 'completed';
   bool get isCancelled => status == 'cancelled';
 
   String get statusText {
     switch (status) {
       case 'waiting':
-        return 'รอการยืนยัน';
-      case 'accepted':
-        return 'ร้านรับออเดอร์แล้ว';
+        return 'ออเดอร์ใหม่ กำลังรอร้านยืนยัน';
+      case 'confirmed':
+        return 'ร้านยืนยันรับออเดอร์แล้ว';
       case 'rider_assigned':
-        return 'กำลังหาไรเดอร์';
+        return 'มีไรเดอร์รับงานแล้ว';
+      case 'going_to_shop':
+        return 'ไรเดอร์กำลังไปที่ร้าน';
+      case 'arrived_at_shop':
+        return 'ไรเดอร์ถึงร้านแล้ว';
       case 'preparing':
-        return 'กำลังเตรียมอาหาร';
+        return 'ร้านกำลังเตรียมอาหาร';
       case 'ready_for_pickup':
-        return 'พร้อมให้ไรเดอร์รับ';
+        return 'พร้อมให้ไรเดอร์มารับ';
       case 'picked_up':
-        return 'ไรเดอร์รับแล้ว';
+        return 'ไรเดอร์รับของแล้ว';
       case 'delivering':
-        return 'กำลังจัดส่ง';
+        return 'ไรเดอร์กำลังส่งของ';
+      case 'arrived_at_customer':
+        return 'ไรเดอร์ถึงบ้านลูกค้าแล้ว';
       case 'completed':
-        return 'จัดส่งเสร็จสิ้น';
+        return 'ส่งสำเร็จ (ปิดงาน)';
       case 'cancelled':
-        return 'ยกเลิกแล้ว';
+        return 'ออเดอร์ถูกยกเลิก';
       default:
         return status;
     }
@@ -128,15 +148,20 @@ class Order {
     switch (status) {
       case 'waiting':
         return Colors.orange;
-      case 'accepted':
+      case 'confirmed':
       case 'preparing':
         return Colors.blue;
       case 'rider_assigned':
-      case 'ready_for_pickup':
+      case 'going_to_shop':
         return Colors.purple;
+      case 'arrived_at_shop':
+      case 'ready_for_pickup':
+        return Colors.indigo;
       case 'picked_up':
       case 'delivering':
         return Colors.teal;
+      case 'arrived_at_customer':
+        return Colors.green.shade700;
       case 'completed':
         return Colors.green;
       case 'cancelled':
@@ -150,10 +175,14 @@ class Order {
     switch (status) {
       case 'waiting':
         return Icons.access_time;
-      case 'accepted':
+      case 'confirmed':
         return Icons.check_circle;
       case 'rider_assigned':
         return Icons.motorcycle;
+      case 'going_to_shop':
+        return Icons.directions;
+      case 'arrived_at_shop':
+        return Icons.store;
       case 'preparing':
         return Icons.restaurant;
       case 'ready_for_pickup':
@@ -162,6 +191,8 @@ class Order {
         return Icons.delivery_dining;
       case 'delivering':
         return Icons.local_shipping;
+      case 'arrived_at_customer':
+        return Icons.home;
       case 'completed':
         return Icons.check_circle_outline;
       case 'cancelled':
@@ -169,6 +200,45 @@ class Order {
       default:
         return Icons.help_outline;
     }
+  }
+
+  // เพิ่ม copyWith method
+  Order copyWith({
+    int? orderId,
+    int? userId,
+    int? marketId,
+    String? shopName,
+    int? riderId,
+    String? address,
+    String? deliveryType,
+    String? paymentMethod,
+    String? note,
+    double? distanceKm,
+    double? deliveryFee,
+    double? totalPrice,
+    String? status,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    List<OrderItem>? items,
+  }) {
+    return Order(
+      orderId: orderId ?? this.orderId,
+      userId: userId ?? this.userId,
+      marketId: marketId ?? this.marketId,
+      shopName: shopName ?? this.shopName,
+      riderId: riderId ?? this.riderId,
+      address: address ?? this.address,
+      deliveryType: deliveryType ?? this.deliveryType,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      note: note ?? this.note,
+      distanceKm: distanceKm ?? this.distanceKm,
+      deliveryFee: deliveryFee ?? this.deliveryFee,
+      totalPrice: totalPrice ?? this.totalPrice,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      items: items ?? this.items,
+    );
   }
 }
 

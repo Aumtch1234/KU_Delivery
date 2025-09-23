@@ -20,7 +20,7 @@ class _OrdersListPageState extends State<OrdersListPage>
   // Updated status tabs for shop workflow
   final Map<String, String> _statusTabs = {
     'waiting': 'รอยืนยัน', // ออเดอร์ใหม่ที่รอร้านรับ
-    'accepted': 'กำลังทำ', // ร้านรับแล้ว กำลังเตรียมอาหาร
+    'confirmed': 'กำลังทำ', // ร้านยืนยันแล้ว กำลังเตรียมอาหาร/พร้อมส่ง
     'delivering': 'กำลังส่ง', // ไรเดอร์รับไปส่งแล้ว
     'completed': 'เสร็จแล้ว', // ส่งเสร็จแล้ว
     'cancelled': 'ปฏิเสธ',
@@ -1023,14 +1023,37 @@ class _OrdersListPageState extends State<OrdersListPage>
         buttonColor = Colors.green;
         onPressed = () => _acceptOrder(order, controller);
         break;
-      case 'accepted':
-        buttonText = 'พร้อมส่ง';
+      case 'confirmed':
+        buttonText = 'เริ่มทำอาหาร';
         buttonColor = Colors.blue;
+        onPressed = () => _startPreparing(order, controller);
+        break;
+      case 'preparing':
+        buttonText = 'อาหารพร้อม';
+        buttonColor = Colors.orange;
         onPressed = () => _markReady(order, controller);
         break;
-      case 'delivering':
-        buttonText = 'กำลังส่ง...';
+      case 'ready_for_pickup':
+        buttonText = 'รอไรเดอร์มารับ';
         buttonColor = Colors.purple;
+        onPressed = null; // ร้านรอไรเดอร์มารับ
+        break;
+      case 'rider_assigned':
+      case 'going_to_shop':
+        buttonText = 'ไรเดอร์กำลังมา';
+        buttonColor = Colors.indigo;
+        onPressed = null; // Read only
+        break;
+      case 'arrived_at_shop':
+        buttonText = 'ไรเดอร์ถึงร้านแล้ว';
+        buttonColor = Colors.indigo;
+        onPressed = null; // Read only
+        break;
+      case 'picked_up':
+      case 'delivering':
+      case 'arrived_at_customer':
+        buttonText = 'กำลังส่ง...';
+        buttonColor = Colors.teal;
         onPressed = null; // Read only
         break;
       case 'completed':
@@ -1063,9 +1086,9 @@ class _OrdersListPageState extends State<OrdersListPage>
   }
 
   Future<void> _acceptOrder(Order order, OrderController controller) async {
-    final success = await controller.acceptOrder(
+    final success = await controller.updateOrderStatus(
       order.orderId,
-      widget.marketId!,
+      'confirmed',
     );
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1084,16 +1107,38 @@ class _OrdersListPageState extends State<OrdersListPage>
     }
   }
 
-  Future<void> _markReady(Order order, OrderController controller) async {
-    final success = await controller.updateOrderStatus(
+  Future<void> _startPreparing(Order order, OrderController controller) async {
+    final success = await controller.updatePreparationStatus(
       order.orderId,
-      'delivering',
+      'preparing',
     );
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('แจ้งพร้อมส่งเรียบร้อย 🚀'),
+          content: Text('เริ่มเตรียมอาหารแล้ว 👨‍🍳'),
           backgroundColor: Colors.blue,
+        ),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('เกิดข้อผิดพลาด: ${controller.error}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _markReady(Order order, OrderController controller) async {
+    final success = await controller.updatePreparationStatus(
+      order.orderId,
+      'ready_for_pickup',
+    );
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('อาหารพร้อมแล้ว รอไรเดอร์มารับ 🍽️'),
+          backgroundColor: Colors.orange,
         ),
       );
     } else if (mounted) {

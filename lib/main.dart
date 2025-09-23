@@ -1,6 +1,5 @@
 import 'package:delivery/APIs/Orders/OrdersSocket.dart';
 import 'package:delivery/SplashScreens/SplashScreen.dart';
-import 'package:delivery/APIs/middleware/AuthGuard.dart';
 import 'package:delivery/APIs/middleware/authService.dart';
 import 'package:delivery/pages/EditProfilePage.dart';
 import 'package:delivery/pages/LoginPage.dart';
