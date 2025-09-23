@@ -235,6 +235,7 @@ class _OrderNowPageState extends State<OrderNowPage> {
 
   Widget _buildAddressSection() {
     if (defaultAddress != null) {
+      print("📦 Address_id: ${defaultAddress!.id}");
       print("📦 Address: ${defaultAddress!.address}");
       print("👤 Name: ${defaultAddress!.name}");
       print("📞 Phone: ${defaultAddress!.phone}");
@@ -553,8 +554,11 @@ class _OrderNowPageState extends State<OrderNowPage> {
   }
 
   double calculateDeliveryFee(double km) {
-    if (km <= 1) return 5;
-    return (km * 5).floorToDouble(); // 5 บาท/กม. ปัดลง
+    if (km <= 2) return 10;
+    if (km <= 10) return 15;
+    if (km <= 15) return 20;
+    // มากกว่า 15 km → base 20 + (ส่วนที่เกิน * 5)
+    return 20 + ((km - 15).ceil() * 5);
   }
 
   // ใช้ map จาก state โดยตรง
@@ -923,6 +927,7 @@ class _OrderNowPageState extends State<OrderNowPage> {
 
                       final result = await OrdersAPI.createOrder(
                         basket: basketForAPI,
+                        address_id: defaultAddress!.id,
                         address: defaultAddress!.address,
                         note: noteController.text,
                         paymentMethod: paymentMethod,

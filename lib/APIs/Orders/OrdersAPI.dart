@@ -26,6 +26,7 @@ class OrdersAPI {
 
   static Future<Map<String, dynamic>> createOrder({
     required List<Map<String, dynamic>> basket,
+    required int address_id,
     required String address,
     required String note,
     required String paymentMethod,
@@ -46,6 +47,7 @@ class OrdersAPI {
       body: jsonEncode({
         'basket': basket,
         'address': address,
+        'address_id': address_id,
         'note': note,
         'paymentMethod': paymentMethod,
         'deliveryType': deliveryType,
