@@ -1,86 +1,41 @@
+// pages/chat/customer_chat_list_screen.dart
+import 'package:delivery/APIs/Chat/ChatControllerSKAPI.dart';
+import 'package:delivery/APIs/Chat/models/ChatCustomerModel.dart';
 import 'package:delivery/pages/chat/ChatPage.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-// Mock Data
-List<ChatMessage> mockChatData = [
-  ChatMessage(
-    id: '1',
-    senderName: 'Angela Garrett',
-    message: 'Hello, how are you?',
-    time: '12 min',
-    avatarUrl:
-        'https://images.unsplash.com/photo-1494790108755-2616b612b77c?w=150&h=150&fit=crop&crop=face',
-    isOnline: true,
-    unreadCount: 3,
-  ),
-  ChatMessage(
-    id: '2',
-    senderName: 'Tammy Hayes',
-    message: 'Thanks pretty wild on you.',
-    time: '5:54 PM',
-    avatarUrl:
-        'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-    isOnline: false,
-    unreadCount: 0,
-    isLastMessageFromMe: true,
-  ),
-  ChatMessage(
-    id: '3',
-    senderName: 'Leon Hunt',
-    message: 'I really love that!',
-    time: '6:14 PM',
-    avatarUrl:
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-    isOnline: false,
-    unreadCount: 0,
-    isLastMessageFromMe: true,
-  ),
-  ChatMessage(
-    id: '4',
-    senderName: 'Sandra Aguilar',
-    message: 'You interest the movie...',
-    time: '10:54 PM',
-    avatarUrl:
-        'https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=150&h=150&fit=crop&crop=face',
-    isOnline: true,
-    unreadCount: 0,
-  ),
-  ChatMessage(
-    id: '5',
-    senderName: 'Marie Fowler',
-    message: 'Thank you so much!',
-    time: 'Sun',
-    avatarUrl:
-        'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=face',
-    isOnline: false,
-    unreadCount: 1,
-  ),
-  ChatMessage(
-    id: '6',
-    senderName: 'Cynthia Medina',
-    message: 'Hey, what are you favorites...',
-    time: 'Oct 23',
-    avatarUrl:
-        'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=face',
-    isOnline: false,
-    unreadCount: 0,
-  ),
-];
-
-// Main Chat List Screen
-class ChatListScreen extends StatefulWidget {
+class CustomerChatListScreen extends StatefulWidget {
   @override
-  _ChatListScreenState createState() => _ChatListScreenState();
+  _CustomerChatListScreenState createState() => _CustomerChatListScreenState();
 }
 
-class _ChatListScreenState extends State<ChatListScreen>
+class _CustomerChatListScreenState extends State<CustomerChatListScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late CustomerChatController _chatController;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _chatController = Provider.of<CustomerChatController>(
+      context,
+      listen: false,
+    );
+
+    // Initialize และโหลดข้อมูล
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeChat();
+    });
+  }
+
+  Future<void> _initializeChat() async {
+    try {
+      await _chatController.initializeUserInfoIfNeeded();
+    } catch (e) {
+      print('Error initializing chat: $e');
+    }
   }
 
   @override
@@ -97,101 +52,232 @@ class _ChatListScreenState extends State<ChatListScreen>
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        title: Text(
+          'แชท',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.search, color: Colors.grey[600]),
-            onPressed: () {},
+            onPressed: () {
+              // TODO: Implement search
+            },
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Tab Bar - ปรับแต่งให้เหมือนรูปที่ส่งมา
-          Container(
-            color: Colors.white,
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Color(0xFFF5F5F5), // สีพื้นหลังของแทบบาร์
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: TabBar(
-                controller: _tabController,
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.grey[700],
-                dividerColor: Colors.transparent,
-                indicator: BoxDecoration(
-                  color: Color(0xFF4CAF50), // สีเขียวเหมือนในรูป
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicatorPadding: EdgeInsets.all(4),
-                labelPadding: EdgeInsets.zero,
-                tabs: [
-                  Container(
-                    height: 40,
-                    alignment: Alignment.center,
-                    child: Text(
-                      'ทั้งหมด',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+      body: Consumer<CustomerChatController>(
+        builder: (context, controller, child) {
+          return Column(
+            children: [
+              // Connection Status
+              if (!controller.isConnected)
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  color: Colors.orange.shade100,
+                  child: Text(
+                    'กำลังเชื่อมต่อ...',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.orange.shade800,
+                      fontSize: 12,
                     ),
                   ),
-                  Container(
-                    height: 40,
-                    alignment: Alignment.center,
-                    child: Text(
-                      'ที่ยังไม่ได้อ่าน',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                ),
+
+              // Tab Bar
+              Container(
+                color: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    labelColor: Colors.white,
+                    unselectedLabelColor: Colors.grey[700],
+                    dividerColor: Colors.transparent,
+                    indicator: BoxDecoration(
+                      color: Color(0xFF4CAF50),
+                      borderRadius: BorderRadius.circular(25),
                     ),
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    indicatorPadding: EdgeInsets.all(4),
+                    labelPadding: EdgeInsets.zero,
+                    tabs: [
+                      Container(
+                        height: 40,
+                        alignment: Alignment.center,
+                        child: Text(
+                          'ทั้งหมด',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        height: 40,
+                        alignment: Alignment.center,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'ที่ยังไม่ได้อ่าน',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (controller.unreadCount > 0) ...[
+                              SizedBox(width: 8),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  controller.unreadCount > 99
+                                      ? '99+'
+                                      : '${controller.unreadCount}',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Chat List
+              Expanded(
+                child: Container(
+                  color: Colors.white,
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      // Tab 1: ทั้งหมด
+                      _buildChatList(controller.allChatRooms),
+
+                      // Tab 2: ที่ยังไม่ได้อ่าน
+                      _buildChatList(controller.unreadChatRooms),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildChatList(List<ChatRoom> rooms) {
+    return Consumer<CustomerChatController>(
+      builder: (context, controller, child) {
+        if (controller.isLoading && rooms.isEmpty) {
+          return Center(
+            child: CircularProgressIndicator(color: Color(0xFF4CAF50)),
+          );
+        }
+
+        if (rooms.isEmpty) {
+          return Center(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min, // ✅ ย่อให้เท่ากับขนาด children
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.chat_bubble_outline,
+                    size: 80,
+                    color: Colors.grey[300],
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'ยังไม่มีการแชท',
+                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'การแชทจะปรากฏที่นี่เมื่อคุณสั่งอาหาร',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
             ),
-          ),
+          );
+        }
 
-          // Chat List
-          Expanded(
-            child: Container(
-              color: Colors.white,
-              child: ListView.builder(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                itemCount: mockChatData.length,
-                itemBuilder: (context, index) {
-                  final chat = mockChatData[index];
-                  return ChatListItem(
-                    chat: chat,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ChatDetailScreen(chat: chat),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
+        return RefreshIndicator(
+          onRefresh: () => controller.refreshChatRooms(),
+          color: Color(0xFF4CAF50),
+          child: ListView.builder(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            itemCount: rooms.length,
+            itemBuilder: (context, index) {
+              final room = rooms[index];
+              return ChatRoomItem(
+                room: room,
+                controller: controller,
+                onTap: () => _openChat(room),
+              );
+            },
           ),
-        ],
+        );
+      },
+    );
+  }
+
+  void _openChat(ChatRoom room) {
+    // Mark room as entered to clear unread count
+    _chatController.markRoomAsEntered(room.roomId!);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CustomerChatDetailScreen(
+          roomId: room.roomId!,
+          orderId: room.orderId!,
+          riderName: room.riderName ?? 'ไรเดอร์',
+          riderPhoto: room.riderPhoto,
+          riderPhone: null, // Add rider phone if available
+        ),
       ),
     );
   }
 }
 
-// Chat List Item Widget
-class ChatListItem extends StatelessWidget {
-  final ChatMessage chat;
+class ChatRoomItem extends StatelessWidget {
+  final ChatRoom room;
+  final CustomerChatController controller;
   final VoidCallback onTap;
 
-  const ChatListItem({Key? key, required this.chat, required this.onTap})
-    : super(key: key);
+  const ChatRoomItem({
+    Key? key,
+    required this.room,
+    required this.controller,
+    required this.onTap,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -200,46 +286,94 @@ class ChatListItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: Offset(0, 1),
+          ),
+        ],
       ),
       child: ListTile(
         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Stack(
+        leading: CircleAvatar(
+          radius: 28,
+          backgroundColor: Colors.grey[300],
+          backgroundImage:
+              room.riderPhoto != null && room.riderPhoto!.isNotEmpty
+              ? NetworkImage(room.riderPhoto!)
+              : null,
+          child: room.riderPhoto == null || room.riderPhoto!.isEmpty
+              ? Icon(Icons.person, color: Colors.white, size: 30)
+              : null,
+        ),
+        title: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundImage: NetworkImage(chat.avatarUrl),
+            Expanded(
+              child: Text(
+                room.riderName ?? 'ไรเดอร์',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
+                overflow: TextOverflow.ellipsis, // ✅ ป้องกันข้อความยาวเกิน
+                maxLines: 1,
+              ),
             ),
-            if (chat.isOnline)
-              Positioned(
-                bottom: 2,
-                right: 2,
+            if (room.orderStatus != null)
+              Flexible(
+                // ✅ ใช้ Flexible แทน Container ปกติ
                 child: Container(
-                  width: 16,
-                  height: 16,
+                  margin: EdgeInsets.only(left: 8), // ✅ เว้นระยะห่างเล็กน้อย
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                    color: controller
+                        .getOrderStatusColor(room.orderStatus)
+                        .withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    controller.getOrderStatusText(room.orderStatus),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: controller.getOrderStatusColor(room.orderStatus),
+                    ),
+                    overflow: TextOverflow.ellipsis, // ✅ กันข้อความสถานะยาวเกิน
+                    maxLines: 1,
                   ),
                 ),
               ),
           ],
         ),
-        title: Text(
-          chat.senderName,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-            color: Colors.black87,
-          ),
-        ),
+
         subtitle: Padding(
           padding: EdgeInsets.only(top: 4),
-          child: Text(
-            chat.message,
-            style: TextStyle(color: Colors.grey[600], fontSize: 14),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                controller.formatLastMessage(
+                  room.lastMessage,
+                  room.messageType,
+                ),
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (room.totalAmount != null)
+                Text(
+                  'ยอดรวม ฿${room.totalAmount!.toStringAsFixed(0)}',
+                  style: TextStyle(
+                    color: Colors.green[600],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+            ],
           ),
         ),
         trailing: Column(
@@ -247,10 +381,10 @@ class ChatListItem extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              chat.time,
+              controller.formatLastMessageTime(room.lastMessageTime),
               style: TextStyle(color: Colors.grey[500], fontSize: 12),
             ),
-            if (chat.unreadCount > 0) ...[
+            if ((room.unreadCount ?? 0) > 0) ...[
               SizedBox(height: 4),
               Container(
                 padding: EdgeInsets.all(6),
@@ -259,7 +393,7 @@ class ChatListItem extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Text(
-                  chat.unreadCount.toString(),
+                  room.unreadCount! > 99 ? '99+' : room.unreadCount.toString(),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 12,

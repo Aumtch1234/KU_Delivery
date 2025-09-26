@@ -1,46 +1,52 @@
 // pages/Chats/models/ChatMessage.dart
 class ChatMessage {
-  final int messageId;
-  final int roomId;
-  final int senderId;
-  final String senderType;
+  final int? messageId; // Changed to nullable
+  final int? roomId; // Changed to nullable
+  final int? senderId; // Changed to nullable
+  final String? senderType; // Changed to nullable
   final String? senderName;
   final String? senderPhoto;
   final String? messageText;
-  final String messageType;
+  final String? messageType; // Changed to nullable
   final String? imageUrl;
   final double? latitude;
   final double? longitude;
-  final bool isRead;
-  final DateTime createdAt;
+  final bool? isRead; // Changed to nullable
+  final DateTime? createdAt; // Changed to nullable
 
   ChatMessage({
-    required this.messageId,
-    required this.roomId,
-    required this.senderId,
-    required this.senderType,
+    this.messageId,
+    this.roomId,
+    this.senderId,
+    this.senderType,
     this.senderName,
     this.senderPhoto,
     this.messageText,
-    required this.messageType,
+    this.messageType,
     this.imageUrl,
     this.latitude,
     this.longitude,
-    required this.isRead,
-    required this.createdAt,
+    this.isRead,
+    this.createdAt,
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     return ChatMessage(
-      messageId: int.tryParse(json['message_id']?.toString() ?? '0') ?? 0,
-      roomId: int.tryParse(json['room_id']?.toString() ?? '0') ?? 0,
-      senderId: int.tryParse(json['sender_id']?.toString() ?? '0') ?? 0,
-      senderType: json['sender_type']?.toString() ?? '',
-      senderName: json['sender_name'],
-      senderPhoto: json['sender_photo'],
-      messageText: json['message_text'],
-      messageType: json['message_type']?.toString() ?? 'text',
-      imageUrl: json['image_url'],
+      messageId: json['message_id'] != null 
+          ? int.tryParse(json['message_id'].toString()) 
+          : null,
+      roomId: json['room_id'] != null 
+          ? int.tryParse(json['room_id'].toString()) 
+          : null,
+      senderId: json['sender_id'] != null 
+          ? int.tryParse(json['sender_id'].toString()) 
+          : null,
+      senderType: json['sender_type']?.toString(),
+      senderName: json['sender_name']?.toString(),
+      senderPhoto: json['sender_photo']?.toString(),
+      messageText: json['message_text']?.toString(),
+      messageType: json['message_type']?.toString(),
+      imageUrl: json['image_url']?.toString(),
       latitude: json['latitude'] != null
           ? double.tryParse(json['latitude'].toString())
           : null,
@@ -48,7 +54,9 @@ class ChatMessage {
           ? double.tryParse(json['longitude'].toString())
           : null,
       isRead: json['is_read'] == true || json['is_read'] == 1,
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: json['created_at'] != null 
+          ? DateTime.tryParse(json['created_at'].toString())
+          : null,
     );
   }
 
@@ -66,7 +74,7 @@ class ChatMessage {
       'latitude': latitude,
       'longitude': longitude,
       'is_read': isRead,
-      'created_at': createdAt.toIso8601String(),
+      'created_at': createdAt?.toIso8601String(),
     };
   }
 
@@ -117,7 +125,7 @@ class ChatRoom {
   final String? customerPhone;
   final String? riderName;
   final String? riderPhoto;
-  final String roomStatus;
+  final String? roomStatus; // Changed to nullable
   final String? orderStatus;
   final double? totalAmount;
   final String? deliveryAddress;
@@ -126,20 +134,20 @@ class ChatRoom {
   final String? messageType;
   final DateTime? lastMessageTime;
   final int? unreadCount;
-  final DateTime createdAt;
+  final DateTime? createdAt; // Changed to nullable
   final DateTime? updatedAt;
 
   ChatRoom({
-    required this.roomId,
-    required this.orderId,
-    required this.customerId,
-    required this.riderId,
+    this.roomId,
+    this.orderId,
+    this.customerId,
+    this.riderId,
     this.customerName,
     this.customerPhoto,
     this.customerPhone,
     this.riderName,
     this.riderPhoto,
-    required this.roomStatus,
+    this.roomStatus,
     this.orderStatus,
     this.totalAmount,
     this.deliveryAddress,
@@ -148,37 +156,49 @@ class ChatRoom {
     this.messageType,
     this.lastMessageTime,
     this.unreadCount,
-    required this.createdAt,
+    this.createdAt,
     this.updatedAt,
   });
 
   factory ChatRoom.fromJson(Map<String, dynamic> json) {
     return ChatRoom(
-      roomId: int.tryParse(json['room_id']?.toString() ?? '0'),
-      orderId: int.tryParse(json['order_id']?.toString() ?? '0'),
-      customerId: int.tryParse(json['customer_id']?.toString() ?? '0'),
-      riderId: int.tryParse(json['rider_id']?.toString() ?? '0'),
-      customerName: json['customer_name'],
-      customerPhoto: json['customer_photo'],
-      customerPhone: json['customer_phone'],
-      riderName: json['rider_name'],
-      riderPhoto: json['rider_photo'],
-      roomStatus: json['room_status'] ?? 'active',
-      orderStatus: json['order_status'],
+      roomId: json['room_id'] != null 
+          ? int.tryParse(json['room_id'].toString()) 
+          : null,
+      orderId: json['order_id'] != null 
+          ? int.tryParse(json['order_id'].toString()) 
+          : null,
+      customerId: json['customer_id'] != null 
+          ? int.tryParse(json['customer_id'].toString()) 
+          : null,
+      riderId: json['rider_id'] != null 
+          ? int.tryParse(json['rider_id'].toString()) 
+          : null,
+      customerName: json['customer_name']?.toString(),
+      customerPhoto: json['customer_photo']?.toString(),
+      customerPhone: json['customer_phone']?.toString(),
+      riderName: json['rider_name']?.toString(),
+      riderPhoto: json['rider_photo']?.toString(),
+      roomStatus: json['room_status']?.toString() ?? 'active',
+      orderStatus: json['order_status']?.toString(),
       totalAmount: json['total_amount'] != null
           ? double.tryParse(json['total_amount'].toString())
           : null,
-      deliveryAddress: json['delivery_address'],
-      pickupAddress: json['pickup_address'],
-      lastMessage: json['last_message'],
-      messageType: json['message_type'],
+      deliveryAddress: json['delivery_address']?.toString(),
+      pickupAddress: json['pickup_address']?.toString(),
+      lastMessage: json['last_message']?.toString(),
+      messageType: json['message_type']?.toString(),
       lastMessageTime: json['last_message_time'] != null
-          ? DateTime.tryParse(json['last_message_time'])
+          ? DateTime.tryParse(json['last_message_time'].toString())
           : null,
-      unreadCount: int.tryParse(json['unread_count']?.toString() ?? '0'),
-      createdAt: DateTime.parse(json['created_at']),
+      unreadCount: json['unread_count'] != null 
+          ? int.tryParse(json['unread_count'].toString())
+          : null,
+      createdAt: json['created_at'] != null 
+          ? DateTime.tryParse(json['created_at'].toString())
+          : null,
       updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at'])
+          ? DateTime.tryParse(json['updated_at'].toString())
           : null,
     );
   }
@@ -203,7 +223,7 @@ class ChatRoom {
       'message_type': messageType,
       'last_message_time': lastMessageTime?.toIso8601String(),
       'unread_count': unreadCount,
-      'created_at': createdAt.toIso8601String(),
+      'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
   }
@@ -259,6 +279,7 @@ class SendMessageRequest {
   final int roomId;
   final String? messageText;
   final String messageType;
+  final String senderType;
   final String? imageUrl;
   final double? latitude;
   final double? longitude;
@@ -267,6 +288,7 @@ class SendMessageRequest {
     required this.roomId,
     this.messageText,
     this.messageType = 'text',
+    this.senderType = 'customer',
     this.imageUrl,
     this.latitude,
     this.longitude,
@@ -277,6 +299,7 @@ class SendMessageRequest {
       'roomId': roomId,
       'messageText': messageText,
       'messageType': messageType,
+      'senderType': senderType,
       'imageUrl': imageUrl,
       'latitude': latitude,
       'longitude': longitude,

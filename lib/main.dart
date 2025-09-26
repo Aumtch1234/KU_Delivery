@@ -1,3 +1,4 @@
+import 'package:delivery/APIs/Chat/ChatControllerSKAPI.dart';
 import 'package:delivery/APIs/Orders/OrdersSocket.dart';
 import 'package:delivery/SplashScreens/SplashScreen.dart';
 import 'package:delivery/APIs/middleware/authService.dart';
@@ -42,6 +43,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => BasketProvider()),
         ChangeNotifierProvider(create: (_) => OrderController()),
         ChangeNotifierProvider(create: (_) => DashboardSalesController()),
+        ChangeNotifierProvider(create: (_) => CustomerChatController()),
       ],
       child: MyApp(),
     ),

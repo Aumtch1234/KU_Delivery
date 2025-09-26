@@ -91,7 +91,7 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
     final List<Widget> _pages = [
       ShopPage(),
       CustomerOrderPage(userId: userId),
-      ChatListScreen(),
+      CustomerChatListScreen(),
       DashboardPage(),
     ];
 
