@@ -1,87 +1,10 @@
+import 'package:delivery/APIs/Chat/models/ChatCustomerModel.dart';
 import 'package:flutter/material.dart';
 
 
-class ChatMessage {
-  final String id;
-  final String senderName;
-  final String message;
-  final String time;
-  final String avatarUrl;
-  final bool isOnline;
-  final int unreadCount;
-  final bool isLastMessageFromMe;
 
-  ChatMessage({
-    required this.id,
-    required this.senderName,
-    required this.message,
-    required this.time,
-    required this.avatarUrl,
-    this.isOnline = false,
-    this.unreadCount = 0,
-    this.isLastMessageFromMe = false,
-  });
-}
 
 // Mock Data
-List<ChatMessage> mockChatData = [
-  ChatMessage(
-    id: '1',
-    senderName: 'Angela Garrett',
-    message: 'Hello, how are you?',
-    time: '12 min',
-    avatarUrl: 'https://images.unsplash.com/photo-1494790108755-2616b612b77c?w=150&h=150&fit=crop&crop=face',
-    isOnline: true,
-    unreadCount: 3,
-  ),
-  ChatMessage(
-    id: '2',
-    senderName: 'Tammy Hayes',
-    message: 'Thanks pretty wild on you.',
-    time: '5:54 PM',
-    avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-    isOnline: false,
-    unreadCount: 0,
-    isLastMessageFromMe: true,
-  ),
-  ChatMessage(
-    id: '3',
-    senderName: 'Leon Hunt',
-    message: 'I really love that!',
-    time: '6:14 PM',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-    isOnline: false,
-    unreadCount: 0,
-    isLastMessageFromMe: true,
-  ),
-  ChatMessage(
-    id: '4',
-    senderName: 'Sandra Aguilar',
-    message: 'You interest the movie...',
-    time: '10:54 PM',
-    avatarUrl: 'https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=150&h=150&fit=crop&crop=face',
-    isOnline: true,
-    unreadCount: 0,
-  ),
-  ChatMessage(
-    id: '5',
-    senderName: 'Marie Fowler',
-    message: 'Thank you so much!',
-    time: 'Sun',
-    avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=face',
-    isOnline: false,
-    unreadCount: 1,
-  ),
-  ChatMessage(
-    id: '6',
-    senderName: 'Cynthia Medina',
-    message: 'Hey, what are you favorites...',
-    time: 'Oct 23',
-    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=face',
-    isOnline: false,
-    unreadCount: 0,
-  ),
-];
 
 class ChatDetailScreen extends StatelessWidget {
   final ChatMessage chat;
@@ -103,7 +26,7 @@ class ChatDetailScreen extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 20,
-              backgroundImage: NetworkImage(chat.avatarUrl),
+              backgroundImage: NetworkImage(),
             ),
             SizedBox(width: 12),
             Expanded(
@@ -111,7 +34,6 @@ class ChatDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    chat.senderName,
                     style: TextStyle(
                       color: Colors.black,
                       fontSize: 16,
@@ -119,7 +41,7 @@ class ChatDetailScreen extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    chat.isOnline ? 'Online' : 'Last seen recently',
+                    'Online' 'Last seen recently',
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 12,

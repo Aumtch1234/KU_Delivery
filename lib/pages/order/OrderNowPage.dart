@@ -555,10 +555,10 @@ class _OrderNowPageState extends State<OrderNowPage> {
 
   double calculateDeliveryFee(double km) {
     if (km <= 2) return 10;
-    if (km <= 10) return 15;
-    if (km <= 15) return 20;
+    if (km <= 5) return 15;
+    if (km <= 10) return 20;
     // มากกว่า 15 km → base 20 + (ส่วนที่เกิน * 5)
-    return 20 + ((km - 15).ceil() * 5);
+    return 20 + ((km - 10).ceil() * 5);
   }
 
   // ใช้ map จาก state โดยตรง
@@ -932,12 +932,9 @@ class _OrderNowPageState extends State<OrderNowPage> {
                         note: noteController.text,
                         paymentMethod: paymentMethod,
                         deliveryType: deliveryType,
-                        distances:
-                            distancesByMarket, // Object with marketId keys
-                        deliveryFees:
-                            deliveryFeesByMarket, // Object with marketId keys
-                        totalPrices:
-                            totalPricesByMarket, // Object with marketId keys
+                        distances: distancesByMarket, // Object with marketId keys
+                        deliveryFees: deliveryFeesByMarket, // Object with marketId keys
+                        totalPrices: totalPricesByMarket, // Object with marketId keys
                       );
 
                       print("✅ Order created: $result");
