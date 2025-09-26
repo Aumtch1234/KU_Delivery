@@ -463,7 +463,7 @@ class _ShopPageState extends State<ShopPage> {
       {'icon': 'assets/menus/main.png', 'label': 'เครื่องดื่ม'},
       {'icon': 'assets/menus/main.png', 'label': 'ของหวาน'},
       {'icon': 'assets/menus/main.png', 'label': 'ผลไม้'},
-      {'icon': 'assets/menus/main.png', 'label': 'ของทอด'},
+      {'icon': 'assets/menus/bakefast.png', 'label': 'ของทอด'},
       {'icon': 'assets/menus/main.png', 'label': 'สลัด'},
     ];
 
@@ -480,11 +480,13 @@ class _ShopPageState extends State<ShopPage> {
             isTablet,
             categories[index]['icon']!,
             categories[index]['label']!,
+            
           );
         },
       ),
     );
   }
+  
 
   Widget _buildStoresSection(Size size, bool isTablet) {
     // จำกัดร้านค้าที่แสดงเป็น 10 ร้าน
@@ -587,51 +589,57 @@ class _ShopPageState extends State<ShopPage> {
     );
   }
 
-  Widget _buildCategory(Size size, bool isTablet, String icon, String label) {
-    return Padding(
-      padding: EdgeInsets.only(right: isTablet ? 20 : 16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: isTablet ? 80 : size.width * 0.16,
-            height: isTablet ? 80 : size.width * 0.16,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Image.asset(
-                icon,
-                height: isTablet ? 36 : size.width * 0.08,
-                width: isTablet ? 36 : size.width * 0.08,
-                fit: BoxFit.contain,
+ Widget _buildCategory(Size size, bool isTablet, String icon, String label) {
+  final bool isFried = label == 'ของทอด'; // 👈 เช็คว่าคือ "ของทอด" ไหม
+
+  return Padding(
+    padding: EdgeInsets.only(right: isTablet ? 20 : 16),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: isTablet ? 80 : size.width * 0.16,
+          height: isTablet ? 80 : size.width * 0.16,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
+            ],
+          ),
+          child: Center(
+            child: Image.asset(
+              icon,
+              height: isFried
+                  ? (isTablet ? 100 : size.width * 0.11)  // 👈 ของทอดใหญ่ขึ้น
+                  : (isTablet ? 36 : size.width * 0.08),
+              width: isFried
+                  ? (isTablet ? 50 : size.width * 0.11)
+                  : (isTablet ? 36 : size.width * 0.08),
+              fit: BoxFit.contain,
             ),
           ),
-          SizedBox(height: isTablet ? 12 : 8),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: isTablet ? 14 : size.width * 0.032,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+        ),
+        SizedBox(height: isTablet ? 12 : 8),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: isTablet ? 14 : size.width * 0.032,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
           ),
-        ],
-      ),
-    );
-  }
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildStoreItem(
     BuildContext context,
