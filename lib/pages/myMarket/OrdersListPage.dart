@@ -162,10 +162,10 @@ class _OrdersListPageState extends State<OrdersListPage>
         .where((order) => order.status == 'completed')
         .fold(0.0, (sum, order) => sum + order.totalPrice);
 
-    // Count orders by status for today
+    // Count orders by status for all orders
     final statusCounts = <String, int>{};
     for (var status in _statusTabs.keys) {
-      statusCounts[status] = todayOrders
+      statusCounts[status] = controller.orders
           .where((order) => order.status == status)
           .length;
     }
@@ -238,30 +238,30 @@ class _OrdersListPageState extends State<OrdersListPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'รายได้วันนี้',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey.shade700,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '฿${todayEarnings.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
-                        ),
-                      ),
-                      Text(
-                        '${todayOrders.length} ออเดอร์ (ทั้งหมด ${controller.orders.length})',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
+                      // Text(
+                      //   'รายได้วันนี้',
+                      //   style: TextStyle(
+                      //     fontSize: 16,
+                      //     color: Colors.grey.shade700,
+                      //     fontWeight: FontWeight.w500,
+                      //   ),
+                      // ),
+                      // const SizedBox(height: 4),
+                      // Text(
+                      //   '฿${todayEarnings.toStringAsFixed(2)}',
+                      //   style: TextStyle(
+                      //     fontSize: 24,
+                      //     fontWeight: FontWeight.bold,
+                      //     color: Colors.green.shade700,
+                      //   ),
+                      // ),
+                      // Text(
+                      //   '${todayOrders.length} ออเดอร์ (ทั้งหมด ${controller.orders.length})',
+                      //   style: TextStyle(
+                      //     fontSize: 14,
+                      //     color: Colors.grey.shade600,
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),
@@ -471,308 +471,216 @@ class _OrdersListPageState extends State<OrdersListPage>
 
   Widget _buildOrderCard(Order order, OrderController controller) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 24),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-            spreadRadius: 0,
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
-        border: Border.all(
-          color: order.statusColor.withOpacity(0.15),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          children: [
-            // Status Header - Clean design
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: order.statusColor.withOpacity(0.08),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-              ),
-              child: Row(
-                children: [
-                  // Status indicator
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: order.statusColor,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      order.statusIcon,
-                      size: 20,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          order.statusText,
-                          style: TextStyle(
-                            color: order.statusColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.access_time,
-                              size: 14,
-                              color: Colors.grey.shade600,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _formatDateTime(order.createdAt),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Payment method badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          order.paymentMethod.toLowerCase().contains('เงินสด')
-                              ? Icons.payments
-                              : Icons.credit_card,
-                          size: 16,
-                          color: Colors.grey.shade700,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          order.paymentMethod,
-                          style: TextStyle(
-                            color: Colors.grey.shade700,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header: Order ID + Status
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: order.statusColor.withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
               ),
             ),
-
-            // Order Content
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Order Header: ID and Total
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'หมายเลขออเดอร์',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '#${order.orderId}',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                order.shopName,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.blue.shade700,
-                                ),
-                              ),
-                            ],
-                          ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: order.statusColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(order.statusIcon, size: 18, color: Colors.white),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '#${order.orderId}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
                         ),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.green.shade500,
-                                Colors.green.shade600,
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            children: [
-                              const Icon(
-                                Icons.receipt_long,
-                                color: Colors.white,
-                                size: 24,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '฿${order.totalPrice.toStringAsFixed(0)}',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const Text(
-                                'ยอดรวม',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white70,
-                                ),
-                              ),
-                            ],
-                          ),
+                      ),
+                      Text(
+                        _formatDateTime(order.createdAt),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: order.statusColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    order.statusText,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                ),
+              ],
+            ),
+          ),
 
-                  const SizedBox(height: 20),
-
-                  // Order Items Section - Redesigned
-                  if (order.items.isNotEmpty) ...[
+          // Content
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Shop name & Payment
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        order.shopName,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                    ),
                     Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            order.paymentMethod.toLowerCase().contains('เงินสด')
+                                ? Icons.payments
+                                : Icons.credit_card,
+                            size: 14,
+                            color: Colors.grey.shade700,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            order.paymentMethod,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Order Items
+                if (order.items.isNotEmpty) ...[
+                  ...order.items.map((item) {
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.grey.shade200),
                       ),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Items Header
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(12),
-                                topRight: Radius.circular(12),
+                          Row(
+                            children: [
+                              // Quantity
+                              Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: Colors.green,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${item.quantity}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.shade100,
-                                    borderRadius: BorderRadius.circular(8),
+                              const SizedBox(width: 10),
+                              // Food name
+                              Expanded(
+                                child: Text(
+                                  item.foodName,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
                                   ),
-                                  child: Icon(
-                                    Icons.restaurant_menu,
-                                    size: 20,
-                                    color: Colors.blue.shade700,
-                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    'รายการอาหาร',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: Colors.blue.shade700,
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.orange.shade100,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    '${order.items.length} รายการ',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.orange.shade700,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
 
-                          // Items List
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              children: order.items.asMap().entries.map((
-                                entry,
-                              ) {
-                                int index = entry.key;
-                                OrderItem item = entry.value;
+                          const SizedBox(height: 8),
 
-                                return Container(
-                                  margin: EdgeInsets.only(
-                                    bottom: index < order.items.length - 1
-                                        ? 16
-                                        : 0,
-                                  ),
-                                  padding: const EdgeInsets.all(16),
+                          // Pricing comparison - เน้นที่เงินที่ร้านได้
+                          Row(
+                            children: [
+                              // รายได้ร้าน (ราคาต้นทุน) - เด่นกว่า
+                              Expanded(
+                                flex: 3,
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Colors.grey.shade200,
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.green.shade400,
+                                        Colors.green.shade600,
+                                      ],
                                     ),
+                                    borderRadius: BorderRadius.circular(8),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.04),
-                                        blurRadius: 8,
+                                        color: Colors.green.withOpacity(0.3),
+                                        blurRadius: 4,
                                         offset: const Offset(0, 2),
                                       ),
                                     ],
@@ -781,428 +689,611 @@ class _OrdersListPageState extends State<OrdersListPage>
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      // Food Name and Quantity
                                       Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
                                         children: [
-                                          // Quantity Badge
-                                          Container(
-                                            width: 32,
-                                            height: 32,
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                colors: [
-                                                  Colors.green.shade500,
-                                                  Colors.green.shade600,
-                                                ],
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Center(
-                                              child: Text(
-                                                '${item.quantity}',
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ),
+                                          const Icon(
+                                            Icons.account_balance_wallet,
+                                            size: 12,
+                                            color: Colors.white,
                                           ),
-                                          const SizedBox(width: 12),
-                                          // Food Details
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  item.foodName,
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.black87,
-                                                  ),
-                                                  maxLines: 2,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                                const SizedBox(height: 8),
-                                                // Price breakdown
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 12,
-                                                        vertical: 6,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.grey.shade100,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
-                                                        ),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      Text(
-                                                        '฿${item.sellPrice.toStringAsFixed(0)}',
-                                                        style: const TextStyle(
-                                                          fontSize: 14,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          color: Colors.black87,
-                                                        ),
-                                                      ),
-                                                      Text(
-                                                        ' × ${item.quantity} = ',
-                                                        style: TextStyle(
-                                                          fontSize: 13,
-                                                          color: Colors
-                                                              .grey
-                                                              .shade600,
-                                                        ),
-                                                      ),
-                                                      Text(
-                                                        '฿${item.subtotal.toStringAsFixed(0)}',
-                                                        style: const TextStyle(
-                                                          fontSize: 14,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          color: Colors.green,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
+                                          const SizedBox(width: 4),
+                                          const Text(
+                                            'รายได้ร้าน',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
                                         ],
                                       ),
-
-                                      // Selected Options - Enhanced display
-                                      if (item.selectedOptions.isNotEmpty) ...[
-                                        const SizedBox(height: 12),
-                                        Container(
-                                          width: double.infinity,
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: Colors.amber.shade50,
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                            border: Border.all(
-                                              color: Colors.amber.shade200,
-                                              width: 1,
-                                            ),
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.tune,
-                                                    size: 16,
-                                                    color:
-                                                        Colors.amber.shade700,
-                                                  ),
-                                                  const SizedBox(width: 6),
-                                                  Text(
-                                                    'ตัวเลือกเพิ่มเติม:',
-                                                    style: TextStyle(
-                                                      fontSize: 13,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color:
-                                                          Colors.amber.shade800,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 8),
-                                              ..._buildFormattedOptions(
-                                                item.selectedOptions,
-                                              ),
-                                            ],
-                                          ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '฿${(item.originalSubtotal ?? 0).toStringAsFixed(0)}',
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
                                         ),
-                                      ],
+                                      ),
+                                      Text(
+                                        'ไม่รวมตัวเลือก ฿${item.originalPrice!.toStringAsFixed(0)} × ${item.quantity} = ${(item.originalPrice! * item.quantity).toStringAsFixed(0)}',
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.white70,
+                                        ),
+                                      ),
+                                      if (item.originalPrice != null &&
+                                          item.originalPrice! > 0)
+                                        Builder(
+                                          builder: (context) {
+                                            double originalOptionsTotal = 0.0;
+                                            if (item.originalOptions != null) {
+                                              for (var option
+                                                  in item.originalOptions!) {
+                                                if (option is Map &&
+                                                    option['extraPrice'] !=
+                                                        null) {
+                                                  originalOptionsTotal +=
+                                                      (option['extraPrice']
+                                                              as num)
+                                                          .toDouble();
+                                                }
+                                              }
+                                            }
+                                            return Text(
+                                              'รวมตัวเลือก ฿${(item.originalPrice! + originalOptionsTotal).toStringAsFixed(0)} × ${item.quantity} = ${(item.originalPrice! + originalOptionsTotal) * item.quantity}',
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                color: Colors.white70,
+                                              ),
+                                            );
+                                          },
+                                        ),
                                     ],
                                   ),
-                                );
-                              }).toList(),
-                            ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // ราคาลูกค้าจ่าย - รอง
+                              Expanded(
+                                flex: 2,
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.grey.shade300,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'ลูกค้าจ่าย',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '฿${item.subtotal.toStringAsFixed(0)}',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.grey.shade800,
+                                        ),
+                                      ),
+                                      Text(
+                                        'ไม่รวมตัวเลือก ฿${item.sellPrice.toStringAsFixed(0)} × ${item.quantity} = ${(item.sellPrice * item.quantity).toStringAsFixed(0)}',
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                      if (item.sellPrice != null &&
+                                          item.sellPrice > 0)
+                                        Builder(
+                                          builder: (context) {
+                                            double sellOptionsTotal = 0.0;
+                                            if (item.selectedOptions != null) {
+                                              for (var option
+                                                  in item.selectedOptions) {
+                                                if (option is Map &&
+                                                    option['extraPrice'] !=
+                                                        null) {
+                                                  sellOptionsTotal +=
+                                                      (option['extraPrice']
+                                                              as num)
+                                                          .toDouble();
+                                                }
+                                              }
+                                            }
+                                            return Text(
+                                              'รวมตัวเลือก ฿${(item.sellPrice + sellOptionsTotal).toStringAsFixed(0)} × ${item.quantity} = ${(item.sellPrice + sellOptionsTotal) * item.quantity}',
+                                              style: TextStyle(
+                                                fontSize: 9,
+                                                color: Colors.grey.shade600,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
 
-                    const SizedBox(height: 20),
-                  ],
-
-                  // Delivery Address Section - Cleaner design
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.red.shade200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
+                          // Selected Options
+                          if (item.selectedOptions.isNotEmpty) ...[
+                            const SizedBox(height: 8),
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.red.shade100,
-                                borderRadius: BorderRadius.circular(8),
+                                color: Colors.amber.shade50,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: Colors.amber.shade200,
+                                  width: 0.5,
+                                ),
                               ),
-                              child: Icon(
-                                Icons.location_on,
-                                color: Colors.red.shade700,
-                                size: 20,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.tune,
+                                        size: 12,
+                                        color: Colors.amber.shade700,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'ตัวเลือกเพิ่มเติม',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.amber.shade700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  ..._buildFormattedOptionsWithCost(
+                                    item.selectedOptions,
+                                    item.originalOptions,
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(width: 12),
+                          ],
+                        ],
+                      ),
+                    );
+                  }).toList(),
+
+                  const Divider(height: 24),
+                ],
+
+                // Delivery Address - Compact
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            size: 16,
+                            color: Colors.red.shade700,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'ที่อยู่จัดส่ง',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red.shade700,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (order.distanceKm != null &&
+                              order.distanceKm! > 0) ...[
+                            Icon(
+                              Icons.straighten,
+                              size: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                            const SizedBox(width: 4),
                             Text(
-                              'ที่อยู่จัดส่ง',
+                              '${order.distanceKm!.toStringAsFixed(1)} กม.',
                               style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        order.address.isNotEmpty
+                            ? order.address
+                            : 'กำลังโหลดที่อยู่...',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: order.address.isNotEmpty
+                              ? Colors.grey.shade700
+                              : Colors.orange.shade600,
+                          height: 1.3,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Special Note
+                if (order.note != null && order.note!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.purple.shade200),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.sticky_note_2,
+                          size: 16,
+                          color: Colors.purple.shade600,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            order.note!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade700,
+                              height: 1.3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 16),
+
+                // Price Summary - เน้นรายได้ร้าน
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.green.shade50, Colors.green.shade100],
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.green.shade300, width: 2),
+                  ),
+                  child: Column(
+                    children: [
+                      // รายได้ร้านจากอาหาร (ไฮไลท์)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade600,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.store,
+                                  size: 18,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'รายได้ร้าน (อาหาร)',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              '฿${_calculateShopRevenue(order).toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: Colors.red.shade700,
+                                color: Colors.white,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.shade200),
-                          ),
-                          child: Text(
-                            order.address.isNotEmpty
-                                ? order.address
-                                : 'กำลังโหลดที่อยู่...',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: order.address.isNotEmpty
-                                  ? Colors.grey.shade700
-                                  : Colors.orange.shade600,
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
+                      ),
 
-                        // Distance and Delivery Fee
-                        if (order.distanceKm != null &&
-                            order.distanceKm! > 0) ...[
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Colors.grey.shade200,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.straighten,
-                                        size: 16,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        '${order.distanceKm!.toStringAsFixed(1)} กม.',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.grey.shade700,
-                                        ),
-                                      ),
-                                    ],
+                      const SizedBox(height: 12),
+
+                      // ข้อมูลเพิ่มเติม
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          children: [
+                            // ลูกค้าจ่าย (อาหาร)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'ลูกค้าจ่าย (อาหาร)',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.blue.shade200,
+                                Text(
+                                  '฿${(order.totalPrice - order.deliveryFee).toStringAsFixed(0)}',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey.shade700,
                                   ),
                                 ),
-                                child: Row(
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            // ส่วนต่างที่บริษัทได้
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
                                   children: [
                                     Icon(
-                                      Icons.local_shipping,
-                                      size: 16,
+                                      Icons.business,
+                                      size: 12,
                                       color: Colors.blue.shade600,
                                     ),
-                                    const SizedBox(width: 8),
+                                    const SizedBox(width: 4),
                                     Text(
-                                      '฿${order.deliveryFee.toStringAsFixed(0)}',
+                                      'ค่าบริการแพลตฟอร์ม 15%',
                                       style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blue.shade600,
+                                        fontSize: 11,
+                                        color: Colors.grey.shade600,
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-
-                  // Special Note Section
-                  if (order.note != null && order.note!.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.purple.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.purple.shade200),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.sticky_note_2,
-                                size: 18,
-                                color: Colors.purple.shade600,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'หมายเหตุพิเศษ',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.purple.shade700,
+                                Text(
+                                  '฿${((order.totalPrice - order.deliveryFee) - _calculateShopRevenue(order)).toStringAsFixed(0)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue.shade600,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8),
+                              ],
                             ),
-                            child: Text(
-                              order.note!,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade700,
-                                height: 1.4,
-                              ),
+                            const Divider(height: 16),
+                            // ค่าจัดส่ง
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'ค่าจัดส่ง',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                                Text(
+                                  '฿${order.deliveryFee.toStringAsFixed(0)}',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.orange.shade600,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
+                            const Divider(height: 16),
+                            // ยอดรวมทั้งหมด
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'ยอดรวมทั้งหมด',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                Text(
+                                  '฿${order.totalPrice.toStringAsFixed(0)}',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey.shade800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ),
 
-                  const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                  // Action Buttons
-                  _buildActionButtons(order, controller),
-                ],
-              ),
+                // Action Buttons
+                _buildActionButtons(order, controller),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  // Enhanced function to format selected options
-  List<Widget> _buildFormattedOptions(List<dynamic> options) {
-    if (options.isEmpty) return [];
+  // Calculate shop revenue from original subtotals
+  double _calculateShopRevenue(Order order) {
+    if (order.originalTotalPrice != null && order.originalTotalPrice! > 0) {
+      return order.originalTotalPrice!;
+    }
 
-    return options.map((option) {
+    // Calculate from original subtotals of items
+    double totalOriginalSubtotal = 0.0;
+    for (var item in order.items) {
+      if (item.originalSubtotal != null && item.originalSubtotal! > 0) {
+        totalOriginalSubtotal += item.originalSubtotal!;
+      } else {
+        // Fallback: calculate based on sell price (assuming 85% of sell price is original)
+        totalOriginalSubtotal += (item.subtotal * 0.85);
+      }
+    }
+
+    return totalOriginalSubtotal;
+  }
+
+  // Enhanced function to format selected options with cost comparison
+  List<Widget> _buildFormattedOptionsWithCost(
+    List<dynamic> selectedOptions,
+    List<dynamic>? originalOptions,
+  ) {
+    if (selectedOptions.isEmpty) return [];
+
+    // สร้าง map ของราคาต้นทุนจาก originalOptions
+    Map<String, double> costMap = {};
+    if (originalOptions != null) {
+      for (var origOption in originalOptions) {
+        if (origOption is Map) {
+          String name =
+              origOption['label']?.toString() ??
+              origOption['name']?.toString() ??
+              '';
+          double cost = (origOption['extraPrice'] as num?)?.toDouble() ?? 0.0;
+          if (name.isNotEmpty) {
+            costMap[name.toLowerCase()] = cost;
+          }
+        }
+      }
+    }
+
+    return selectedOptions.map((option) {
       if (option is Map) {
         String name =
             option['label']?.toString() ?? option['name']?.toString() ?? '';
         String value = option['value']?.toString() ?? '';
-        String price =
+        String sellPrice =
             option['extraPrice']?.toString() ??
             option['price']?.toString() ??
             '';
 
+        // หาราคาต้นทุนที่ตรงกัน
+        double costPrice = costMap[name.toLowerCase()] ?? 0.0;
+
         return Container(
-          margin: const EdgeInsets.only(bottom: 6),
-          child: Row(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: Colors.amber.shade300, width: 0.5),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade600,
-                  shape: BoxShape.circle,
-                ),
+              Row(
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade600,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      name + (value.isNotEmpty ? ': $value' : ''),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade800,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: name,
+              const SizedBox(height: 4),
+              // แสดงราคาขายและราคาต้นทุน
+              Row(
+                children: [
+                  const SizedBox(width: 14),
+                  if (sellPrice.isNotEmpty) ...[
+                    Text(
+                      'ราคาขาย: +฿$sellPrice',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.green.shade600,
+                      ),
+                    ),
+                    if (costPrice > 0) ...[
+                      Text(
+                        ' | ',
                         style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade800,
+                          fontSize: 11,
+                          color: Colors.grey.shade500,
                         ),
                       ),
-                      if (value.isNotEmpty)
-                        TextSpan(
-                          text: ': $value',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade700,
-                          ),
+                      Text(
+                        'ต้นทุน: +฿${costPrice.toStringAsFixed(0)}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.orange.shade600,
                         ),
-                      if (price.isNotEmpty)
-                        TextSpan(
-                          text: ' (+฿$price)',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green.shade600,
-                          ),
-                        ),
+                      ),
                     ],
-                  ),
-                ),
+                  ] else if (costPrice > 0) ...[
+                    Text(
+                      'ต้นทุน: +฿${costPrice.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.orange.shade600,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
@@ -1232,34 +1323,6 @@ class _OrdersListPageState extends State<OrdersListPage>
         ),
       );
     }).toList();
-  }
-
-  // Keep the original _formatSelectedOptions for backward compatibility
-  String _formatSelectedOptions(List<dynamic> options) {
-    if (options.isEmpty) return '';
-
-    return options
-        .map((option) {
-          if (option is Map) {
-            String name =
-                option['label']?.toString() ?? option['name']?.toString() ?? '';
-            String value = option['value']?.toString() ?? '';
-            String price =
-                option['extraPrice']?.toString() ??
-                option['price']?.toString() ??
-                '';
-
-            if (name.isNotEmpty) {
-              if (price.isNotEmpty) {
-                return '$name${value.isNotEmpty ? ": $value" : ""} (+฿$price)';
-              }
-              return '$name${value.isNotEmpty ? ": $value" : ""}';
-            }
-            return option.toString();
-          }
-          return option.toString();
-        })
-        .join(', ');
   }
 
   Widget _buildActionButtons(Order order, OrderController controller) {
@@ -1561,6 +1624,35 @@ class _OrdersListPageState extends State<OrdersListPage>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPriceSummaryRow(
+    String label,
+    String amount,
+    Color color, {
+    bool isTotal = false,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: isTotal ? 14 : 13,
+            fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
+            color: Colors.grey.shade700,
+          ),
+        ),
+        Text(
+          amount,
+          style: TextStyle(
+            fontSize: isTotal ? 16 : 14,
+            fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 

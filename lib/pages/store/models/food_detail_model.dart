@@ -64,7 +64,7 @@ class FoodOption {
   factory FoodOption.fromJson(Map<String, dynamic> json) {
     return FoodOption(
       label: json['label'] ?? '',
-      extraPrice: (json['extra_price'] ?? 0).toDouble(),
+      extraPrice: (json['extraPrice'] ?? json['extra_price'] ?? 0).toDouble(),
     );
   }
 }

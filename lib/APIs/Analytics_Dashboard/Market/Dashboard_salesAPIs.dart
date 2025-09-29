@@ -9,7 +9,7 @@ class DashboardSalesController extends ChangeNotifier {
   DailySummary? daily;
   MonthlySummary? monthly;
   YearlySummary? yearly;
-  
+
   bool loading = false;
   String? error;
 
@@ -30,9 +30,12 @@ class DashboardSalesController extends ChangeNotifier {
           );
       final res = await http.get(uri);
       if (res.statusCode == 200) {
-        daily = DailySummary.fromJson(json.decode(res.body));
+        final responseData = json.decode(res.body);
+        print('Daily API Response: $responseData');
+        daily = DailySummary.fromJson(responseData);
       } else {
         error = res.body;
+        print('Daily API Error: ${res.statusCode} - ${res.body}');
       }
     } catch (e) {
       error = "$e";
@@ -63,9 +66,12 @@ class DashboardSalesController extends ChangeNotifier {
           );
       final res = await http.get(uri);
       if (res.statusCode == 200) {
-        monthly = MonthlySummary.fromJson(json.decode(res.body));
+        final responseData = json.decode(res.body);
+        print('Monthly API Response: $responseData');
+        monthly = MonthlySummary.fromJson(responseData);
       } else {
         error = res.body;
+        print('Monthly API Error: ${res.statusCode} - ${res.body}');
       }
     } catch (e) {
       error = "$e";
@@ -91,9 +97,12 @@ class DashboardSalesController extends ChangeNotifier {
           );
       final res = await http.get(uri);
       if (res.statusCode == 200) {
-        yearly = YearlySummary.fromJson(json.decode(res.body));
+        final responseData = json.decode(res.body);
+        print('Yearly API Response: $responseData');
+        yearly = YearlySummary.fromJson(responseData);
       } else {
         error = res.body;
+        print('Yearly API Error: ${res.statusCode} - ${res.body}');
       }
     } catch (e) {
       error = "$e";

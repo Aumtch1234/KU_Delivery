@@ -16,9 +16,9 @@ class FoodOrderController {
         if (data['success'] == true && data['data'].isNotEmpty) {
           final first = data['data'][0];
 
-          // ดึง options จาก JSON array
-          final optionsJson = first['options'] as List<dynamic>? ?? [];
-          final options = optionsJson
+          // ดึง sell_options จาก JSON array แทน options
+          final sellOptionsJson = first['sell_options'] as List<dynamic>? ?? [];
+          final options = sellOptionsJson
               .map(
                 (e) => FoodOption(
                   label: e['label'] ?? '',

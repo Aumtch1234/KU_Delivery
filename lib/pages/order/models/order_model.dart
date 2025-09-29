@@ -21,6 +21,7 @@ class Order {
   final double? distanceKm;
   final double deliveryFee;
   final double totalPrice;
+  final double? originalTotalPrice; // ราคาต้นทุนรวม (ไม่รวมค่าส่ง)
   final String status;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -39,6 +40,7 @@ class Order {
     this.distanceKm,
     required this.deliveryFee,
     required this.totalPrice,
+    this.originalTotalPrice,
     required this.status,
     required this.createdAt,
     required this.updatedAt,
@@ -59,6 +61,7 @@ class Order {
       distanceKm: _toDouble(json['distance_km']),
       deliveryFee: _toDouble(json['delivery_fee']),
       totalPrice: _toDouble(json['total_price']),
+      originalTotalPrice: _toDouble(json['original_total_price']),
       status: json['status'],
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
@@ -216,6 +219,7 @@ class Order {
     double? distanceKm,
     double? deliveryFee,
     double? totalPrice,
+    double? originalTotalPrice,
     String? status,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -234,6 +238,7 @@ class Order {
       distanceKm: distanceKm ?? this.distanceKm,
       deliveryFee: deliveryFee ?? this.deliveryFee,
       totalPrice: totalPrice ?? this.totalPrice,
+      originalTotalPrice: originalTotalPrice ?? this.originalTotalPrice,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -250,7 +255,10 @@ class OrderItem {
   final int quantity;
   final double sellPrice;
   final double subtotal;
+  final double? originalPrice; // ราคาต้นทุนต่อชิ้น
+  final double? originalSubtotal; // ราคาต้นทุนรวม
   final List<dynamic> selectedOptions;
+  final List<dynamic>? originalOptions; // ตัวเลือกต้นทุน
 
   OrderItem({
     required this.itemId,
@@ -260,7 +268,10 @@ class OrderItem {
     required this.quantity,
     required this.sellPrice,
     required this.subtotal,
+    this.originalPrice,
+    this.originalSubtotal,
     required this.selectedOptions,
+    this.originalOptions,
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
@@ -272,7 +283,10 @@ class OrderItem {
       quantity: json['quantity'],
       sellPrice: _toDouble(json['sell_price']),
       subtotal: _toDouble(json['subtotal']),
+      originalPrice: _toDouble(json['original_price']),
+      originalSubtotal: _toDouble(json['original_subtotal']),
       selectedOptions: json['selected_options'] ?? [],
+      originalOptions: json['original_options'] ?? [],
     );
   }
 
@@ -285,7 +299,10 @@ class OrderItem {
       'quantity': quantity,
       'sell_price': sellPrice,
       'subtotal': subtotal,
+      'original_price': originalPrice,
+      'original_subtotal': originalSubtotal,
       'selected_options': selectedOptions,
+      'original_options': originalOptions,
     };
   }
 }

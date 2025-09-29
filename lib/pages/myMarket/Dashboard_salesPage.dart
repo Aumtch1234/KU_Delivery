@@ -93,7 +93,24 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
   Widget _buildDailyTab(DashboardSalesController controller, NumberFormat nf) {
     final d = controller.daily;
     if (controller.error != null) {
-      return Center(child: Text('Error: ${controller.error}'));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error, color: Colors.red, size: 48),
+            const SizedBox(height: 16),
+            Text('Error: ${controller.error}', textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => controller.fetchDaily(
+                date: _selectedDate,
+                marketId: widget.marketId,
+              ),
+              child: const Text('ลองอีกครั้ง'),
+            ),
+          ],
+        ),
+      );
     }
     if (d == null) return const Center(child: Text('ไม่มีข้อมูล'));
 
@@ -101,22 +118,24 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Summary Cards
+          // Summary Cards - ราคาขาย
           Row(
             children: [
               Expanded(
                 child: _SummaryCard(
-                  title: 'ยอดขายรวม',
+                  title: 'ยอดขาย (ราคาขายที่ + 15%)',
                   value: '฿${nf.format(d.totalRevenue)}',
                   icon: Icons.attach_money,
+                  color: Colors.green,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _SummaryCard(
-                  title: 'จำนวนออเดอร์',
-                  value: '${d.totalOrders}',
-                  icon: Icons.shopping_cart,
+                  title: 'ยอดขาย (ต้นทุน)',
+                  value: '฿${nf.format(d.totalCostRevenue)}',
+                  icon: Icons.monetization_on,
+                  color: Colors.orange,
                 ),
               ),
             ],
@@ -126,17 +145,41 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
             children: [
               Expanded(
                 child: _SummaryCard(
-                  title: 'ค่าเฉลี่ยต่อออเดอร์',
+                  title: 'จำนวนออเดอร์',
+                  value: '${d.totalOrders}',
+                  icon: Icons.shopping_cart,
+                  color: Colors.blue,
+                ),
+              ),
+              // const SizedBox(width: 8),
+              // Expanded(
+              //   child: _SummaryCard(
+              //     title: 'กำไร (ขาย-ต้นทุน)',
+              //     value: '฿${nf.format(d.totalRevenue - d.totalCostRevenue)}',
+              //     icon: Icons.trending_up,
+              //     color: Colors.red,
+              //   ),
+              // ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _SummaryCard(
+                  title: 'ค่าเฉลี่ย (ขาย)',
                   value: '฿${nf.format(d.avgOrderValue)}',
                   icon: Icons.analytics,
+                  color: Colors.purple,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _SummaryCard(
-                  title: 'ชั่วโมงพีค',
-                  value: d.peakHour != null ? '${d.peakHour}:00' : 'ไม่มี',
-                  icon: Icons.access_time,
+                  title: 'ค่าเฉลี่ย (ต้นทุน)',
+                  value: '฿${nf.format(d.avgCostOrderValue)}',
+                  icon: Icons.analytics_outlined,
+                  color: Colors.teal,
                 ),
               ),
             ],
@@ -160,10 +203,39 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundColor: Colors.green.shade100,
-                          child: Text('${h.hour}'),
+                          child: Text(
+                            '${h.hour}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
-                        title: Text('${h.orders} ออเดอร์'),
-                        trailing: Text('฿${nf.format(h.revenue)}'),
+                        title: Text(
+                          '${h.orders} ออเดอร์',
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        subtitle: Text(
+                          'กำไร: ฿${nf.format(h.revenue - h.originalRevenue)}',
+                          style: TextStyle(color: Colors.red.shade700),
+                        ),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '฿${nf.format(h.revenue)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                              ),
+                            ),
+                            Text(
+                              'ต้นทุน: ฿${nf.format(h.originalRevenue)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.orange.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
                       );
                     },
                   ),
@@ -187,27 +259,63 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
                       final percentage = total > 0
                           ? (entry.value / total * 100)
                           : 0;
-                      return ListTile(
-                        leading: Icon(
-                          entry.key.contains('cash')
-                              ? Icons.money
-                              : Icons.credit_card,
-                          color: Colors.green,
+                      return Container(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
                         ),
-                        title: Text(entry.key),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text('฿${nf.format(entry.value)}'),
-                            Text(
-                              '${percentage.toStringAsFixed(1)}%',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
+                        child: ListTile(
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: entry.key.contains('cash')
+                                  ? Colors.green.withOpacity(0.2)
+                                  : Colors.blue.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                          ],
+                            child: Icon(
+                              entry.key.contains('cash')
+                                  ? Icons.money
+                                  : Icons.credit_card,
+                              color: entry.key.contains('cash')
+                                  ? Colors.green
+                                  : Colors.blue,
+                            ),
+                          ),
+                          title: Text(
+                            entry.key,
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          trailing: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                '฿${nf.format(entry.value)}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade200,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${percentage.toStringAsFixed(1)}%',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade700,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     }).toList(),
@@ -224,16 +332,82 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
                     child: Center(child: Text('ไม่มีข้อมูลเมนู')),
                   )
                 : Column(
-                    children: d.menuItemsSold.entries.map((entry) {
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: Colors.orange.shade100,
-                          child: Text('${entry.value}'),
-                        ),
-                        title: Text(entry.key),
-                        trailing: Text('${entry.value} ชิ้น'),
-                      );
-                    }).toList(),
+                    children: d.menuItemsSold.entries
+                        .toList()
+                        .asMap()
+                        .entries
+                        .map((indexedEntry) {
+                          final index = indexedEntry.key;
+                          final entry = indexedEntry.value;
+                          final rankColors = [
+                            Colors.amber,
+                            Colors.grey,
+                            Colors.orange,
+                            Colors.blue,
+                            Colors.green,
+                          ];
+                          final rankColor = index < rankColors.length
+                              ? rankColors[index]
+                              : Colors.grey;
+
+                          return Container(
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            child: ListTile(
+                              leading: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      rankColor.withOpacity(0.8),
+                                      rankColor.withOpacity(0.4),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '#${index + 1}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              title: Text(
+                                entry.key,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              trailing: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: rankColor.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Text(
+                                  '${entry.value} ชิ้น',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: rankColor,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        })
+                        .toList(),
                   ),
           ),
         ],
@@ -247,7 +421,25 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
   ) {
     final m = controller.monthly;
     if (controller.error != null) {
-      return Center(child: Text('Error: ${controller.error}'));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error, color: Colors.red, size: 48),
+            const SizedBox(height: 16),
+            Text('Error: ${controller.error}', textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => controller.fetchMonthly(
+                month: _selectedMonth,
+                year: _selectedYear,
+                marketId: widget.marketId,
+              ),
+              child: const Text('ลองอีกครั้ง'),
+            ),
+          ],
+        ),
+      );
     }
     if (m == null) return const Center(child: Text('ไม่มีข้อมูล'));
 
@@ -255,23 +447,70 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
+          // Debug info
+          if (m.totalRevenue == 0 && m.totalOrders == 0)
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade300),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info, color: Colors.orange.shade700),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'ไม่มีข้อมูลสำหรับเดือน ${m.month}/${m.year}',
+                      style: TextStyle(color: Colors.orange.shade700),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Row(
             children: [
               Expanded(
                 child: _SummaryCard(
-                  title: 'ยอดขายรวม (เดือน)',
+                  title: 'ยอดขาย (ราคาขายที่ + 15%)',
                   value: '฿${nf.format(m.totalRevenue)}',
                   icon: Icons.attach_money,
+                  color: Colors.green,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _SummaryCard(
+                  title: 'ยอดขาย (ต้นทุน)',
+                  value: '฿${nf.format(m.totalCostRevenue)}',
+                  icon: Icons.monetization_on,
+                  color: Colors.orange,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _SummaryCard(
                   title: 'จำนวนออเดอร์',
                   value: '${m.totalOrders}',
                   icon: Icons.shopping_cart,
+                  color: Colors.blue,
                 ),
               ),
+              // const SizedBox(width: 8),
+              // Expanded(
+              //   child: _SummaryCard(
+              //     title: 'กำไรรวม',
+              //     value: '฿${nf.format(m.totalRevenue - m.totalCostRevenue)}',
+              //     icon: Icons.trending_up,
+              //     color: Colors.red,
+              //   ),
+              // ),
             ],
           ),
           const SizedBox(height: 16),
@@ -289,14 +528,50 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
                     itemCount: m.daily.length,
                     itemBuilder: (context, index) {
                       final d = m.daily[index];
+                      final estimatedCost =
+                          d.revenue * 0.85; // ประมาณการต้นทุน 85%
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundColor: Colors.blue.shade100,
-                          child: Text('${d.date.day}'),
+                          child: Text(
+                            '${d.date.day}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
-                        title: Text(DateFormat('dd/MM/yyyy').format(d.date)),
-                        subtitle: Text('${d.orders} ออเดอร์'),
-                        trailing: Text('฿${nf.format(d.revenue)}'),
+                        title: Text(
+                          DateFormat('dd/MM/yyyy').format(d.date),
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${d.orders} ออเดอร์'),
+                            Text(
+                              'กำไร: ฿${nf.format(d.revenue - estimatedCost)}',
+                              style: TextStyle(color: Colors.red.shade700),
+                            ),
+                          ],
+                        ),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '฿${nf.format(d.revenue)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                              ),
+                            ),
+                            Text(
+                              'ต้นทุน: ฿${nf.format(estimatedCost)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.orange.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
                       );
                     },
                   ),
@@ -309,7 +584,24 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
   Widget _buildYearlyTab(DashboardSalesController controller, NumberFormat nf) {
     final y = controller.yearly;
     if (controller.error != null) {
-      return Center(child: Text('Error: ${controller.error}'));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error, color: Colors.red, size: 48),
+            const SizedBox(height: 16),
+            Text('Error: ${controller.error}', textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => controller.fetchYearly(
+                year: _selectedYear,
+                marketId: widget.marketId,
+              ),
+              child: const Text('ลองอีกครั้ง'),
+            ),
+          ],
+        ),
+      );
     }
     if (y == null) return const Center(child: Text('ไม่มีข้อมูล'));
 
@@ -317,23 +609,70 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
+          // Debug info
+          if (y.totalRevenue == 0 && y.totalOrders == 0)
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade300),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info, color: Colors.orange.shade700),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'ไม่มีข้อมูลสำหรับปี ${y.year}',
+                      style: TextStyle(color: Colors.orange.shade700),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Row(
             children: [
               Expanded(
                 child: _SummaryCard(
-                  title: 'ยอดขายรวม (ปี)',
+                  title: 'ยอดขาย (ราคาขายที่ + 15%)',
                   value: '฿${nf.format(y.totalRevenue)}',
                   icon: Icons.attach_money,
+                  color: Colors.green,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _SummaryCard(
+                  title: 'ยอดขาย (ต้นทุน)',
+                  value: '฿${nf.format(y.totalCostRevenue)}',
+                  icon: Icons.monetization_on,
+                  color: Colors.orange,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _SummaryCard(
                   title: 'จำนวนออเดอร์',
                   value: '${y.totalOrders}',
                   icon: Icons.shopping_cart,
+                  color: Colors.blue,
                 ),
               ),
+              // const SizedBox(width: 8),
+              // Expanded(
+              //   child: _SummaryCard(
+              //     title: 'กำไรรวม',
+              //     value: '฿${nf.format(y.totalRevenue - y.totalCostRevenue)}',
+              //     icon: Icons.trending_up,
+              //     color: Colors.red,
+              //   ),
+              // ),
             ],
           ),
           const SizedBox(height: 16),
@@ -351,14 +690,50 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
                     itemCount: y.monthlyData.length,
                     itemBuilder: (context, index) {
                       final m = y.monthlyData[index];
+                      final estimatedCost =
+                          m.revenue * 0.85; // ประมาณการต้นทุน 85%
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundColor: Colors.purple.shade100,
-                          child: Text('${m.month}'),
+                          child: Text(
+                            '${m.month}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
-                        title: Text('เดือน ${m.month}/${y.year}'),
-                        subtitle: Text('${m.orders} ออเดอร์'),
-                        trailing: Text('฿${nf.format(m.revenue)}'),
+                        title: Text(
+                          'เดือน ${m.month}/${y.year}',
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${m.orders} ออเดอร์'),
+                            Text(
+                              'กำไร: ฿${nf.format(m.revenue - estimatedCost)}',
+                              style: TextStyle(color: Colors.red.shade700),
+                            ),
+                          ],
+                        ),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '฿${nf.format(m.revenue)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                              ),
+                            ),
+                            Text(
+                              'ต้นทุน: ฿${nf.format(estimatedCost)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.orange.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
                       );
                     },
                   ),
@@ -373,47 +748,69 @@ class _SummaryCard extends StatelessWidget {
   final String title;
   final String value;
   final IconData icon;
+  final Color? color;
 
   const _SummaryCard({
     required this.title,
     required this.value,
     required this.icon,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
+    final cardColor = color ?? Colors.green;
     return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: Colors.green),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [cardColor.withOpacity(0.1), cardColor.withOpacity(0.05)],
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: cardColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, color: cardColor, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade700,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: cardColor,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
