@@ -557,7 +557,7 @@ class _OrderNowPageState extends State<OrderNowPage> {
     if (km <= 2) return 10;
     if (km <= 5) return 15;
     if (km <= 10) return 20;
-    // มากกว่า 15 km → base 20 + (ส่วนที่เกิน * 5)
+    // มากกว่า 10 km → base 20 + (ส่วนที่เกิน * 5)
     return 20 + ((km - 10).ceil() * 5);
   }
 
@@ -647,6 +647,7 @@ class _OrderNowPageState extends State<OrderNowPage> {
                 : "ไม่สามารถคำนวณระยะทางได้";
 
             final totalWithDelivery = storeTotal + deliveryFee;
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -885,14 +886,42 @@ class _OrderNowPageState extends State<OrderNowPage> {
                     try {
                       // Group items by market and calculate totals per market
                       Map<int, List<BasketItem>> itemsByMarket = {};
-                      Map<String, double> distancesByMarket = {};
-                      Map<String, double> deliveryFeesByMarket = {};
-                      Map<String, double> totalPricesByMarket = {};
+                      Map<int, double> distancesByMarket = {};
+                      Map<int, double> deliveryFeesByMarket = {};
+                      Map<int, double> totalPricesByMarket = {};
+                      // Map<int, double> riderGpByMarket = {};
 
                       // Group items by market
                       for (var item in items) {
                         itemsByMarket.putIfAbsent(item.marketId, () => []);
                         itemsByMarket[item.marketId]!.add(item);
+                      }
+
+                      // 🔥 เช็คว่าร้านไหนเป็นร้านแอดมิน (owner_id = null)
+                      final marketIds = itemsByMarket.keys.toList();
+                      Map<int, bool> isAdminMarket = {}; // marketId -> isAdmin
+
+                      try {
+                        final marketsInfo = await OrdersAPI.getMarketsInfo(
+                          marketIds,
+                        );
+                        if (marketsInfo['success'] == true &&
+                            marketsInfo['data'] != null) {
+                          for (var market in marketsInfo['data']) {
+                            final marketId = market['market_id'] as int;
+                            final ownerId = market['owner_id'];
+                            isAdminMarket[marketId] = (ownerId == null);
+                            print(
+                              "🏪 Market $marketId - isAdmin: ${ownerId == null} (owner_id: $ownerId)",
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        print("⚠️ ไม่สามารถดึงข้อมูลร้านได้: $e");
+                        // ถ้าดึงข้อมูลไม่ได้ ให้ใช้ 15% ปกติ
+                        for (final marketId in marketIds) {
+                          isAdminMarket[marketId] = false;
+                        }
                       }
 
                       // Calculate per-market data
@@ -904,14 +933,38 @@ class _OrderNowPageState extends State<OrderNowPage> {
                           (sum, item) => sum + item.total,
                         );
 
-                        distancesByMarket[marketId.toString()] = km;
-                        deliveryFeesByMarket[marketId.toString()] = deliveryFee;
-                        totalPricesByMarket[marketId.toString()] =
-                            foodTotal + deliveryFee;
-                      });
+                        distancesByMarket[marketId] = km;
+                        deliveryFeesByMarket[marketId] = deliveryFee;
+                        totalPricesByMarket[marketId] = foodTotal + deliveryFee;
 
-                      final basketForAPI = items.map((item) {
-                        return {
+                        print("foodTotal: $foodTotal");
+
+                        // 🔥 คำนวณ GP ตามหลักการของคุณ (แอดมิน 20%, ทั่วไป 15%)
+                        // final bool isAdmin = isAdminMarket[marketId] ?? false;
+                        // final double gpPercent = isAdmin ? 0.20 : 0.15; // ร้านแอดมิน 20%, ร้านทั่วไป 15%
+
+                        // // คำนวณ GP ที่ต้องการใน order นี้ (ตามหลักการของคุณ)
+                        // final Gp_required = foodTotal - (gpPercent * foodTotal);
+                        // print("ราคาที่ร้านตั้งก่อนปัดขึ้น: $Gp_required");
+                        // final Gp_required_ceil = Gp_required.ceil();
+                        // print("ราคาที่ร้านตั้งหลังปัดขึ้น Gp_required_ceil: $Gp_required_ceil");
+                        // final GpgpAmount_r = (foodTotal - Gp_required_ceil).toDouble();
+                        // print("Gp ที่ต้องใช้ในออเดอร์ (foodTotal - Gp_required_ceil): $GpgpAmount_r");
+                        // print("🏪 Market $marketId - isAdmin: $isAdmin, GP%: ${(gpPercent * 100).toInt()}%");
+
+                        // riderGpByMarket[marketId] = GpgpAmount_r; // ให้แยกออกเป็น GP ของแต่ละออเดอร์
+
+                        // print(
+                        //   "Market $marketId - foodTotal: $foodTotal, GP: $GpgpAmount_r",
+                        // );
+                      });
+                      // print("🧮 GP by market: $riderGpByMarket");
+
+                      // แยก basket ตาม market
+                      Map<int, List<Map<String, dynamic>>> basketsByMarket = {};
+                      for (var item in items) {
+                        basketsByMarket.putIfAbsent(item.marketId, () => []);
+                        basketsByMarket[item.marketId]!.add({
                           "cart_id": item.cartId,
                           "food_id": item.foodId,
                           "food_name": item.foodName,
@@ -919,26 +972,29 @@ class _OrderNowPageState extends State<OrderNowPage> {
                           "shop_name": item.storeName,
                           "quantity": item.quantity,
                           "sell_price": item.sell_price,
-                          "total": item.total, // Keep individual item total
+                          "total": item.total,
                           "selected_options": item.selectedOptions,
                           "note": item.note,
-                        };
-                      }).toList();
+                        });
+                      }
 
-                      final result = await OrdersAPI.createOrder(
-                        basket: basketForAPI,
+                      // สร้างหลายออเดอร์พร้อมกัน (แยกตามร้าน)
+                      final result = await OrdersAPI.createMultipleOrders(
+                        basketsByMarket: basketsByMarket,
                         address_id: defaultAddress!.id,
                         address: defaultAddress!.address,
                         note: noteController.text,
                         paymentMethod: paymentMethod,
                         deliveryType: deliveryType,
-                        distances: distancesByMarket, // Object with marketId keys
-                        deliveryFees: deliveryFeesByMarket, // Object with marketId keys
-                        totalPrices: totalPricesByMarket, // Object with marketId keys
+                        distancesByMarket: distancesByMarket,
+                        deliveryFeesByMarket: deliveryFeesByMarket,
+                        totalPricesByMarket: totalPricesByMarket,
+                        // riderGpByMarket: riderGpByMarket,
+                        // bonus: 0,
                       );
 
-                      print("✅ Order created: $result");
-                      print("🛒 basketForAPI: $basketForAPI");
+                      print("✅ Multiple orders result: $result");
+                      print("🛒 basketsByMarket: $basketsByMarket");
                       print("📍 distancesByMarket: $distancesByMarket");
                       print("🚚 deliveryFeesByMarket: $deliveryFeesByMarket");
                       print("💰 totalPricesByMarket: $totalPricesByMarket");
@@ -946,13 +1002,23 @@ class _OrderNowPageState extends State<OrderNowPage> {
                       if (result['success'] == true &&
                           result['orders'] != null &&
                           result['orders'].isNotEmpty) {
-                        final orderId = result['orders'][0]['order_id'];
-                        print("✅ Order created with ID: $orderId");
+                        // ดึง order ID จากออเดอร์แรกที่สร้างสำเร็จ
+                        final firstOrder = result['orders'][0]['order_data'];
+                        if (firstOrder['orders'] != null &&
+                            firstOrder['orders'].isNotEmpty) {
+                          final orderId = firstOrder['orders'][0]['order_id'];
+                          print("✅ Orders created, first order ID: $orderId");
 
-                        // เรียก getOrderStatus ด้วย orderId จริง
-                        await OrdersAPI.getOrderStatus(orderId);
+                          // เรียก getOrderStatus ด้วย orderId จริง
+                          await OrdersAPI.getOrderStatus(orderId);
+                        }
 
-                        SocketService().emitNewOrder(result);
+                        // Emit socket events สำหรับทุกออเดอร์ที่สร้างสำเร็จ
+                        for (var orderResult in result['orders']) {
+                          SocketService().emitNewOrder(
+                            orderResult['order_data'],
+                          );
+                        }
 
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(

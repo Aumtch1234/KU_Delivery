@@ -486,7 +486,7 @@ class _MyBasketPageState extends State<MyBasketPage> {
                         Text(
                           item.optionsText,
                           style: TextStyle(
-                            fontSize: _responsiveFontSize(context, 10),
+                            fontSize: _responsiveFontSize(context, 11),
                             color: Colors.grey[600],
                           ),
                           maxLines: 2,
@@ -500,7 +500,7 @@ class _MyBasketPageState extends State<MyBasketPage> {
                         Text(
                           "หมายเหตุ: ${item.note}",
                           style: TextStyle(
-                            fontSize: _responsiveFontSize(context, 10),
+                            fontSize: _responsiveFontSize(context, 11),
                             color: Colors.orange[700],
                             fontStyle: FontStyle.italic,
                           ),

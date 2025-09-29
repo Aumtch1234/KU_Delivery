@@ -344,7 +344,7 @@ class _StoreMenuPageState extends State<StoreMenuPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '฿${food.price.toStringAsFixed(0)}',
+                      '฿${food.sell_price.toStringAsFixed(0)}',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
