@@ -103,6 +103,8 @@ class OrderController extends ChangeNotifier {
     _socketService.off('new_order_notification');
     _socketService.off('customer:newOrder');
     _socketService.off('order_status_update');
+    _socketService.off('rider:statusUpdate');
+    _socketService.off('shop:orderUpdate');
     _socketService.off('error');
     _socketService.off('pong');
 
@@ -149,6 +151,17 @@ class OrderController extends ChangeNotifier {
       print('💗 Heartbeat pong received');
     });
 
+    // เพิ่ม listeners สำหรับ rider และ shop updates
+    _socketService.on('rider:statusUpdate', (data) {
+      print('🏍️ Rider status update: $data');
+      _handleOrderUpdate(data);
+    });
+
+    _socketService.on('shop:orderUpdate', (data) {
+      print('🏪 Shop order update: $data');
+      _handleOrderUpdate(data);
+    });
+
     print('✅ Socket listeners setup complete');
   }
 
@@ -161,28 +174,39 @@ class OrderController extends ChangeNotifier {
 
     print('🔄 Processing order update: $data');
 
-    final orderId = data['order_id'];
-    if (orderId == null) {
+    // แปลง orderId ให้เป็น int เสมอ
+    dynamic orderIdRaw = data['order_id'] ?? data['orderId'];
+    if (orderIdRaw == null) {
       print('⚠️ Order update missing order_id');
       return;
     }
 
-    // ⭐ กรองเฉพาะออเดอร์ที่เกี่ยวข้อง
-    if (_currentMarketId != null && data['market_id'] != null) {
-      if (data['market_id'] != _currentMarketId) {
-        print(
-          '🚫 Filtered out order from different market: ${data['market_id']} (current: $_currentMarketId)',
-        );
-        return;
-      }
+    int orderId;
+    try {
+      orderId = orderIdRaw is int
+          ? orderIdRaw
+          : int.parse(orderIdRaw.toString());
+    } catch (e) {
+      print('❌ Invalid orderId format: $orderIdRaw');
+      return;
     }
 
-    if (_currentUserId != null && data['user_id'] != null) {
-      if (data['user_id'] != _currentUserId) {
+    // ⭐ ลดการกรองที่เข้มงวดเกินไป - อนุญาตให้ update ผ่านได้มากขึ้น
+    if (_currentMarketId != null && data['market_id'] != null) {
+      try {
+        final dataMarketId = data['market_id'] is int
+            ? data['market_id']
+            : int.parse(data['market_id'].toString());
+        if (dataMarketId != _currentMarketId) {
+          print(
+            '🚫 Filtered out order from different market: $dataMarketId (current: $_currentMarketId)',
+          );
+          return;
+        }
+      } catch (e) {
         print(
-          '🚫 Filtered out order from different user: ${data['user_id']} (current: $_currentUserId)',
+          '⚠️ Could not parse market_id, allowing update: ${data['market_id']}',
         );
-        return;
       }
     }
 
@@ -230,9 +254,34 @@ class OrderController extends ChangeNotifier {
         }
       } else {
         print('⚠️ Order $orderId not found in local list for update');
-        // Refresh data if order not found
-        hasChanges = true;
-        _refreshCurrentData();
+        // ลองค้นหาด้วย string conversion
+        final stringIndex = _orders.indexWhere(
+          (order) => order.orderId.toString() == orderId.toString(),
+        );
+        if (stringIndex != -1) {
+          final oldStatus = _orders[stringIndex].status;
+          final newStatus = data['status'] ?? _orders[stringIndex].status;
+          final newRiderId = data['rider_id'] ?? _orders[stringIndex].riderId;
+
+          if (oldStatus != newStatus ||
+              _orders[stringIndex].riderId != newRiderId) {
+            _orders[stringIndex] = _orders[stringIndex].copyWith(
+              status: newStatus,
+              riderId: newRiderId,
+              updatedAt: data['timestamp'] != null
+                  ? DateTime.parse(data['timestamp'])
+                  : DateTime.now(),
+            );
+            hasChanges = true;
+            print(
+              '📝 Updated order in list (string match): $orderId ($oldStatus -> ${_orders[stringIndex].status})',
+            );
+          }
+        } else {
+          print('⚠️ Order $orderId not found even with string matching');
+          hasChanges = true;
+          // _refreshCurrentData(); // ปิดการ refresh เพื่อป้องกัน infinite loop
+        }
       }
 
       // ⭐ Force UI update if there are changes
@@ -494,6 +543,56 @@ class OrderController extends ChangeNotifier {
     }
   }
 
+  // เพิ่ม method สำหรับมาร์คอาหารพร้อม - ส่งไปแท็บเสร็จแล้ว
+  Future<bool> markFoodReady(int orderId) async {
+    try {
+      print(
+        '🍽️ Marking food ready for order $orderId - sending to completed tab',
+      );
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/update_preparation_status'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'order_id': orderId, 'status': 'ready_for_pickup'}),
+      );
+
+      final data = json.decode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        // ⭐ Update local order status เป็น ready_for_pickup เพื่อให้เด้งไปแท็บ completed
+        final orderIndex = _orders.indexWhere(
+          (order) => order.orderId == orderId,
+        );
+        if (orderIndex != -1) {
+          _orders[orderIndex] = _orders[orderIndex].copyWith(
+            status: 'ready_for_pickup',
+            updatedAt: DateTime.now(),
+          );
+          print(
+            '✅ Local food ready status updated - order moved to completed tab',
+          );
+        }
+
+        print(
+          '✅ Order $orderId food marked as ready and moved to completed tab',
+        );
+
+        // ⭐ Force UI update
+        notifyListeners();
+        return true;
+      } else {
+        _error = data['error'] ?? 'Failed to mark food ready';
+        print('❌ Failed to mark food ready: $_error');
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = 'Network error: $e';
+      print('❌ Network error: $e');
+      notifyListeners();
+      return false;
+    }
+  }
+
   // แก้ไข updateOrderStatus ให้อัปเดต UI ทันที
   Future<bool> updateOrderStatus(
     int orderId,
@@ -605,13 +704,15 @@ class OrderController extends ChangeNotifier {
     List<Order> filtered;
 
     switch (statusCategory) {
-      case 'waiting':
-        // รอยืนยัน - ออเดอร์ใหม่ที่รอร้านรับ
-        filtered = _orders.where((order) => order.status == 'waiting').toList();
+      case 'rider_assigned':
+        // รอไรเดอร์รับ - ออเดอร์ที่รอไรเดอร์รับงาน
+        filtered = _orders
+            .where((order) => order.status == 'rider_assigned')
+            .toList();
         break;
 
       case 'confirmed':
-        // กำลังทำ - ร้านยืนยันแล้ว, กำลังเตรียม, พร้อมส่ง
+        // รับแล้ว - ไรเดอร์รับงานแล้ว ร้านเริ่มทำอาหาร, กำลังเตรียม, พร้อมส่ง
         filtered = _orders
             .where(
               (order) =>
@@ -623,11 +724,10 @@ class OrderController extends ChangeNotifier {
         break;
 
       case 'delivering':
-        // กำลังส่ง - ไรเดอร์รับงานแล้วจนถึงกำลังส่ง
+        // กำลังส่ง - ไรเดอร์รับไปส่งแล้วจนถึงกำลังส่ง
         filtered = _orders
             .where(
               (order) =>
-                  order.status == 'rider_assigned' ||
                   order.status == 'going_to_shop' ||
                   order.status == 'arrived_at_shop' ||
                   order.status == 'picked_up' ||
@@ -638,9 +738,18 @@ class OrderController extends ChangeNotifier {
         break;
 
       case 'completed':
-        // เสร็จแล้ว
+        // เสร็จแล้ว - รวมทุกสถานะหลังจากอาหารพร้อม
         filtered = _orders
-            .where((order) => order.status == 'completed')
+            .where(
+              (order) =>
+                  order.status == 'completed' ||
+                  order.status == 'ready_for_pickup' ||
+                  order.status == 'going_to_shop' ||
+                  order.status == 'arrived_at_shop' ||
+                  order.status == 'picked_up' ||
+                  order.status == 'delivering' ||
+                  order.status == 'arrived_at_customer',
+            )
             .toList();
         break;
 
@@ -680,6 +789,20 @@ class OrderController extends ChangeNotifier {
       statusGroups[order.status] = (statusGroups[order.status] ?? 0) + 1;
     }
     print('   Orders by status: $statusGroups');
+
+    // แสดงรายละเอียด order แต่ละอัน
+    for (var order in _orders) {
+      print(
+        '   Order ${order.orderId}: ${order.status} (Market: ${order.marketId})',
+      );
+    }
+  }
+
+  // เพิ่ม method สำหรับบังคับ refresh
+  Future<void> forceRefreshOrders() async {
+    print('🔄 Force refreshing orders...');
+    await _refreshCurrentData();
+    print('✅ Force refresh completed');
   }
 
   // Fetch single order (helper method) - ปรับปรุง
@@ -803,6 +926,8 @@ class OrderController extends ChangeNotifier {
             marketId: data['data']['market_id'] ?? 0,
             shopName: data['data']['shop_name'],
             riderId: data['data']['rider_id'],
+            customerName: data['data']['customer_name'] ?? 'ไม่ระบุ',
+            customerPhone: data['data']['customer_phone'] ?? 'ไม่ระบุ',
             address: data['data']['address'] ?? '',
             deliveryType: data['data']['delivery_type'] ?? '',
             paymentMethod: data['data']['payment_method'] ?? '',
@@ -852,11 +977,11 @@ class OrderController extends ChangeNotifier {
     }
   }
 
-  // Get pending orders (waiting for shop confirmation)
-  List<Order> get pendingOrders => getOrdersByStatus('waiting');
+  // Get pending orders (waiting for rider assignment)
+  List<Order> get pendingOrders => getOrdersByStatus('rider_assigned');
 
   // Get accepted orders (shop confirmed, cooking)
-  List<Order> get acceptedOrders => getOrdersByStatus('accepted');
+  List<Order> get acceptedOrders => getOrdersByStatus('confirmed');
 
   // Get completed orders
   List<Order> get completedOrders => getOrdersByStatus('completed');
@@ -882,13 +1007,14 @@ class OrderController extends ChangeNotifier {
   }
 }
 
-// Extension for Order copyWith method
 extension OrderCopyWith on Order {
   Order copyWith({
     int? orderId,
     int? userId,
     int? marketId,
     int? riderId,
+    String? customerName,
+    String? customerPhone,
     String? address,
     String? deliveryType,
     String? paymentMethod,
@@ -907,6 +1033,8 @@ extension OrderCopyWith on Order {
       marketId: marketId ?? this.marketId,
       shopName: shopName,
       riderId: riderId ?? this.riderId,
+      customerName: customerName ?? this.customerName,
+      customerPhone: customerPhone ?? this.customerPhone,
       address: address ?? this.address,
       deliveryType: deliveryType ?? this.deliveryType,
       paymentMethod: paymentMethod ?? this.paymentMethod,

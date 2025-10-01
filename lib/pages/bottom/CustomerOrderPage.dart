@@ -1025,10 +1025,10 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
   Widget _buildProgressBar(String status) {
     final steps = [
       'waiting',
+      'rider_assigned',
       'confirmed',
       'preparing',
       'ready_for_pickup',
-      'rider_assigned',
       'going_to_shop',
       'arrived_at_shop',
       'picked_up',
@@ -1038,10 +1038,10 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
     ];
     final stepNames = [
       'รอยืนยัน',
+      'มีไรเดอร์',
       'ยืนยัน',
       'เตรียม',
       'พร้อม',
-      'มีไรเดอร์',
       'ไปร้าน',
       'ถึงร้าน',
       'รับแล้ว',

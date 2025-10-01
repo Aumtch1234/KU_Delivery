@@ -14,6 +14,8 @@ class Order {
   final int marketId;
   final String shopName;
   final int? riderId;
+  final String customerName; // ชื่อลูกค้า
+  final String customerPhone; // เบอร์โทรลูกค้า
   final String address;
   final String deliveryType;
   final String paymentMethod;
@@ -33,6 +35,8 @@ class Order {
     required this.marketId,
     required this.shopName,
     this.riderId,
+    required this.customerName, // ชื่อลูกค้าจาก API
+    required this.customerPhone, // เบอร์โทรลูกค้า
     required this.address,
     required this.deliveryType,
     required this.paymentMethod,
@@ -54,6 +58,14 @@ class Order {
       marketId: json['market_id'],
       shopName: json['shop_name'],
       riderId: json['rider_id'],
+      customerName:
+          json['customer_name'] ??
+          json['name'] ??
+          'ไม่ระบุ', // กำหนดค่าเริ่มต้น
+      customerPhone:
+          json['customer_phone'] ??
+          json['phone'] ??
+          'ไม่ระบุ', // กำหนดค่าเริ่มต้น
       address: json['address'],
       deliveryType: json['delivery_type'],
       paymentMethod: json['payment_method'],
@@ -80,6 +92,8 @@ class Order {
       'market_id': marketId,
       'shop_name': shopName,
       'rider_id': riderId,
+      'customer_name': customerName,
+      'customer_phone': customerPhone,
       'address': address,
       'delivery_type': deliveryType,
       'payment_method': paymentMethod,
@@ -212,6 +226,8 @@ class Order {
     int? marketId,
     String? shopName,
     int? riderId,
+    String? customerName,
+    String? customerPhone,
     String? address,
     String? deliveryType,
     String? paymentMethod,
@@ -231,6 +247,8 @@ class Order {
       marketId: marketId ?? this.marketId,
       shopName: shopName ?? this.shopName,
       riderId: riderId ?? this.riderId,
+      customerName: customerName ?? this.customerName,
+      customerPhone: customerPhone ?? this.customerPhone,
       address: address ?? this.address,
       deliveryType: deliveryType ?? this.deliveryType,
       paymentMethod: paymentMethod ?? this.paymentMethod,
