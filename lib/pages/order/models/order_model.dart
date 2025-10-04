@@ -25,6 +25,8 @@ class Order {
   final double totalPrice;
   final double? originalTotalPrice; // ราคาต้นทุนรวม (ไม่รวมค่าส่ง)
   final String status;
+  final String? shopStatus; // ✅ เพิ่ม
+  final String? riderStatus; // ✅ เพิ่มเพื่อเก็บสถานะไรเดอร์ปัจจุบัน
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<OrderItem> items;
@@ -46,12 +48,32 @@ class Order {
     required this.totalPrice,
     this.originalTotalPrice,
     required this.status,
+    this.shopStatus, // ✅ เพิ่ม
+    this.riderStatus, // ✅ เพิ่มพารามิเตอร์ใหม่
     required this.createdAt,
     required this.updatedAt,
     required this.items,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
+    final String? shopStatus =
+        json['shop_status'] ??
+        (json['status'] == 'preparing' || json['status'] == 'ready_for_pickup'
+            ? json['status']
+            : null);
+
+    // กำหนด riderStatus ตาม status ปัจจุบันหรือข้อมูลจาก API
+    String? riderStatus;
+    final String currentStatus = json['status'];
+    if (currentStatus == 'going_to_shop' ||
+        currentStatus == 'arrived_at_shop' ||
+        currentStatus == 'picked_up' ||
+        currentStatus == 'delivering') {
+      riderStatus = currentStatus;
+    } else if (json['rider_status'] != null) {
+      riderStatus = json['rider_status'];
+    }
+
     return Order(
       orderId: json['order_id'],
       userId: json['user_id'],
@@ -75,6 +97,8 @@ class Order {
       totalPrice: _toDouble(json['total_price']),
       originalTotalPrice: _toDouble(json['original_total_price']),
       status: json['status'],
+      shopStatus: shopStatus, // ✅ เพิ่ม
+      riderStatus: riderStatus, // ✅ เพิ่ม
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
       items:
@@ -102,6 +126,8 @@ class Order {
       'delivery_fee': deliveryFee,
       'total_price': totalPrice,
       'status': status,
+      'shop_status': shopStatus, // ✅
+      'rider_status': riderStatus, // ✅ เพิ่ม
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'items': items.map((item) => item.toJson()).toList(),
@@ -131,21 +157,28 @@ class Order {
   bool get isCancelled => status == 'cancelled';
 
   String get statusText {
+    // เช็ค shop_status ก่อน (มีความสำคัญสูง)
+    if (shopStatus != null) {
+      switch (shopStatus) {
+        case 'preparing':
+          return 'ร้านกำลังเตรียมอาหาร';
+        case 'ready_for_pickup':
+          return 'พร้อมให้ไรเดอร์มารับ';
+      }
+    }
+
+    // ถ้าไม่มี shop_status หรือไม่ตรงกับที่เช็ค ให้ใช้ status
     switch (status) {
       case 'waiting':
-        return 'ออเดอร์ใหม่ กำลังรอร้านยืนยัน';
+        return 'ออเดอร์ใหม่ รอไรเดอร์รับงาน';
+      case 'rider_assigned':
+        return 'มีไรเดอร์รับงานแล้ว รอร้านยืนยัน';
       case 'confirmed':
         return 'ร้านยืนยันรับออเดอร์แล้ว';
-      case 'rider_assigned':
-        return 'มีไรเดอร์รับงานแล้ว';
       case 'going_to_shop':
         return 'ไรเดอร์กำลังไปที่ร้าน';
       case 'arrived_at_shop':
         return 'ไรเดอร์ถึงร้านแล้ว';
-      case 'preparing':
-        return 'ร้านกำลังเตรียมอาหาร';
-      case 'ready_for_pickup':
-        return 'พร้อมให้ไรเดอร์มารับ';
       case 'picked_up':
         return 'ไรเดอร์รับของแล้ว';
       case 'delivering':
@@ -189,6 +222,17 @@ class Order {
   }
 
   IconData get statusIcon {
+    // เช็ค shop_status ก่อน (มีความสำคัญสูง)
+    if (shopStatus != null) {
+      switch (shopStatus) {
+        case 'preparing':
+          return Icons.restaurant;
+        case 'ready_for_pickup':
+          return Icons.shopping_bag;
+      }
+    }
+
+    // ถ้าไม่มี shop_status หรือไม่ตรงกับที่เช็ค ให้ใช้ status
     switch (status) {
       case 'waiting':
         return Icons.access_time;
@@ -200,10 +244,6 @@ class Order {
         return Icons.directions;
       case 'arrived_at_shop':
         return Icons.store;
-      case 'preparing':
-        return Icons.restaurant;
-      case 'ready_for_pickup':
-        return Icons.shopping_bag;
       case 'picked_up':
         return Icons.delivery_dining;
       case 'delivering':
@@ -237,6 +277,8 @@ class Order {
     double? totalPrice,
     double? originalTotalPrice,
     String? status,
+    String? shopStatus, // ✅ เพิ่ม
+    String? riderStatus, // ✅ เพิ่ม
     DateTime? createdAt,
     DateTime? updatedAt,
     List<OrderItem>? items,
@@ -258,6 +300,8 @@ class Order {
       totalPrice: totalPrice ?? this.totalPrice,
       originalTotalPrice: originalTotalPrice ?? this.originalTotalPrice,
       status: status ?? this.status,
+      shopStatus: shopStatus ?? this.shopStatus, // ✅
+      riderStatus: riderStatus ?? this.riderStatus, // ✅ เพิ่ม
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       items: items ?? this.items,

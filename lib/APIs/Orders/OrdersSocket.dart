@@ -85,11 +85,36 @@ class OrderController extends ChangeNotifier {
 
       // ⭐ Force UI update after socket connection
       notifyListeners();
+
+      // ⭐ เพิ่ม subscription สำหรับ global order events
+      _subscribeToGlobalOrderEvents();
     } catch (e) {
       _error = 'Failed to connect to socket: $e';
       print('❌ Socket initialization failed: $e');
       notifyListeners();
     }
+  }
+
+  // เพิ่ม method สำหรับ subscribe global order events
+  void _subscribeToGlobalOrderEvents() {
+    print('🌐 Subscribing to global order events...');
+
+    // Subscribe to general order updates
+    _socketService.emit("subscribe_order_updates", {
+      "marketId": _currentMarketId,
+      "userId": _currentUserId,
+    });
+
+    // Join global order room
+    _socketService.emit("join_room", {"room": "order_updates"});
+
+    if (_currentMarketId != null) {
+      _socketService.emit("join_room", {
+        "room": "market_${_currentMarketId}_orders",
+      });
+    }
+
+    print('✅ Global order events subscription complete');
   }
 
   // แก้ไข _setupSocketListeners ให้ครบถ้วน
@@ -107,6 +132,13 @@ class OrderController extends ChangeNotifier {
     _socketService.off('shop:orderUpdate');
     _socketService.off('error');
     _socketService.off('pong');
+
+    // เพิ่ม listeners สำหรับ rider events
+    _socketService.off('rider:updateStatus');
+    _socketService.off('rider:orderStatusUpdate');
+    _socketService.off('orderStatusChanged');
+    _socketService.off('riderStatusUpdate');
+    _socketService.off('order_rider_update');
 
     // Connection status
     _socketService.on('connect', (data) {
@@ -162,6 +194,32 @@ class OrderController extends ChangeNotifier {
       _handleOrderUpdate(data);
     });
 
+    // เพิ่ม listeners เพิ่มเติมสำหรับ rider events
+    _socketService.on('rider:updateStatus', (data) {
+      print('🏍️ Rider update status event: $data');
+      _handleOrderUpdate(data);
+    });
+
+    _socketService.on('rider:orderStatusUpdate', (data) {
+      print('🏍️ Rider order status update event: $data');
+      _handleOrderUpdate(data);
+    });
+
+    _socketService.on('orderStatusChanged', (data) {
+      print('📊 Order status changed event: $data');
+      _handleOrderUpdate(data);
+    });
+
+    _socketService.on('riderStatusUpdate', (data) {
+      print('🏍️ Rider status update event: $data');
+      _handleOrderUpdate(data);
+    });
+
+    _socketService.on('order_rider_update', (data) {
+      print('📦🏍️ Order rider update event: $data');
+      _handleOrderUpdate(data);
+    });
+
     print('✅ Socket listeners setup complete');
   }
 
@@ -192,6 +250,8 @@ class OrderController extends ChangeNotifier {
     }
 
     // ⭐ ลดการกรองที่เข้มงวดเกินไป - อนุญาตให้ update ผ่านได้มากขึ้น
+    // ✅ เปลี่ยนเป็น optional filtering สำหรับ rider updates
+    bool shouldFilter = false;
     if (_currentMarketId != null && data['market_id'] != null) {
       try {
         final dataMarketId = data['market_id'] is int
@@ -199,9 +259,19 @@ class OrderController extends ChangeNotifier {
             : int.parse(data['market_id'].toString());
         if (dataMarketId != _currentMarketId) {
           print(
-            '🚫 Filtered out order from different market: $dataMarketId (current: $_currentMarketId)',
+            '🚫 Different market detected: $dataMarketId (current: $_currentMarketId), but allowing rider updates',
           );
-          return;
+          // ถ้าเป็น rider status update ให้ผ่านไปได้
+          if (![
+            'going_to_shop',
+            'arrived_at_shop',
+            'picked_up',
+            'delivering',
+            'arrived_at_customer',
+            'completed',
+          ].contains(data['status'])) {
+            shouldFilter = true;
+          }
         }
       } catch (e) {
         print(
@@ -210,8 +280,21 @@ class OrderController extends ChangeNotifier {
       }
     }
 
+    if (shouldFilter) {
+      print('🚫 Filtering out non-rider update from different market');
+      return;
+    }
+
     try {
       bool hasChanges = false;
+
+      // ✅ อ่านค่า shop_status จาก event (รองรับ fallback)
+      final String? newShopStatus =
+          data['shop_status'] ??
+          ((data['status'] == 'preparing' ||
+                  data['status'] == 'ready_for_pickup')
+              ? data['status']
+              : null);
 
       // Update current order if it matches
       if (_currentOrder?.orderId == orderId) {
@@ -219,10 +302,12 @@ class OrderController extends ChangeNotifier {
         final newRiderId = data['rider_id'] ?? _currentOrder!.riderId;
 
         if (_currentOrder!.status != newStatus ||
-            _currentOrder!.riderId != newRiderId) {
+            _currentOrder!.riderId != newRiderId ||
+            _currentOrder!.shopStatus != newShopStatus) {
           _currentOrder = _currentOrder?.copyWith(
             status: newStatus,
             riderId: newRiderId,
+            shopStatus: newShopStatus,
             updatedAt: data['timestamp'] != null
                 ? DateTime.parse(data['timestamp'])
                 : DateTime.now(),
@@ -236,20 +321,24 @@ class OrderController extends ChangeNotifier {
       final index = _orders.indexWhere((order) => order.orderId == orderId);
       if (index != -1) {
         final oldStatus = _orders[index].status;
+        final oldShopStatus = _orders[index].shopStatus;
         final newStatus = data['status'] ?? _orders[index].status;
         final newRiderId = data['rider_id'] ?? _orders[index].riderId;
 
-        if (oldStatus != newStatus || _orders[index].riderId != newRiderId) {
+        if (oldStatus != newStatus ||
+            _orders[index].riderId != newRiderId ||
+            oldShopStatus != newShopStatus) {
           _orders[index] = _orders[index].copyWith(
             status: newStatus,
             riderId: newRiderId,
+            shopStatus: newShopStatus,
             updatedAt: data['timestamp'] != null
                 ? DateTime.parse(data['timestamp'])
                 : DateTime.now(),
           );
           hasChanges = true;
           print(
-            '📝 Updated order in list: $orderId ($oldStatus -> ${_orders[index].status})',
+            '📝 Updated order in list: $orderId ($oldStatus->$newStatus, shopStatus: $oldShopStatus->$newShopStatus)',
           );
         }
       } else {
@@ -260,21 +349,24 @@ class OrderController extends ChangeNotifier {
         );
         if (stringIndex != -1) {
           final oldStatus = _orders[stringIndex].status;
+          final oldShopStatus = _orders[stringIndex].shopStatus;
           final newStatus = data['status'] ?? _orders[stringIndex].status;
           final newRiderId = data['rider_id'] ?? _orders[stringIndex].riderId;
 
           if (oldStatus != newStatus ||
-              _orders[stringIndex].riderId != newRiderId) {
+              _orders[stringIndex].riderId != newRiderId ||
+              oldShopStatus != newShopStatus) {
             _orders[stringIndex] = _orders[stringIndex].copyWith(
               status: newStatus,
               riderId: newRiderId,
+              shopStatus: newShopStatus,
               updatedAt: data['timestamp'] != null
                   ? DateTime.parse(data['timestamp'])
                   : DateTime.now(),
             );
             hasChanges = true;
             print(
-              '📝 Updated order in list (string match): $orderId ($oldStatus -> ${_orders[stringIndex].status})',
+              '📝 Updated order in list (string match): $orderId ($oldStatus->$newStatus, shopStatus: $oldShopStatus->$newShopStatus)',
             );
           }
         } else {
@@ -517,16 +609,78 @@ class OrderController extends ChangeNotifier {
           (order) => order.orderId == orderId,
         );
         if (orderIndex != -1) {
+          final oldShopStatus = _orders[orderIndex].shopStatus;
+          final currentOrder = _orders[orderIndex];
+
+          // เก็บสถานะไรเดอร์ปัจจุบันก่อนที่จะอัปเดต (ถ้ายังไม่มี)
+          String? preservedRiderStatus = currentOrder.riderStatus;
+          if (preservedRiderStatus == null &&
+              currentOrder.status != 'preparing') {
+            // ถ้ายังไม่มี riderStatus และกำลังจะเปลี่ยนเป็น preparing
+            // ให้เก็บสถานะปัจจุบันเป็น riderStatus
+            if (currentOrder.status == 'going_to_shop' ||
+                currentOrder.status == 'arrived_at_shop') {
+              preservedRiderStatus = currentOrder.status;
+            }
+          }
+
           _orders[orderIndex] = _orders[orderIndex].copyWith(
-            status: status,
+            shopStatus: status, // อัปเดตเฉพาะ shopStatus
+            riderStatus: preservedRiderStatus, // เก็บสถานะไรเดอร์ไว้
             updatedAt: DateTime.now(),
           );
-          print('✅ Local preparation status updated immediately');
+          print(
+            '✅ Local preparation status updated immediately: Order $orderId shopStatus changed from $oldShopStatus to $status',
+          );
+          print(
+            '📊 Order $orderId after update: status=${_orders[orderIndex].status}, shopStatus=${_orders[orderIndex].shopStatus}',
+          );
+        } else {
+          print('⚠️ Order $orderId not found in _orders list for local update');
         }
 
+        if (_currentOrder?.orderId == orderId) {
+          final oldShopStatus = _currentOrder?.shopStatus;
+          final currentOrderRef = _currentOrder!;
+
+          // เก็บสถานะไรเดอร์ปัจจุบันก่อนที่จะอัปเดต (ถ้ายังไม่มี)
+          String? preservedRiderStatus = currentOrderRef.riderStatus;
+          if (preservedRiderStatus == null &&
+              currentOrderRef.status != 'preparing') {
+            if (currentOrderRef.status == 'going_to_shop' ||
+                currentOrderRef.status == 'arrived_at_shop') {
+              preservedRiderStatus = currentOrderRef.status;
+            }
+          }
+
+          _currentOrder = _currentOrder?.copyWith(
+            shopStatus: status,
+            riderStatus: preservedRiderStatus, // เก็บสถานะไรเดอร์ไว้
+            updatedAt: DateTime.now(),
+          );
+          print(
+            '✅ Current order preparation status updated immediately: Order $orderId shopStatus changed from $oldShopStatus to $status',
+          );
+        }
         print('✅ Order $orderId preparation status updated to $status');
 
         // ⭐ Force UI update
+        print('🔄 Forcing UI update after preparation status change');
+
+        // Debug: ตรวจสอบออเดอร์ในแต่ละแท็บหลัง update
+        print('📊 Debug - Orders in each tab after preparation status update:');
+        print(
+          '  - rider_assigned: ${getOrdersByStatus('rider_assigned').length}',
+        );
+        print('  - accepted: ${getOrdersByStatus('accepted').length}');
+        print('  - completed: ${getOrdersByStatus('completed').length}');
+
+        // Debug: แสดงรายละเอียดออเดอร์ที่เพิ่งอัปเดต
+        final updatedOrder = _orders.firstWhere((o) => o.orderId == orderId);
+        print(
+          '📦 Updated order details: ID=${updatedOrder.orderId}, status=${updatedOrder.status}, shopStatus=${updatedOrder.shopStatus}',
+        );
+
         notifyListeners();
         return true;
       } else {
@@ -564,12 +718,18 @@ class OrderController extends ChangeNotifier {
         );
         if (orderIndex != -1) {
           _orders[orderIndex] = _orders[orderIndex].copyWith(
-            status: 'ready_for_pickup',
+            shopStatus: 'ready_for_pickup',
             updatedAt: DateTime.now(),
           );
           print(
             '✅ Local food ready status updated - order moved to completed tab',
           );
+        }
+        if (_currentOrder?.orderId == orderId) {
+          _currentOrder = _currentOrder?.copyWith(
+            shopStatus: 'ready_for_pickup',
+            updatedAt: DateTime.now(),
+          ); // ✅
         }
 
         print(
@@ -704,51 +864,54 @@ class OrderController extends ChangeNotifier {
     List<Order> filtered;
 
     switch (statusCategory) {
+      case 'waiting':
+        // รอไรเดอร์ - ออเดอร์ที่รอไรเดอร์กดรับ
+        filtered = _orders.where((order) => order.status == 'waiting').toList();
+        break;
+
       case 'rider_assigned':
-        // รอไรเดอร์รับ - ออเดอร์ที่รอไรเดอร์รับงาน
+        // รอรับ - ออเดอร์ที่มีไรเดอร์แล้วแต่ร้านยังไม่ยืนยัน
         filtered = _orders
             .where((order) => order.status == 'rider_assigned')
             .toList();
         break;
 
-      case 'confirmed':
-        // รับแล้ว - ไรเดอร์รับงานแล้ว ร้านเริ่มทำอาหาร, กำลังเตรียม, พร้อมส่ง
-        filtered = _orders
-            .where(
-              (order) =>
-                  order.status == 'confirmed' ||
-                  order.status == 'preparing' ||
-                  order.status == 'ready_for_pickup',
-            )
-            .toList();
-        break;
+      case 'accepted':
+        // รับแล้ว - ออเดอร์ที่ร้านยืนยันแล้ว รวมถึงไรเดอร์กำลังมาหรือถึงร้านแล้ว
+        // รวมถึงที่กำลังทำอาหาร (preparing) แต่ยังไม่พร้อม (ready_for_pickup)
+        filtered = _orders.where((order) {
+          bool statusMatch = [
+            'confirmed',
+            'preparing', // ⭐ เพิ่ม 'preparing' เข้าไป
+            'going_to_shop',
+            'arrived_at_shop',
+          ].contains(order.status);
 
-      case 'delivering':
-        // กำลังส่ง - ไรเดอร์รับไปส่งแล้วจนถึงกำลังส่ง
-        filtered = _orders
-            .where(
-              (order) =>
-                  order.status == 'going_to_shop' ||
-                  order.status == 'arrived_at_shop' ||
-                  order.status == 'picked_up' ||
-                  order.status == 'delivering' ||
-                  order.status == 'arrived_at_customer',
-            )
-            .toList();
+          // แก้ไขการกรอง shop_status ให้ชัดเจน - รวม null และ preparing เท่านั้น
+          bool shopStatusMatch =
+              (order.shopStatus == null || order.shopStatus == 'preparing');
+
+          // Debug logs สำหรับแต่ละ order
+          print(
+            '🔍 Order ${order.orderId}: status=${order.status}, shopStatus=${order.shopStatus}, statusMatch=$statusMatch, shopStatusMatch=$shopStatusMatch, included=${statusMatch && shopStatusMatch}',
+          );
+
+          return statusMatch && shopStatusMatch;
+        }).toList();
         break;
 
       case 'completed':
-        // เสร็จแล้ว - รวมทุกสถานะหลังจากอาหารพร้อม
+        // เสร็จแล้ว - ออเดอร์ที่อาหารพร้อมแล้วจนถึงส่งสำเร็จ
         filtered = _orders
             .where(
               (order) =>
-                  order.status == 'completed' ||
-                  order.status == 'ready_for_pickup' ||
-                  order.status == 'going_to_shop' ||
-                  order.status == 'arrived_at_shop' ||
-                  order.status == 'picked_up' ||
-                  order.status == 'delivering' ||
-                  order.status == 'arrived_at_customer',
+                  order.shopStatus == 'ready_for_pickup' ||
+                  [
+                    'picked_up',
+                    'delivering',
+                    'arrived_at_customer',
+                    'completed',
+                  ].contains(order.status),
             )
             .toList();
         break;
@@ -771,6 +934,14 @@ class OrderController extends ChangeNotifier {
     print(
       '🔍 getOrdersByStatus($statusCategory): found ${filtered.length} orders',
     );
+
+    // Debug: แสดงรายละเอียดแต่ละ order ที่กรองได้
+    for (var order in filtered) {
+      print(
+        '  📦 Order ${order.orderId}: status=${order.status}, shopStatus=${order.shopStatus}',
+      );
+    }
+
     return filtered;
   }
 
@@ -803,6 +974,24 @@ class OrderController extends ChangeNotifier {
     print('🔄 Force refreshing orders...');
     await _refreshCurrentData();
     print('✅ Force refresh completed');
+  }
+
+  // เพิ่ม method สำหรับ reconnect socket เมื่อมีปัญหา
+  Future<void> reconnectSocket() async {
+    print('🔄 Reconnecting socket...');
+    _socketService.disconnect();
+    await Future.delayed(Duration(seconds: 1));
+    await initializeSocket(userId: _currentUserId, marketId: _currentMarketId);
+  }
+
+  // เพิ่ม method สำหรับ debug socket status
+  void debugSocketStatus() {
+    print('🔧 Socket Debug Info:');
+    print('  Connected: ${_socketService.isConnected}');
+    print('  Current Market ID: $_currentMarketId');
+    print('  Current User ID: $_currentUserId');
+    print('  Orders count: ${_orders.length}');
+    print('  Socket status: ${_socketService.getConnectionStatus()}');
   }
 
   // Fetch single order (helper method) - ปรับปรุง
@@ -933,6 +1122,13 @@ class OrderController extends ChangeNotifier {
             paymentMethod: data['data']['payment_method'] ?? '',
             deliveryFee: _toDouble(data['data']['delivery_fee']),
             totalPrice: _toDouble(data['data']['total_price']),
+            // ✅ สำคัญ
+            shopStatus:
+                data['shop_status'] ??
+                ((data['status'] == 'preparing' ||
+                        data['status'] == 'ready_for_pickup')
+                    ? data['status']
+                    : null),
             status: data['data']['status'],
             createdAt: DateTime.parse(data['data']['timestamps']['created_at']),
             updatedAt: data['data']['timestamps']['updated_at'] != null
@@ -1022,7 +1218,9 @@ extension OrderCopyWith on Order {
     double? distanceKm,
     double? deliveryFee,
     double? totalPrice,
+    double? originalTotalPrice,
     String? status,
+    String? shopStatus, // ✅ เพิ่ม shopStatus
     DateTime? createdAt,
     DateTime? updatedAt,
     List<OrderItem>? items,
@@ -1042,7 +1240,9 @@ extension OrderCopyWith on Order {
       distanceKm: distanceKm ?? this.distanceKm,
       deliveryFee: deliveryFee ?? this.deliveryFee,
       totalPrice: totalPrice ?? this.totalPrice,
+      originalTotalPrice: originalTotalPrice ?? this.originalTotalPrice,
       status: status ?? this.status,
+      shopStatus: shopStatus ?? this.shopStatus, // ✅ เพิ่ม
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       items: items ?? this.items,

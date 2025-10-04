@@ -18,7 +18,66 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // Updated status tabs with all 11 statuses
+  bool matchesStatus(Order o, String status) {
+    switch (status) {
+      case 'waiting':
+        return o.status == 'waiting';
+
+      case 'rider_assigned':
+        // มีไรเดอร์แล้วแต่ร้านยังไม่รับ
+        return o.status == 'rider_assigned' &&
+            (o.shopStatus == null || o.shopStatus!.isEmpty);
+
+      case 'confirmed':
+        // ร้านยืนยันแล้วแต่ยังไม่เริ่มทำ
+        return o.status == 'confirmed' &&
+            (o.shopStatus == null || o.shopStatus!.isEmpty);
+
+      case 'preparing':
+        // ร้านกำลังทำอาหาร (ไม่ว่าไรเดอร์จะอยู่ไหน - going_to_shop/arrived_at_shop)
+        return o.shopStatus == 'preparing';
+
+      case 'ready_for_pickup':
+        // อาหารพร้อมแล้ว (เฉพาะกรณีที่ไรเดอร์ยังไม่ได้ไปร้าน)
+        return o.shopStatus == 'ready_for_pickup' &&
+            ![
+              'going_to_shop',
+              'arrived_at_shop',
+              'picked_up',
+              'delivering',
+              'arrived_at_customer',
+            ].contains(o.status);
+
+      case 'going_to_shop':
+        // ไรเดอร์กำลังไปร้าน (และอาหารพร้อมแล้ว)
+        return o.status == 'going_to_shop' &&
+            o.shopStatus == 'ready_for_pickup';
+
+      case 'arrived_at_shop':
+        // ไรเดอร์ถึงร้านแล้ว (และอาหารพร้อมแล้ว)
+        return o.status == 'arrived_at_shop' &&
+            o.shopStatus == 'ready_for_pickup';
+
+      case 'picked_up':
+        return o.status == 'picked_up';
+
+      case 'delivering':
+        return o.status == 'delivering';
+
+      case 'arrived_at_customer':
+        return o.status == 'arrived_at_customer';
+
+      case 'completed':
+        return o.status == 'completed';
+
+      case 'cancelled':
+        return o.status == 'cancelled';
+
+      default:
+        return false;
+    }
+  } // Updated status tabs with all 11 statuses
+
   final Map<String, Map<String, dynamic>> _statusTabs = {
     'all': {'name': 'ทั้งหมด', 'icon': Icons.list_alt},
     'waiting': {'name': 'รอยืนยัน', 'icon': Icons.schedule},
@@ -88,7 +147,8 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
       filteredOrders = controller.orders;
     } else {
       filteredOrders = controller.orders
-          .where((order) => order.status == status)
+          // .where((order) => order.status == status)
+          .where((order) => matchesStatus(order, status))
           .toList();
     }
 
@@ -130,7 +190,10 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
 
   int _getOrderCountByStatus(OrderController controller, String status) {
     if (status == 'all') return controller.orders.length;
-    return controller.orders.where((order) => order.status == status).length;
+    // return controller.orders.where((order) => order.status == status).length;
+    return controller.orders
+        .where((order) => matchesStatus(order, status))
+        .length;
   }
 
   @override

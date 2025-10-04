@@ -18,10 +18,11 @@ class _OrdersListPageState extends State<OrdersListPage>
 
   // Updated status tabs for shop workflow
   final Map<String, String> _statusTabs = {
-    'rider_assigned': 'รอรับ', // ออเดอร์ที่รอรับงาน
-    'confirmed': 'รับแล้ว', // ไรเดอร์รับงานแล้ว ร้านเริ่มทำอาหาร
-    // 'delivering': 'กำลังส่ง', // ไรเดอร์รับไปส่งแล้ว
-    'completed': 'เสร็จแล้ว', // ส่งเสร็จแล้ว
+    'rider_assigned': 'รอรับ', // ออเดอร์ที่รอรับงาน (status=rider_assigned)
+    'accepted':
+        'รับแล้ว', // ออเดอร์ที่รับแล้ว (confirmed + going_to_shop + arrived_at_shop)
+    'completed':
+        'เสร็จแล้ว', // ออเดอร์เสร็จแล้ว (ready_for_pickup + picked_up + delivering + completed)
     'cancelled': 'ปฏิเสธ',
   };
 
@@ -53,12 +54,30 @@ class _OrdersListPageState extends State<OrdersListPage>
     print('🏪 Initializing data for market: ${widget.marketId}');
 
     if (!controller.isSocketConnected) {
-      await controller.initializeSocket();
+      await controller.initializeSocket(marketId: widget.marketId);
     }
 
     if (widget.marketId != null) {
       await controller.fetchOrdersByMarket(marketId: widget.marketId!);
     }
+
+    // Debug socket status
+    controller.debugSocketStatus();
+  }
+
+  // เพิ่ม method สำหรับ refresh และ debug
+  Future<void> _refreshWithSocketDebug() async {
+    final controller = context.read<OrderController>();
+
+    print('🔄 Refreshing with socket debug...');
+    controller.debugSocketStatus();
+
+    if (!controller.isSocketConnected) {
+      print('🔌 Socket not connected, reconnecting...');
+      await controller.reconnectSocket();
+    }
+
+    await _initializeData();
   }
 
   @override
@@ -1085,83 +1104,254 @@ class _OrdersListPageState extends State<OrdersListPage>
   }
 
   Widget _buildMainActionButton(Order order, OrderController controller) {
-    String buttonText;
-    Color buttonColor;
-    VoidCallback? onPressed;
-
-    switch (order.status) {
-      case 'rider_assigned':
-        buttonText = 'รับออเดอร์';
-        buttonColor = Colors.green;
-        onPressed = () => _acceptOrder(order, controller);
-        break;
-      case 'confirmed':
-        buttonText = 'เริ่มทำอาหาร';
-        buttonColor = Colors.blue;
-        onPressed = () => _startPreparing(order, controller);
-        break;
-      case 'preparing':
-        buttonText = 'อาหารพร้อม';
-        buttonColor = Colors.orange;
-        onPressed = () => _markReady(order, controller);
-        break;
-      case 'ready_for_pickup':
-        buttonText = 'รอไรเดอร์มารับ';
-        buttonColor = Colors.grey;
-        onPressed = null; // ร้านรอไรเดอร์มารับ
-        break;
-      case 'going_to_shop':
-        buttonText = 'ไรเดอร์กำลังมา';
-        buttonColor = Colors.grey;
-        onPressed = null; // Read only
-        break;
-      case 'arrived_at_shop':
-        buttonText = 'ไรเดอร์ถึงร้านแล้ว';
-        buttonColor = Colors.grey;
-        onPressed = null; // Read only
-        break;
-      case 'picked_up':
-        buttonText = 'ไรเดอร์รับของแล้ว';
-        buttonColor = Colors.grey;
-        onPressed = null; // Read only
-        break;
-      case 'delivering':
-        buttonText = 'กำลังส่ง...';
-        buttonColor = Colors.grey;
-        onPressed = null; // Read only
-        break;
-      case 'arrived_at_customer':
-        buttonText = 'ไรเดอร์ถึงที่หมายแล้ว';
-        buttonColor = Colors.grey;
-        onPressed = null; // Read only
-        break;
-      case 'completed':
-        buttonText = 'เสร็จสิ้นแล้ว';
-        buttonColor = Colors.grey;
-        onPressed = null; // Read only
-        break;
-      default:
-        buttonText = order.status;
-        buttonColor = Colors.grey;
-        onPressed = null;
-    }
-
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: buttonColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        elevation: onPressed != null ? 2 : 0,
-      ),
-      onPressed: onPressed,
-      child: Text(
-        buttonText,
-        style: const TextStyle(
-          fontSize: 16,
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
+    // แสดงปุ่มตามสถานะของออเดอร์ตาม flow ที่ต้องการ
+    if (order.status == 'rider_assigned') {
+      // แท็บรอรับ: มีไรเดอร์รับแล้ว รอร้านยืนยัน
+      return ElevatedButton(
+        onPressed: () => _acceptOrder(order, controller),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
         ),
-      ),
-    );
+        child: const Text('ยืนยันรับออเดอร์'),
+      );
+    } else if (order.status == 'confirmed') {
+      // แท็บรับแล้ว: ร้านยืนยันแล้ว
+      if (order.shopStatus == null || order.shopStatus == 'preparing') {
+        // ยังไม่เริ่มทำอาหารหรือกำลังทำอาหาร
+        if (order.shopStatus == null) {
+          return ElevatedButton(
+            onPressed: () => _startPreparing(order, controller),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('เริ่มทำอาหาร'),
+          );
+        } else {
+          return ElevatedButton(
+            onPressed: () => _markReady(order, controller),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('อาหารพร้อม'),
+          );
+        }
+      } else {
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.blue.shade200),
+          ),
+          child: Text(
+            'กำลังเตรียมอาหาร',
+            style: TextStyle(
+              color: Colors.blue.shade700,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        );
+      }
+    } else if (order.status == 'preparing') {
+      // แท็บรับแล้ว: กำลังเตรียมอาหาร - ตรวจสอบสถานะไรเดอร์ปัจจุบัน
+      String buttonText = 'อาหารพร้อม';
+
+      // ตรวจสอบสถานะไรเดอร์เพื่อแสดงข้อความที่เหมาะสม
+      if (order.riderStatus == 'going_to_shop') {
+        buttonText = 'อาหารพร้อม (ไรเดอร์กำลังมา)';
+      } else if (order.riderStatus == 'arrived_at_shop') {
+        buttonText = 'อาหารพร้อม (ไรเดอร์ถึงร้านแล้ว)';
+      }
+
+      return ElevatedButton(
+        onPressed: () => _markReady(order, controller),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange,
+          foregroundColor: Colors.white,
+        ),
+        child: Text(buttonText),
+      );
+    } else if (order.status == 'going_to_shop') {
+      // แท็บรับแล้ว: ไรเดอร์กำลังไปร้าน
+      if (order.shopStatus == null) {
+        // ไรเดอร์กำลังไปร้านแต่ร้านยังไม่เริ่มทำอาหาร
+        return ElevatedButton(
+          onPressed: () => _startPreparing(order, controller),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('เริ่มทำอาหาร (ไรเดอร์กำลังมา)'),
+        );
+      } else if (order.shopStatus == 'preparing') {
+        return ElevatedButton(
+          onPressed: () => _markReady(order, controller),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.orange,
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('อาหารพร้อม (ไรเดอร์กำลังมา)'),
+        );
+      } else {
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.blue.shade200),
+          ),
+          child: Text(
+            'ไรเดอร์กำลังมาร้าน',
+            style: TextStyle(
+              color: Colors.blue.shade700,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        );
+      }
+    } else if (order.status == 'arrived_at_shop') {
+      // แท็บรับแล้ว: ไรเดอร์ถึงร้านแล้ว
+      if (order.shopStatus == null) {
+        // ไรเดอร์ถึงร้านแล้วแต่ร้านยังไม่เริ่มทำอาหาร
+        return ElevatedButton(
+          onPressed: () => _startPreparing(order, controller),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('เริ่มทำอาหาร (ไรเดอร์ถึงร้านแล้ว)'),
+        );
+      } else if (order.shopStatus == 'preparing') {
+        return ElevatedButton(
+          onPressed: () => _markReady(order, controller),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.orange,
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('อาหารพร้อม (ไรเดอร์ถึงร้านแล้ว)'),
+        );
+      } else {
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.green.shade200),
+          ),
+          child: Text(
+            'ไรเดอร์ถึงร้านแล้ว',
+            style: TextStyle(
+              color: Colors.green.shade700,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        );
+      }
+    } else if (order.status == 'picked_up') {
+      // แท็บเสร็จแล้ว: ไรเดอร์รับของแล้ว
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.blue.shade200),
+        ),
+        child: Text(
+          'ไรเดอร์รับของแล้ว',
+          style: TextStyle(
+            color: Colors.blue.shade700,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    } else if (order.status == 'delivering') {
+      // แท็บเสร็จแล้ว: ไรเดอร์กำลังส่งของ
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.blue.shade200),
+        ),
+        child: Text(
+          'ไรเดอร์กำลังส่งของ',
+          style: TextStyle(
+            color: Colors.blue.shade700,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    } else if (order.status == 'arrived_at_customer') {
+      // แท็บเสร็จแล้ว: ส่งสำเร็จ
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.green.shade200),
+        ),
+        child: Text(
+          'ถึงที่หมายแล้ว',
+          style: TextStyle(
+            color: Colors.green.shade700,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    } else if (order.status == 'completed') {
+      // แท็บเสร็จแล้ว: ส่งสำเร็จ
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.green.shade200),
+        ),
+        child: Text(
+          'ส่งสำเร็จ',
+          style: TextStyle(
+            color: Colors.green.shade700,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    } else if (order.shopStatus == 'ready_for_pickup') {
+      // แท็บเสร็จแล้ว: อาหารพร้อมแล้ว รอไรเดอร์รับ (เฉพาะกรณีที่ยังไม่มีการ pickup)
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.orange.shade200),
+        ),
+        child: Text(
+          'อาหารพร้อมแล้ว รอไรเดอร์รับ',
+          style: TextStyle(
+            color: Colors.orange.shade700,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    } else {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Text(
+          order.statusText,
+          style: TextStyle(
+            color: Colors.grey.shade700,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _acceptOrder(Order order, OrderController controller) async {
@@ -1314,21 +1504,17 @@ class _OrdersListPageState extends State<OrdersListPage>
         message = 'ไม่มีออเดอร์ที่รอรับ';
         icon = Icons.motorcycle;
         break;
-      case 'confirmed':
+      case 'accepted':
         message = 'ไม่มีออเดอร์ที่รับแล้ว';
         icon = Icons.check_circle;
-        break;
-      case 'accepted':
-        message = 'ไม่มีออเดอร์ที่กำลังทำ';
-        icon = Icons.restaurant;
-        break;
-      case 'delivering':
-        message = 'ไม่มีออเดอร์ที่กำลังส่ง';
-        icon = Icons.delivery_dining;
         break;
       case 'completed':
         message = 'ไม่มีออเดอร์ที่เสร็จแล้ว';
         icon = Icons.done_all;
+        break;
+      case 'cancelled':
+        message = 'ไม่มีออเดอร์ที่ปฏิเสธ';
+        icon = Icons.cancel;
         break;
       default:
         message = 'ไม่มีออเดอร์';
