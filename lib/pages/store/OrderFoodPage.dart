@@ -96,37 +96,36 @@ class _OrderFoodPageState extends State<OrderFoodPage> {
   }
 
   void _addToBasket(BuildContext context) async {
-  if (foodDetail == null) return;
+    if (foodDetail == null) return;
 
-  // ✅ แปลง selectedOptions ให้เป็น List<Map>
-  final selectedOpts = <Map<String, dynamic>>[];
-  for (int i = 0; i < selectedOptions.length; i++) {
-    if (selectedOptions[i]) {
-      selectedOpts.add({
-        "label": foodDetail!.options[i].label,
-        "extraPrice": foodDetail!.options[i].extraPrice,
-      });
+    // ✅ แปลง selectedOptions ให้เป็น List<Map>
+    final selectedOpts = <Map<String, dynamic>>[];
+    for (int i = 0; i < selectedOptions.length; i++) {
+      if (selectedOptions[i]) {
+        selectedOpts.add({
+          "label": foodDetail!.options[i].label,
+          "extraPrice": foodDetail!.options[i].extraPrice,
+        });
+      }
+    }
+
+    final success = await CartAPI.addToCart(
+      foodId: widget.foodId,
+      quantity: quantity,
+      selectedOptions: selectedOpts,
+      note: noteController.text,
+    );
+
+    if (success) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('เพิ่มลงตะกร้าแล้ว')));
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('เพิ่มตะกร้าไม่สำเร็จ')));
     }
   }
-
-  final success = await CartAPI.addToCart(
-    foodId: widget.foodId,
-    quantity: quantity,
-    selectedOptions: selectedOpts,
-    note: noteController.text,
-  );
-
-  if (success) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('เพิ่มลงตะกร้าแล้ว')),
-    );
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('เพิ่มตะกร้าไม่สำเร็จ')),
-    );
-  }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -507,34 +506,34 @@ class _OrderFoodPageState extends State<OrderFoodPage> {
                       // Buttons
                       Row(
                         children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () => _orderNow(context),
-                              icon: const Icon(
-                                Icons.flash_on,
-                                color: Colors.white,
-                              ),
-                              label: const Text(
-                                'สั่งเลย',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.grey[700],
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 2,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
+                          // Expanded(
+                          //   child: ElevatedButton.icon(
+                          //     onPressed: () => _orderNow(context),
+                          //     icon: const Icon(
+                          //       Icons.flash_on,
+                          //       color: Colors.white,
+                          //     ),
+                          //     label: const Text(
+                          //       'สั่งเลย',
+                          //       style: TextStyle(
+                          //         fontSize: 18,
+                          //         color: Colors.white,
+                          //         fontWeight: FontWeight.w600,
+                          //       ),
+                          //     ),
+                          //     style: ElevatedButton.styleFrom(
+                          //       backgroundColor: Colors.grey[700],
+                          //       padding: const EdgeInsets.symmetric(
+                          //         vertical: 16,
+                          //       ),
+                          //       shape: RoundedRectangleBorder(
+                          //         borderRadius: BorderRadius.circular(12),
+                          //       ),
+                          //       elevation: 2,
+                          //     ),
+                          //   ),
+                          // ),
+                          // const SizedBox(width: 12),
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: () => _addToBasket(context),

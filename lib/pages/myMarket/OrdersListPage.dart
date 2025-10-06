@@ -792,6 +792,57 @@ class _OrdersListPageState extends State<OrdersListPage>
                                       ),
                                     ),
                                   ],
+
+                                  // แสดง additionalDetailsNote ถ้ามี
+                                  if (item
+                                      .additionalDetailsNote
+                                      .isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.shade50,
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: Colors.orange.shade200,
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.note_alt,
+                                                size: 14,
+                                                color: Colors.orange.shade700,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                'เพิ่มเติม:',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.orange.shade700,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            item.additionalDetailsNote,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.orange.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),

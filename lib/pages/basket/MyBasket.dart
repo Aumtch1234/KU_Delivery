@@ -495,14 +495,14 @@ class _MyBasketPageState extends State<MyBasketPage> {
                         const SizedBox(height: 4),
                       ],
 
-                      // หมายเหตุ
+                      // เพิ่มเติมในสินค้านั้น
                       if (item.note.isNotEmpty) ...[
                         Text(
-                          "หมายเหตุ: ${item.note}",
+                          "เพิ่มเติม: ${item.note}",
                           style: TextStyle(
                             fontSize: _responsiveFontSize(context, 11),
                             color: Colors.orange[700],
-                            fontStyle: FontStyle.italic,
+                            // fontStyle: FontStyle.italic,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,

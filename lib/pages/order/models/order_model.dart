@@ -19,7 +19,7 @@ class Order {
   final String address;
   final String deliveryType;
   final String paymentMethod;
-  final String? note;
+  final String? note; // โน้ต บอกไรเดอร์
   final double? distanceKm;
   final double deliveryFee;
   final double totalPrice;
@@ -318,6 +318,7 @@ class OrderItem {
   final double sellPrice;
   final double subtotal;
   final double? originalPrice; // ราคาต้นทุนต่อชิ้น
+  final String additionalDetailsNote; // รายละเอียดเพิ่มเติมของแต่ละเมนูที่สั่ง เช่น ไม่เอาผัก, เอาน้ำแข็งเยอะๆ
   final double? originalSubtotal; // ราคาต้นทุนรวม
   final List<dynamic> selectedOptions;
   final List<dynamic>? originalOptions; // ตัวเลือกต้นทุน
@@ -331,6 +332,7 @@ class OrderItem {
     required this.sellPrice,
     required this.subtotal,
     this.originalPrice,
+    required this.additionalDetailsNote,
     this.originalSubtotal,
     required this.selectedOptions,
     this.originalOptions,
@@ -346,6 +348,7 @@ class OrderItem {
       sellPrice: _toDouble(json['sell_price']),
       subtotal: _toDouble(json['subtotal']),
       originalPrice: _toDouble(json['original_price']),
+      additionalDetailsNote: json['additional_notes'] ?? '',
       originalSubtotal: _toDouble(json['original_subtotal']),
       selectedOptions: json['selected_options'] ?? [],
       originalOptions: json['original_options'] ?? [],
@@ -362,6 +365,7 @@ class OrderItem {
       'sell_price': sellPrice,
       'subtotal': subtotal,
       'original_price': originalPrice,
+      'additional_notes': additionalDetailsNote,
       'original_subtotal': originalSubtotal,
       'selected_options': selectedOptions,
       'original_options': originalOptions,

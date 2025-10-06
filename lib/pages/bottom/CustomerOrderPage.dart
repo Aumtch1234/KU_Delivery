@@ -1016,6 +1016,41 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                     ),
                   ),
                 ],
+                // แสดง additionalDetailsNote ถ้ามี
+                if (item.additionalDetailsNote.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: warningColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: warningColor.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.note_alt,
+                          size: 12,
+                          color: Colors.orange.shade700,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            'เพิ่มเติม: ${item.additionalDetailsNote}',
+                            style: TextStyle(
+                              color: Colors.orange.shade700,
+                              fontSize: 11,
+                              // fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
