@@ -89,7 +89,7 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
 
       // ✅ 1) ตรวจสอบ user info ก่อน
       await _chatController.initializeUserInfoIfNeeded();
-      
+
       if (_chatController.userId == null) {
         throw Exception('User not logged in');
       }
@@ -100,10 +100,13 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
       // รอให้ socket connect จริงๆ
       int attempts = 0;
       const maxAttempts = 15; // เพิ่มจำนวนครั้งที่รอ
-      while (!_chatController.chatService.isConnected && attempts < maxAttempts) {
+      while (!_chatController.chatService.isConnected &&
+          attempts < maxAttempts) {
         await Future.delayed(const Duration(milliseconds: 500));
         attempts++;
-        print('⏳ Waiting for socket connection... attempt $attempts/$maxAttempts');
+        print(
+          '⏳ Waiting for socket connection... attempt $attempts/$maxAttempts',
+        );
       }
 
       if (_chatController.chatService.isConnected) {
@@ -112,9 +115,20 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
         // ✅ 3) Setup listeners ก่อน join room
         _setupRealtimeListeners();
 
-        // ✅ 4) Join room ผ่าน socket และ API
-        await _chatController.chatService.joinRoom(widget.roomId);
+        // ✅ 4) Join room ผ่าน socket และ API (ใช้ครั้งเดียว)
+        final joined = await _chatController.chatService.joinRoom(
+          widget.roomId,
+        );
+        if (!joined) {
+          print('⚠️ joinRoom failed, retrying...');
+          await Future.delayed(Duration(milliseconds: 300));
+          await _chatController.chatService.joinRoom(widget.roomId);
+        }
+
         await _chatController.chatService.joinChatRoomAPI(widget.roomId);
+
+        // ✅ เพิ่มดีเลย์ก่อนโหลดข้อความ
+        await Future.delayed(Duration(milliseconds: 500));
 
         // ✅ 5) โหลดข้อความหลังจาก join สำเร็จ
         await _loadMessages();
@@ -151,109 +165,158 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
     _connectionSubscription?.cancel();
 
     // ✅ Listen for new messages
-    _messageSubscription = _chatController.chatService.messageStream.listen((message) {
-      print('📩 [STREAM] New message from room ${message.roomId}');
-      print('📍 Current room: ${widget.roomId}');
-      print('📝 Message: ${message.messageText}');
-      print('👤 Sender: ${message.senderId} (${message.senderType})');
+    _messageSubscription = _chatController.chatService.messageStream.listen(
+      (message) {
+        print('📩 [STREAM] New message from room ${message.roomId}');
+        print(
+          '📨 [STREAM] Received message: ${message.messageText} (${message.roomId})',
+        );
+        print('📍 Current room: ${widget.roomId}');
+        print('📝 Message: ${message.messageText}');
+        print('👤 Sender: ${message.senderId} (${message.senderType})');
 
-      // ✅ ตรวจสอบว่าเป็นข้อความของห้องนี้หรือไม่
-      if (message.roomId?.toString() == widget.roomId.toString()) {
-        
-        // ✅ ป้องกัน duplicate messages อย่างเข้มงวด
-        final isDuplicate = _messages.any(
-          (existingMessage) {
+        // ✅ ตรวจสอบว่าเป็นข้อความของห้องนี้หรือไม่
+        if (message.roomId?.toString() == widget.roomId.toString()) {
+          // ✅ ป้องกัน duplicate messages อย่างเข้มงวด
+          final isDuplicate = _messages.any((existingMessage) {
             // ตรวจสอบ message_id ก่อน
-            if (existingMessage.messageId == message.messageId && 
-                existingMessage.messageId != null && 
+            if (existingMessage.messageId == message.messageId &&
+                existingMessage.messageId != null &&
                 message.messageId != null) {
               return true;
             }
-            
+
             // ถ้าไม่มี message_id หรือไม่ตรงกัน ให้ตรวจสอบเนื้อหาและเวลา
             return existingMessage.messageText == message.messageText &&
-                   existingMessage.senderId == message.senderId &&
-                   existingMessage.senderType == message.senderType &&
-                   _isMessageTimeSimilar(existingMessage.createdAt, message.createdAt);
-          },
-        );
-
-        if (!isDuplicate && mounted) {
-          setState(() {
-            _messages.add(message);
+                existingMessage.senderId == message.senderId &&
+                existingMessage.senderType == message.senderType &&
+                _isMessageTimeSimilar(
+                  existingMessage.createdAt,
+                  message.createdAt,
+                );
           });
-          
-          // ✅ เลื่อนไปข้อความล่าสุด
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _scrollToBottom();
-          });
-          
-          print('✅ New message added to UI successfully');
 
-          // ✅ Mark as read ถ้าข้อความไม่ใช่ของเราเอง
-          if (!_isMyMessage(message)) {
-            _chatController.chatService.markAsRead();
-            _chatController.chatService.markMessagesAsReadAPI(widget.roomId);
+          if (!isDuplicate && mounted) {
+            setState(() {
+              _messages.add(message);
+            });
+
+            // ✅ เลื่อนไปข้อความล่าสุด
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Future.delayed(Duration(milliseconds: 200), () {
+                if (_scrollController.hasClients) {
+                  _scrollController.jumpTo(
+                    _scrollController.position.maxScrollExtent,
+                  );
+                }
+              });
+            });
+
+            print('✅ New message added to UI successfully');
+
+            // ✅ Mark as read ถ้าข้อความไม่ใช่ของเราเอง
+            if (!_isMyMessage(message)) {
+              _chatController.chatService.markAsRead();
+              _chatController.chatService.markMessagesAsReadAPI(widget.roomId);
+            }
+          } else if (isDuplicate) {
+            print('🔄 Duplicate message ignored');
           }
-        } else if (isDuplicate) {
-          print('🔄 Duplicate message ignored');
+        } else {
+          print('⚠️ [STREAM] Message ignored (not current room)');
         }
-      } else {
-        print('⚠️ [STREAM] Message ignored (not current room)');
-      }
-    }, onError: (error) {
-      print('❌ Message stream error: $error');
-    });
+      },
+      onError: (error) {
+        print('❌ Message stream error: $error');
+      },
+    );
 
     // ✅ Listen for typing status
-    _typingSubscription = _chatController.chatService.typingStream.listen((data) {
-      final roomId = data['roomId'];
-      final userId = data['userId'];
-      final isTyping = data['isTyping'] ?? false;
+    _typingSubscription = _chatController.chatService.typingStream.listen(
+      (data) {
+        final roomId = data['roomId'];
+        final userId = data['userId'];
+        final isTyping = data['isTyping'] ?? false;
 
-      print('⌨️ Typing event: room=$roomId, user=$userId, typing=$isTyping');
+        print('⌨️ Typing event: room=$roomId, user=$userId, typing=$isTyping');
 
-      if (roomId == widget.roomId &&
-          userId != _chatController.userId &&
-          mounted) {
-        setState(() {
-          _isTyping = isTyping;
-        });
-
-        // ✅ หยุด typing หลังจาก 3 วินาที (กันกรณี stop event หาย)
-        if (isTyping) {
-          Future.delayed(const Duration(seconds: 3), () {
-            if (mounted) {
-              setState(() {
-                _isTyping = false;
-              });
-            }
+        if (roomId == widget.roomId &&
+            userId != _chatController.userId &&
+            mounted) {
+          setState(() {
+            _isTyping = isTyping;
           });
+
+          // ✅ หยุด typing หลังจาก 3 วินาที (กันกรณี stop event หาย)
+          if (isTyping) {
+            Future.delayed(const Duration(seconds: 3), () {
+              if (mounted) {
+                setState(() {
+                  _isTyping = false;
+                });
+              }
+            });
+          }
         }
-      }
-    }, onError: (error) {
-      print('❌ Typing stream error: $error');
-    });
+      },
+      onError: (error) {
+        print('❌ Typing stream error: $error');
+      },
+    );
 
     // ✅ Listen for connection status
-    _connectionSubscription = _chatController.chatService.connectionStream.listen((isConnected) {
-      print('🔌 Connection status changed: $isConnected');
-      if (mounted) {
-        setState(() {
-          // Force rebuild to show connection status
-        });
-      }
-    }, onError: (error) {
-      print('❌ Connection stream error: $error');
-    });
+    // ✅ Listen for connection status
+    _connectionSubscription = _chatController.chatService.connectionStream
+        .listen(
+          (isConnected) async {
+            print('🔌 Connection status changed: $isConnected');
+
+            if (mounted) {
+              setState(
+                () {},
+              ); // อัปเดต UI ทันที (เช่น banner "กำลังเชื่อมต่อ...")
+
+              // 🛠️ ถ้า reconnect แล้ว
+              if (isConnected) {
+                print('🔁 Reconnected! Re-joining room ${widget.roomId}...');
+
+                try {
+                  await _chatController.chatService.joinRoom(widget.roomId);
+                  await _chatController.chatService.joinChatRoomAPI(
+                    widget.roomId,
+                  );
+                  await Future.delayed(
+                    Duration(milliseconds: 300),
+                  ); // ✅ เพิ่มดีเลย์เล็กน้อย
+
+                  // ✅ โหลดข้อความใหม่กันพลาดช่วง disconnect
+                  await _loadMessages();
+
+                  // ✅ Mark as read ใหม่อีกรอบ
+                  _chatController.chatService.markAsRead();
+                  _chatController.chatService.markMessagesAsReadAPI(
+                    widget.roomId,
+                  );
+
+                  print('✅ Re-joined and refreshed successfully');
+                } catch (e) {
+                  print('❌ Error during re-join after reconnect: $e');
+                }
+              }
+            }
+          },
+          onError: (error) {
+            print('❌ Connection stream error: $error');
+          },
+        );
 
     print('✅ All realtime listeners setup completed');
   }
 
   // ✅ เพิ่มฟังก์ชันตรวจสอบว่าเป็นข้อความของเราหรือไม่
   bool _isMyMessage(ChatMessage message) {
-    return message.senderId == _chatController.userId && 
-           (message.senderType == 'customer' || message.senderType == 'member');
+    return message.senderId == _chatController.userId &&
+        (message.senderType == 'customer' || message.senderType == 'member');
   }
 
   bool _isMessageTimeSimilar(DateTime? time1, DateTime? time2) {
@@ -272,6 +335,7 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
       );
 
       print('📨 API Response success: ${response['success']}');
+      print('📨 Raw response: ${jsonEncode(response)}');
 
       if (response['success'] && mounted) {
         final List<dynamic> messagesJson = response['messages'] ?? [];
@@ -314,7 +378,7 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _scrollToBottom();
         });
-        
+
         print('💬 Messages loaded successfully: ${messages.length}');
       } else {
         print('❌ API response success=false or not mounted');
@@ -330,7 +394,7 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
   ChatMessage _parseMessage(dynamic messageData) {
     try {
       Map<String, dynamic> data;
-      
+
       if (messageData is Map) {
         data = Map<String, dynamic>.from(
           messageData.map((k, v) => MapEntry(k.toString(), v)),
@@ -346,20 +410,43 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
 
       // ✅ Map database fields to model fields - รองรับทั้ง snake_case และ camelCase
       final mappedData = {
-        'message_id': data['message_id']?.toString() ?? data['messageId']?.toString(),
-        'room_id': data['room_id']?.toString() ?? data['roomId']?.toString() ?? widget.roomId.toString(),
+        'message_id':
+            data['message_id']?.toString() ?? data['messageId']?.toString(),
+        'room_id':
+            data['room_id']?.toString() ??
+            data['roomId']?.toString() ??
+            widget.roomId.toString(),
         'sender_id': data['sender_id'] ?? data['senderId'],
-        'sender_type': data['sender_type']?.toString() ?? data['senderType']?.toString(),
-        'sender_name': data['sender_name']?.toString() ?? data['senderName']?.toString(),
-        'sender_photo': data['sender_photo']?.toString() ?? data['senderPhoto']?.toString(),
-        'message_text': data['message_text']?.toString() ?? data['messageText']?.toString(),
-        'message_type': data['message_type']?.toString() ?? data['messageType']?.toString() ?? 'text',
-        'image_url': data['image_url']?.toString() ?? data['imageUrl']?.toString(),
-        'latitude': data['latitude']?.toString(),
-        'longitude': data['longitude']?.toString(),
+        'sender_type':
+            data['sender_type']?.toString() ?? data['senderType']?.toString(),
+        'message_text':
+            data['message_text']?.toString() ??
+            data['messageText']?.toString() ??
+            '',
+        'message_type':
+            data['message_type']?.toString() ??
+            data['messageType']?.toString() ??
+            'text',
+        'created_at':
+            data['created_at']?.toString() ??
+            data['createdAt']?.toString() ??
+            DateTime.now().toIso8601String(),
+        // ✅ ป้องกัน null ที่พัง
+        'image_url':
+            data['image_url']?.toString() ?? data['imageUrl']?.toString() ?? '',
+        'sender_name':
+            data['sender_name']?.toString() ??
+            data['senderName']?.toString() ??
+            '',
+        'sender_photo':
+            data['sender_photo']?.toString() ??
+            data['senderPhoto']?.toString() ??
+            '',
         'is_read': data['is_read'] ?? data['isRead'] ?? false,
-        'created_at': data['created_at']?.toString() ?? data['createdAt']?.toString() ?? DateTime.now().toIso8601String(),
-        'updated_at': data['updated_at']?.toString() ?? data['updatedAt']?.toString() ?? data['created_at']?.toString() ?? data['createdAt']?.toString(),
+        'updated_at':
+            data['updated_at']?.toString() ??
+            data['updatedAt']?.toString() ??
+            data['created_at']?.toString(),
       };
 
       return ChatMessage.fromJson(mappedData);
@@ -386,7 +473,7 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
       if (response['success'] && mounted) {
         final List<dynamic> messagesJson = response['messages'] ?? [];
         final newMessages = <ChatMessage>[];
-        
+
         for (var json in messagesJson) {
           try {
             final message = _parseMessage(json);
@@ -426,7 +513,7 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
 
     try {
       print('📤 Sending message: $text');
-      
+
       // ✅ Clear input และ stop typing ทันที
       final messageToSend = text;
       _messageController.clear();
@@ -443,7 +530,6 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
       // ✅ ส่งข้อความ - service จะจัดการ HTTP + Socket
       await _chatController.chatService.sendMessage(request);
       print('✅ Message sent successfully');
-      
     } catch (e, stackTrace) {
       debugPrint('❌ Error sending message: $e');
       debugPrint('Stack trace: $stackTrace');
@@ -491,7 +577,9 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
 
       try {
         // Upload image
-        final imageUrl = await _chatController.chatService.uploadImage(image.path);
+        final imageUrl = await _chatController.chatService.uploadImage(
+          image.path,
+        );
 
         // Close loading dialog
         if (mounted && Navigator.canPop(context)) {
@@ -509,7 +597,6 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
 
         await _chatController.chatService.sendMessage(request);
         print('✅ Image message sent successfully');
-        
       } catch (e) {
         // Close loading dialog
         if (mounted && Navigator.canPop(context)) {
@@ -576,17 +663,17 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
   void dispose() {
     // ✅ Cancel all subscriptions
     _messageSubscription?.cancel();
-    _typingSubscription?.cancel(); 
+    _typingSubscription?.cancel();
     _connectionSubscription?.cancel();
-    
+
     // ✅ Dispose controllers
     _messageController.dispose();
     _scrollController.dispose();
-    
+
     // ✅ Clean up chat service
     _chatController.chatService.stopTyping();
     _chatController.chatService.leaveRoom();
-    
+
     super.dispose();
   }
 
@@ -658,7 +745,9 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
                   Consumer<CustomerChatController>(
                     builder: (context, controller, child) {
                       return Text(
-                        controller.isConnected ? 'ออนไลน์' : 'กำลังเชื่อมต่อ...',
+                        controller.isConnected
+                            ? 'ออนไลน์'
+                            : 'กำลังเชื่อมต่อ...',
                         style: TextStyle(
                           color: controller.isConnected
                               ? Colors.green
@@ -835,7 +924,9 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
   Widget _buildMessageBubble(ChatMessage message, bool isMe) {
     final messageText = message.messageText ?? '';
     final isImage = message.messageType == 'image';
-    final safeImageUrl = message.imageUrl?.isNotEmpty == true ? message.imageUrl! : '';
+    final safeImageUrl = message.imageUrl?.isNotEmpty == true
+        ? message.imageUrl!
+        : '';
 
     return Container(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,

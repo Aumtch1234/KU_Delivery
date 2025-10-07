@@ -1,4 +1,4 @@
-// controllers/customer_chat_controller.dart (แก้ไขให้ใช้กับ API ลูกค้า - Fixed Version)
+// controllers/customer_chat_controller.dart (Fixed Real-time Update)
 import 'dart:async';
 import 'dart:convert';
 
@@ -102,8 +102,8 @@ class CustomerChatController extends ChangeNotifier {
   void _setupConnectionListener() {
     // ✅ Cancel existing subscription before creating new one
     _connectionSub?.cancel();
-    
-    _connectionSub = _chatService.connectionStream.listen((connected) {
+
+    _connectionSub = _chatService.connectionStream.listen((connected) async {
       _isConnected = connected;
       notifyListeners();
 
@@ -112,6 +112,15 @@ class CustomerChatController extends ChangeNotifier {
       // ✅ โหลดแชทเมื่อเชื่อมต่อสำเร็จ
       if (connected && _userId != null) {
         loadChatRooms();
+      }
+      if (connected && _userId != null) {
+        await loadChatRooms();
+        // 🆕 join อีกครั้งเมื่อ reconnect สำเร็จ
+        for (final room in _chatRooms) {
+          if (room.roomId != null) {
+            await _chatService.joinRoom(room.roomId!);
+          }
+        }
       }
     });
   }
@@ -145,15 +154,29 @@ class CustomerChatController extends ChangeNotifier {
 
       print('📋 Loading chat rooms for user $_userId');
       final rooms = await _chatService.getChatRooms();
-      
+
+      rooms.sort((a, b) {
+        final timeA = a.lastMessageTime ?? DateTime(2000);
+        final timeB = b.lastMessageTime ?? DateTime(2000);
+        return timeB.compareTo(timeA);
+      });
+
       _chatRooms = rooms;
+
+      // ✅ 🔥 Join ทุกห้องหลังโหลดเสร็จ
+      for (final room in _chatRooms) {
+        if (room.roomId != null) {
+          await _chatService.joinRoom(room.roomId!);
+          print('🏠 Joined room: ${room.roomId}');
+        }
+      }
 
       _unreadCount = rooms.fold<int>(
         0,
         (sum, room) => sum + (room.unreadCount ?? 0),
       );
 
-      print('✅ Chat rooms loaded: ${rooms.length} rooms, $unreadCount unread');
+      print('✅ Chat rooms loaded: ${rooms.length} rooms, $_unreadCount unread');
     } catch (e) {
       debugPrint('❌ Error loading chat rooms: $e');
     } finally {
@@ -182,76 +205,105 @@ class CustomerChatController extends ChangeNotifier {
     _readSub?.cancel();
 
     // ✅ Message stream listener
-    _msgSub = _chatService.messageStream.listen((message) {
-      print('📨 [CONTROLLER] New message received: ${message.messageText?.substring(0, 50)}...');
-      
-      final idx = _chatRooms.indexWhere((r) => r.roomId == message.roomId);
-      final isMyMessage = message.senderId == _userId && 
-                          (message.senderType == 'customer' || message.senderType == 'member');
+    _msgSub = _chatService.messageStream.listen(
+      (message) {
+        print('📨 [CONTROLLER] New message received in room ${message.roomId}');
+        print('📨 [CONTROLLER] Message text: ${message.messageText}');
 
-      if (idx != -1) {
-        final prev = _chatRooms[idx];
-        _chatRooms[idx] = prev.copyWith(
-          lastMessage: message.messageText,
-          messageType: message.messageType,
-          lastMessageTime: message.createdAt,
-          unreadCount: isMyMessage
-              ? (prev.unreadCount ?? 0)
-              : (prev.unreadCount ?? 0) + 1,
-        );
-        
-        if (!isMyMessage) {
-          _unreadCount += 1;
+        final idx = _chatRooms.indexWhere((r) => r.roomId == message.roomId);
+        final isMyMessage =
+            message.senderId == _userId &&
+            (message.senderType == 'customer' ||
+                message.senderType == 'member');
+
+        if (idx != -1) {
+          final prev = _chatRooms[idx];
+
+          // ✅ สร้าง room ใหม่ด้วยข้อมูลล่าสุด
+          final updatedRoom = prev.copyWith(
+            lastMessage: message.messageText,
+            messageType: message.messageType,
+            lastMessageTime: message.createdAt,
+            unreadCount: isMyMessage
+                ? (prev.unreadCount ?? 0)
+                : (prev.unreadCount ?? 0) + 1,
+          );
+
+          // ✅ ลบห้องเก่าออก
+          _chatRooms.removeAt(idx);
+
+          // ✅ เพิ่มห้องใหม่ที่ตำแหน่งบนสุด
+          _chatRooms.insert(0, updatedRoom);
+
+          // ✅ อัพเดท unread count
+          if (!isMyMessage) {
+            _unreadCount += 1;
+          }
+
+          // ✅ ส่งสัญญาณให้ UI อัพเดท
+          notifyListeners();
+
+          print('✅ [CONTROLLER] Chat room moved to top of list');
+          print('✅ [CONTROLLER] Total unread: $_unreadCount');
+        } else {
+          // ถ้าไม่พบห้อง โหลดใหม่ (กันกรณีเพิ่งถูกสร้าง)
+          print(
+            '⚠️ [CONTROLLER] Room ${message.roomId} not found in list, reloading...',
+          );
+          loadChatRooms();
         }
-        
-        notifyListeners();
-        print('✅ [CONTROLLER] Chat room updated in list');
-      } else {
-        // ถ้าไม่พบห้อง โหลดใหม่ (กันกรณีเพิ่งถูกสร้าง)
-        print('⚠️ [CONTROLLER] Room not found in list, reloading...');
-        loadChatRooms();
-      }
-    }, onError: (error) {
-      print('❌ [CONTROLLER] Message stream error: $error');
-    });
+      },
+      onError: (error) {
+        print('❌ [CONTROLLER] Message stream error: $error');
+      },
+    );
 
     // ✅ Room update stream listener
-    _roomSub = _chatService.roomUpdateStream.listen((room) {
-      print('🏠 [CONTROLLER] Room update received: ${room.roomId}');
-      
-      final idx = _chatRooms.indexWhere((r) => r.roomId == room.roomId);
-      if (idx == -1) {
-        _chatRooms.insert(0, room);
-        print('✅ [CONTROLLER] New room added to list');
-      } else {
-        _chatRooms[idx] = room;
-        print('✅ [CONTROLLER] Existing room updated in list');
-      }
-      
-      _unreadCount = _chatRooms.fold(0, (s, r) => s + (r.unreadCount ?? 0));
-      notifyListeners();
-    }, onError: (error) {
-      print('❌ [CONTROLLER] Room update stream error: $error');
-    });
+    _roomSub = _chatService.roomUpdateStream.listen(
+      (room) {
+        print('🏠 [CONTROLLER] Room update received: ${room.roomId}');
+
+        final idx = _chatRooms.indexWhere((r) => r.roomId == room.roomId);
+        if (idx == -1) {
+          // ✅ ห้องใหม่ - เพิ่มที่บนสุด
+          _chatRooms.insert(0, room);
+          print('✅ [CONTROLLER] New room added to top of list');
+        } else {
+          // ✅ ห้องเดิม - อัพเดทและย้ายขึ้นบนสุด
+          _chatRooms.removeAt(idx);
+          _chatRooms.insert(0, room);
+          print('✅ [CONTROLLER] Existing room updated and moved to top');
+        }
+
+        _unreadCount = _chatRooms.fold(0, (s, r) => s + (r.unreadCount ?? 0));
+        notifyListeners();
+      },
+      onError: (error) {
+        print('❌ [CONTROLLER] Room update stream error: $error');
+      },
+    );
 
     // ✅ Read status stream listener
-    _readSub = _chatService.readStatusStream.listen((data) {
-      final roomId = data['roomId'] as int?;
-      if (roomId == null) return;
-      
-      print('👁️ [CONTROLLER] Messages marked as read in room: $roomId');
-      
-      final idx = _chatRooms.indexWhere((r) => r.roomId == roomId);
-      if (idx != -1) {
-        final prev = _chatRooms[idx].unreadCount ?? 0;
-        _chatRooms[idx] = _chatRooms[idx].copyWith(unreadCount: 0);
-        _unreadCount = (_unreadCount - prev).clamp(0, 999);
-        notifyListeners();
-        print('✅ [CONTROLLER] Unread count updated: $_unreadCount');
-      }
-    }, onError: (error) {
-      print('❌ [CONTROLLER] Read status stream error: $error');
-    });
+    _readSub = _chatService.readStatusStream.listen(
+      (data) {
+        final roomId = data['roomId'] as int?;
+        if (roomId == null) return;
+
+        print('👁️ [CONTROLLER] Messages marked as read in room: $roomId');
+
+        final idx = _chatRooms.indexWhere((r) => r.roomId == roomId);
+        if (idx != -1) {
+          final prev = _chatRooms[idx].unreadCount ?? 0;
+          _chatRooms[idx] = _chatRooms[idx].copyWith(unreadCount: 0);
+          _unreadCount = (_unreadCount - prev).clamp(0, 999);
+          notifyListeners();
+          print('✅ [CONTROLLER] Unread count updated: $_unreadCount');
+        }
+      },
+      onError: (error) {
+        print('❌ [CONTROLLER] Read status stream error: $error');
+      },
+    );
 
     print('✅ [CONTROLLER] All realtime listeners setup completed');
   }
@@ -265,14 +317,14 @@ class CustomerChatController extends ChangeNotifier {
   // เข้าแชท → unread = 0
   void markRoomAsEntered(int roomId) {
     print('👁️ Marking room as entered: $roomId');
-    
+
     final index = _chatRooms.indexWhere((r) => r.roomId == roomId);
     if (index != -1) {
       final prevUnread = _chatRooms[index].unreadCount ?? 0;
       _chatRooms[index] = _chatRooms[index].copyWith(unreadCount: 0);
       _unreadCount = (_unreadCount - prevUnread).clamp(0, 999);
       notifyListeners();
-      
+
       print('✅ Room marked as entered, unread count: $_unreadCount');
     }
   }
@@ -435,16 +487,16 @@ class CustomerChatController extends ChangeNotifier {
   @override
   void dispose() {
     print('🗑️ Disposing CustomerChatController');
-    
+
     // ✅ Cancel all subscriptions
     _msgSub?.cancel();
     _roomSub?.cancel();
     _readSub?.cancel();
     _connectionSub?.cancel();
-    
+
     // ✅ Dispose chat service
     _chatService.dispose();
-    
+
     super.dispose();
   }
 }

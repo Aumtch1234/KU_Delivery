@@ -237,26 +237,29 @@ class CustomerChatService {
   }
 
   // ✅ แก้ไข joinRoom ให้รอการตอบกลับจาก server
-  Future<void> joinRoom(int roomId) async {
-    if (_socket?.connected != true || _currentUserId == null) {
-      print('❌ Cannot join room - socket not connected or user not set');
-      throw Exception('Socket not connected or user not set');
-    }
-
-    print('🏠 Joining room $roomId for customer $_currentUserId');
-    _currentRoomId = roomId;
-
-    // ✅ ส่ง join_room event พร้อม userId และ userType ที่ถูกต้อง
-    _socket!.emit('join_room', {
-      'roomId': roomId,
-      'userId': _currentUserId,
-      'userType': 'customer',
-    });
-
-    // ✅ รอให้ server confirm การ join (เพิ่มเวลารอ)
-    await Future.delayed(const Duration(milliseconds: 1000));
-    print('✅ Room join request sent, waiting for confirmation');
+ Future<bool> joinRoom(int roomId) async {
+  if (_socket?.connected != true || _currentUserId == null) {
+    print('❌ Cannot join room - socket not connected or user not set');
+    return false; // ❗ เปลี่ยนจาก throw เป็น false
   }
+
+  print('🏠 Joining room $roomId for customer $_currentUserId');
+  _currentRoomId = roomId;
+
+  // ✅ ส่ง join_room event พร้อม userId และ userType ที่ถูกต้อง
+  _socket!.emit('join_room', {
+    'roomId': roomId,
+    'userId': _currentUserId,
+    'userType': 'customer',
+  });
+
+  // ✅ รอให้ server confirm การ join (เพิ่มเวลารอ)
+  await Future.delayed(const Duration(milliseconds: 1000));
+  print('✅ Room join request sent, waiting for confirmation');
+
+  return true; // ✅ สำเร็จแล้ว return true
+}
+
 
   void leaveRoom() {
     if (_currentRoomId != null && _socket?.connected == true) {
