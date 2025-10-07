@@ -1,12 +1,20 @@
+import 'package:delivery/APIs/Markets/FetchFoodsForMarket.dart';
+import 'package:delivery/APIs/Markets/FetchMarket.dart';
+import 'package:delivery/pages/myMarket/OrdersListPage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
+bool isLoading = true;
+String marketId = '';
+
 class AssistiveButton extends StatefulWidget {
   final double size;
   final EdgeInsets padding;
   final VoidCallback? onTap;
+  final VoidCallback? onSalesSummaryTap;
+  final VoidCallback? onOrdersTap;
   final Duration autoHideDuration;
   final Duration animationDuration;
 
@@ -15,6 +23,8 @@ class AssistiveButton extends StatefulWidget {
     this.size = 60,
     this.padding = const EdgeInsets.all(16),
     this.onTap,
+    this.onSalesSummaryTap,
+    this.onOrdersTap,
     this.autoHideDuration = const Duration(seconds: 4),
     this.animationDuration = const Duration(milliseconds: 400),
   }) : super(key: key);
@@ -22,7 +32,6 @@ class AssistiveButton extends StatefulWidget {
   @override
   State<AssistiveButton> createState() => _AssistiveButtonState();
 
-  // สร้าง static method เพื่อใช้จากภายนอก
   static void showButton(BuildContext context) {
     final state = context.findAncestorStateOfType<_AssistiveButtonState>();
     state?._showFromEdge();
@@ -35,19 +44,47 @@ class _AssistiveButtonState extends State<AssistiveButton>
   late bool initialized;
   bool isDragging = false;
   bool isHidden = false;
+  bool isMenuExpanded = false;
   Timer? autoHideTimer;
   late AnimationController _slideController;
   late AnimationController _fadeController;
   late AnimationController _pulseController;
   late AnimationController _glowController;
+  late AnimationController _menuController;
   late Animation<double> _slideAnimation;
   late Animation<double> _fadeAnimation;
   late Animation<double> _pulseAnimation;
   late Animation<double> _glowAnimation;
   late Animation<Color?> _colorAnimation;
+  late Animation<double> _menuAnimation;
 
-  // Key สำหรับ SharedPreferences
   static const String _positionKey = 'assistive_button_position';
+
+  Future<void> loadMarket() async {
+    try {
+      print('⏳ เรียก fetchMyMarket...');
+      final market = await fetchMyMarket();
+      print('จาก AssistiveButton.dart นะจะ');
+      print('✅ market: $market');
+      final fetchedFoods = await FetchFoodsForMarket();
+      print('✅ foods: $fetchedFoods');
+
+      setState(() {
+        if (market != null && fetchedFoods != null) {
+          marketId = market['market_id'].toString();
+        } else {
+          marketId = 'ไม่พบ ID ร้านค้า';
+        }
+        isLoading = false;
+      });
+    } catch (e) {
+      print('❌ Error in loadMarket: $e');
+      setState(() {
+        marketId = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -55,7 +92,6 @@ class _AssistiveButtonState extends State<AssistiveButton>
     initialized = false;
     position = const Offset(0, 0);
 
-    // สร้าง animation controllers
     _slideController = AnimationController(
       duration: widget.animationDuration,
       vsync: this,
@@ -76,7 +112,11 @@ class _AssistiveButtonState extends State<AssistiveButton>
       vsync: this,
     );
 
-    // สร้าง animations
+    _menuController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
     _slideAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _slideController, curve: Curves.elasticOut),
     );
@@ -85,7 +125,7 @@ class _AssistiveButtonState extends State<AssistiveButton>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
@@ -93,24 +133,24 @@ class _AssistiveButtonState extends State<AssistiveButton>
       CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
 
+    _menuAnimation = CurvedAnimation(
+      parent: _menuController,
+      curve: Curves.easeOutBack,
+    );
+
     _colorAnimation =
         ColorTween(
-          begin: Colors.blue.shade400,
-          end: Colors.purple.shade400,
+          begin: const Color(0xFF34C759),
+          end: const Color(0xFF30D158),
         ).animate(
           CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
         );
 
-    // เริ่มต้น fade controller
     _fadeController.value = 1.0;
-
-    // ไม่เริ่ม pulse และ glow animation อัตโนมัติ
-
-    // โหลดตำแหน่งที่บันทึกไว้
     _loadSavedPosition();
-
-    // เริ่มต้นการซ่อนอัตโนมัติ
     _startAutoHideTimer();
+
+    loadMarket();
   }
 
   @override
@@ -120,6 +160,7 @@ class _AssistiveButtonState extends State<AssistiveButton>
     _fadeController.dispose();
     _pulseController.dispose();
     _glowController.dispose();
+    _menuController.dispose();
     super.dispose();
   }
 
@@ -136,7 +177,6 @@ class _AssistiveButtonState extends State<AssistiveButton>
         });
       }
     } catch (e) {
-      // ถ้าเกิดข้อผิดพลาดในการโหลด ใช้ตำแหน่งเริ่มต้น
       print('Error loading position: $e');
     }
   }
@@ -154,7 +194,7 @@ class _AssistiveButtonState extends State<AssistiveButton>
   void _startAutoHideTimer() {
     autoHideTimer?.cancel();
     autoHideTimer = Timer(widget.autoHideDuration, () {
-      if (mounted && !isDragging) {
+      if (mounted && !isDragging && !isMenuExpanded) {
         _hideToEdge();
       }
     });
@@ -181,25 +221,40 @@ class _AssistiveButtonState extends State<AssistiveButton>
     }
   }
 
+  void _toggleMenu() {
+    setState(() {
+      isMenuExpanded = !isMenuExpanded;
+    });
+
+    if (isMenuExpanded) {
+      _menuController.forward();
+      autoHideTimer?.cancel();
+    } else {
+      _menuController.reverse();
+      _startAutoHideTimer();
+    }
+
+    HapticFeedback.mediumImpact();
+  }
+
   void _onDragStart() {
+    if (isMenuExpanded) {
+      _toggleMenu();
+    }
     setState(() {
       isDragging = true;
     });
     autoHideTimer?.cancel();
     _showFromEdge();
-    // เพิ่ม haptic feedback เมื่อเริ่มเลื่อน
     HapticFeedback.lightImpact();
   }
 
   void _initPosition(Size screen, EdgeInsets safe) {
     if (initialized) return;
-    // default bottom-right (ชิดขอบจอมากที่สุด)
-    final dx = screen.width - widget.size - 20; // เพิ่ม margin
-    final bottomMargin = 100.0; // เพิ่ม margin ล่าง
-    final topMargin = 60.0; // เพิ่ม margin บน
+    final dx = screen.width - widget.size - 20;
+    final bottomMargin = 100.0;
+    final topMargin = 60.0;
     final dy = screen.height - widget.size - safe.bottom - bottomMargin;
-
-    // clamp ไม่ให้ต่ำกว่าขอบบน
     final minY = safe.top + topMargin;
     position = Offset(dx, dy < minY ? minY : dy);
     initialized = true;
@@ -219,19 +274,17 @@ class _AssistiveButtonState extends State<AssistiveButton>
     final screen = media.size;
     final safe = media.padding;
 
-    // clamp ตำแหน่ง Y
     double x = position.dx;
     double y = position.dy;
-    final topMargin = -30.0; // ลด margin บน
+    final topMargin = -30.0;
     final minY = safe.top + topMargin;
-    final bottomMargin = 50.0; // ลด margin ล่าง
+    final bottomMargin = 50.0;
     final maxY = screen.height - widget.size - safe.bottom - bottomMargin;
     if (y < minY) y = minY;
     if (y > maxY) y = maxY;
 
-    // snap horizontally to nearest edge (ชิดขอบจอมากขึ้น)
     final centerX = x + widget.size / 2;
-    final margin = 2.0; // ลด margin จากขอบให้ชิดมากขึ้น
+    final margin = 2.0;
     final snapLeft = margin;
     final snapRight = screen.width - widget.size - margin;
     final targetX = (centerX < screen.width / 2) ? snapLeft : snapRight;
@@ -241,26 +294,15 @@ class _AssistiveButtonState extends State<AssistiveButton>
       isDragging = false;
     });
 
-    // บันทึกตำแหน่งใหม่
     _savePosition();
-
-    // เพิ่ม haptic feedback เมื่อ snap
     HapticFeedback.mediumImpact();
-
-    // เริ่มต้นการซ่อนอัตโนมัติใหม่
     _startAutoHideTimer();
   }
 
   void _onTap() {
     _showFromEdge();
-    // เพิ่ม haptic feedback เมื่อแตะ
     HapticFeedback.selectionClick();
-
-    if (widget.onTap != null) {
-      widget.onTap!();
-    } else {
-      _showHelpDialog(context);
-    }
+    _toggleMenu();
   }
 
   @override
@@ -274,119 +316,107 @@ class _AssistiveButtonState extends State<AssistiveButton>
         _fadeController,
         _pulseController,
         _glowController,
+        _menuController,
       ]),
       builder: (context, child) {
         final screen = media.size;
         final isOnLeftSide = position.dx < screen.width / 2;
 
-        // คำนวดตำแหน่งที่จะซ่อน (ซ่อนแนบขอบจอ)
         double hideOffset = 0;
         if (isHidden) {
           hideOffset = isOnLeftSide
-              ? -(widget.size * 0.52) *
-                    _slideAnimation
-                        .value // ซ่อนไปทางซ้าย 52%
-              : (widget.size * 0.52) *
-                    _slideAnimation.value; // ซ่อนไปทางขวา 52%
+              ? -(widget.size * 0.52) * _slideAnimation.value
+              : (widget.size * 0.52) * _slideAnimation.value;
         }
 
-        // คำนวด opacity ที่จะเปลี่ยนแปลง
         final opacity = isHidden
-            ? 0.3 +
-                  (0.5 * (1 - _fadeAnimation.value)) // เฟดเป็น 0.3-0.8
+            ? 0.3 + (0.5 * (1 - _fadeAnimation.value))
             : 1.0;
 
-        // สี gradient สำหรับ glow effect
-        final glowColor = _colorAnimation.value ?? Colors.blue.shade400;
+        final glowColor = _colorAnimation.value ?? const Color(0xFF34C759);
 
-        return Positioned(
-          left: position.dx + hideOffset,
-          top: position.dy,
-          child: SafeArea(
-            child: GestureDetector(
-              onPanStart: (_) => _onDragStart(),
-              onPanUpdate: _onDragUpdate,
-              onPanEnd: (_) => _onDragEnd(context),
-              onTap: _onTap,
-              child: Transform.scale(
-                scale: isDragging
-                    ? 1.15
-                    : isHidden
-                    ? 1.0
-                    : _pulseAnimation.value, // Pulse เมื่อไม่ซ่อน
-                child: Opacity(
-                  opacity: opacity,
-                  child: Container(
-                    width: widget.size,
-                    height: widget.size,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Glow effect ด้านหลัง
-                        if (!isHidden && !isDragging)
-                          Container(
-                            width: widget.size + 20,
-                            height: widget.size + 20,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: glowColor.withOpacity(
-                                    0.3 * _glowAnimation.value,
+        return Stack(
+          children: [
+            // Menu items
+            if (isMenuExpanded) _buildMenuItems(isOnLeftSide),
+
+            // Main button
+            Positioned(
+              left: position.dx + hideOffset,
+              top: position.dy,
+              child: SafeArea(
+                child: GestureDetector(
+                  onPanStart: (_) => _onDragStart(),
+                  onPanUpdate: _onDragUpdate,
+                  onPanEnd: (_) => _onDragEnd(context),
+                  onTap: _onTap,
+                  child: Transform.scale(
+                    scale: isDragging ? 1.15 : _pulseAnimation.value,
+                    child: Opacity(
+                      opacity: opacity,
+                      child: Container(
+                        width: widget.size,
+                        height: widget.size,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            if (!isHidden && !isDragging)
+                              Container(
+                                width: widget.size + 20,
+                                height: widget.size + 20,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: glowColor.withOpacity(
+                                        0.4 * _glowAnimation.value,
+                                      ),
+                                      blurRadius:
+                                          25 + (15 * _glowAnimation.value),
+                                      spreadRadius:
+                                          3 + (4 * _glowAnimation.value),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            Container(
+                              width: widget.size,
+                              height: widget.size,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    glowColor,
+                                    glowColor.withOpacity(0.8),
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(
+                                      isDragging ? 0.3 : 0.2,
+                                    ),
+                                    blurRadius: isDragging ? 20 : 12,
+                                    offset: Offset(0, isDragging ? 10 : 6),
+                                    spreadRadius: isDragging ? 3 : 1,
                                   ),
-                                  blurRadius: 20 + (10 * _glowAnimation.value),
-                                  spreadRadius: 2 + (3 * _glowAnimation.value),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                        // ปุ่มหลัก
-                        Container(
-                          width: widget.size,
-                          height: widget.size,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [Colors.white, Colors.grey.shade50],
-                            ),
-                            border: Border.all(
-                              color: glowColor.withOpacity(0.3),
-                              width: 2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(
-                                  isDragging ? 0.25 : 0.15,
-                                ),
-                                blurRadius: isDragging ? 15 : 8,
-                                offset: Offset(0, isDragging ? 8 : 4),
-                                spreadRadius: isDragging ? 2 : 0,
+                                ],
                               ),
-                              BoxShadow(
-                                color: Colors.white.withOpacity(0.8),
-                                blurRadius: 5,
-                                // offset: Offset(-2, -2),
-                              ),
-                            ],
-                          ),
-                          child: ClipOval(
-                            child: Material(
-                              color: Colors.transparent,
-                              child: Center(
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    // Icon หลัก
-                                    AnimatedSwitcher(
+                              child: ClipOval(
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: Center(
+                                    child: AnimatedSwitcher(
                                       duration: const Duration(
                                         milliseconds: 300,
                                       ),
                                       transitionBuilder: (child, animation) {
                                         return RotationTransition(
-                                          turns: animation,
+                                          turns: Tween<double>(
+                                            begin: 0.0,
+                                            end: 0.25,
+                                          ).animate(animation),
                                           child: ScaleTransition(
                                             scale: animation,
                                             child: child,
@@ -394,60 +424,197 @@ class _AssistiveButtonState extends State<AssistiveButton>
                                         );
                                       },
                                       child: Icon(
-                                        isHidden
+                                        isMenuExpanded
+                                            ? Icons.close_rounded
+                                            : isHidden
                                             ? Icons.touch_app_rounded
-                                            : Icons.help_outline_rounded,
-                                        key: ValueKey(isHidden),
-                                        color: glowColor,
-                                        size: widget.size * 0.45,
+                                            : Icons.apps_rounded,
+                                        key: ValueKey(
+                                          isMenuExpanded
+                                              ? 'close'
+                                              : isHidden
+                                              ? 'touch'
+                                              : 'apps',
+                                        ),
+                                        color: Colors.white,
+                                        size: widget.size * 0.5,
                                       ),
                                     ),
-
-                                    // จุดแจ้งเตือนเมื่อซ่อนอยู่
-                                    if (isHidden)
-                                      Positioned(
-                                        right: 8,
-                                        top: 8,
-                                        child: Transform.scale(
-                                          scale: _pulseAnimation.value,
-                                          child: Container(
-                                            width: 8,
-                                            height: 8,
-                                            decoration: BoxDecoration(
-                                              gradient: RadialGradient(
-                                                colors: [
-                                                  Colors.orange.shade400,
-                                                  Colors.red.shade400,
-                                                ],
-                                              ),
-                                              shape: BoxShape.circle,
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.orange
-                                                      .withOpacity(0.6),
-                                                  blurRadius: 4,
-                                                  spreadRadius: 1,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
+          ],
         );
       },
+    );
+  }
+
+  Widget _buildMenuItems(bool isOnLeftSide) {
+    return Positioned(
+      left: isOnLeftSide ? position.dx + widget.size + 16 : position.dx - 180,
+      top: position.dy - 80,
+      child: ScaleTransition(
+        scale: _menuAnimation,
+        alignment: isOnLeftSide ? Alignment.centerLeft : Alignment.centerRight,
+        child: FadeTransition(
+          opacity: _menuAnimation,
+          child: Column(
+            crossAxisAlignment: isOnLeftSide
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildMenuItem(
+                icon: Icons.food_bank_rounded,
+                label: 'ร้านค้า',
+                color: const Color(0xFF007AFF),
+                onTap: () async {
+                  _toggleMenu();
+                  print('✅ กดเมนูร้านค้าแล้ว');
+
+                  if (widget.onSalesSummaryTap != null) {
+                    widget.onSalesSummaryTap!();
+                  } else if (marketId != '') {
+                    final result = await Navigator.pushNamed(
+                      context,
+                      '/myMarket',
+                    );
+                    print('markets result: $result');
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildMenuItem(
+                icon: Icons.bar_chart_rounded,
+                label: 'สรุปยอดขาย',
+                color: const Color(0xFF007AFF),
+                onTap: () async {
+                  _toggleMenu();
+                  print('✅ กดเมนูสรุปยอดขายแล้ว');
+
+                  if (widget.onSalesSummaryTap != null) {
+                    widget.onSalesSummaryTap!();
+                  } else if (marketId != '') {
+                    final result = await Navigator.pushNamed(
+                      context,
+                      '/dashboard-sales',
+                      arguments: {'marketId': int.tryParse(marketId) ?? 0},
+                    );
+                    print('Dashboard Sales result: $result');
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildMenuItem(
+                icon: Icons.work_outline_rounded,
+                label: 'รับงาน',
+                color: const Color(0xFFFF9500),
+                onTap: () async {
+                  _toggleMenu();
+                  print('✅ กดเมนูรับงานแล้ว');
+                  if (widget.onOrdersTap != null) {
+                    widget.onOrdersTap!();
+                  } else if (marketId != '') {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => OrdersListPage(
+                          marketId: int.tryParse(marketId) ?? 0,
+                        ),
+                      ),
+                    );
+                    print('OrdersListPage result: $result');
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildMenuItem(
+                icon: Icons.help_outline_rounded,
+                label: 'ช่วยเหลือ',
+                color: const Color(0xFF5856D6),
+                onTap: () {
+                  _toggleMenu();
+                  _showHelpDialog(context);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Container(
+        // fixed width so all menu items are the same size
+        width: 180,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.2),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+              spreadRadius: 1,
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  // ensure no underline and consistent text appearance
+                  decoration: TextDecoration.none,
+                  color: Colors.grey.shade800,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -456,28 +623,31 @@ class _AssistiveButtonState extends State<AssistiveButton>
       context: context,
       barrierDismissible: true,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
             Container(
-              padding: EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(
+                  colors: [const Color(0xFF5856D6), const Color(0xFF7B79F5)],
+                ),
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.help_outline_rounded,
-                color: Colors.blue.shade600,
-                size: 24,
+                color: Colors.white,
+                size: 26,
               ),
             ),
-            SizedBox(width: 12),
+            const SizedBox(width: 12),
             Text(
-              'ช่วยเหลือ',
+              'วิธีใช้งาน',
               style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade800,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: Colors.grey.shade900,
+                letterSpacing: -0.5,
               ),
             ),
           ],
@@ -488,43 +658,42 @@ class _AssistiveButtonState extends State<AssistiveButton>
           children: [
             _buildHelpItem(
               Icons.touch_app_rounded,
-              'แตะเพื่อเปิดเมนูช่วยเหลือ',
-              Colors.green,
+              'แตะเพื่อเปิดเมนูด่วน',
+              const Color(0xFF34C759),
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 14),
             _buildHelpItem(
               Icons.drag_indicator_rounded,
               'ลากเพื่อย้ายตำแหน่ง',
-              Colors.orange,
+              const Color(0xFFFF9500),
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 14),
             _buildHelpItem(
               Icons.visibility_off_rounded,
               'ปุ่มจะซ่อนอัตโนมัติใน ${widget.autoHideDuration.inSeconds} วินาที',
-              Colors.blue,
+              const Color(0xFF007AFF),
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 14),
             _buildHelpItem(
-              Icons.save_rounded,
+              Icons.bookmark_rounded,
               'ตำแหน่งจะถูกบันทึกอัตโนมัติ',
-              Colors.purple,
+              const Color(0xFF5856D6),
             ),
           ],
         ),
         actions: [
-          TextButton.icon(
+          TextButton(
             onPressed: () => Navigator.pop(context),
-            icon: Icon(Icons.check_rounded),
-            label: Text(
-              'เข้าใจแล้ว',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
             style: TextButton.styleFrom(
-              foregroundColor: Colors.blue.shade600,
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              foregroundColor: const Color(0xFF34C759),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
               ),
+            ),
+            child: const Text(
+              'เข้าใจแล้ว',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
           ),
         ],
@@ -534,23 +703,28 @@ class _AssistiveButtonState extends State<AssistiveButton>
 
   Widget _buildHelpItem(IconData icon, String text, Color color) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: EdgeInsets.all(6),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, size: 16, color: color),
+          child: Icon(icon, size: 18, color: color),
         ),
-        SizedBox(width: 12),
+        const SizedBox(width: 14),
         Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade700,
-              height: 1.4,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade700,
+                height: 1.5,
+                letterSpacing: -0.1,
+              ),
             ),
           ),
         ),

@@ -9,6 +9,8 @@ Future<Map<String, dynamic>> UpdateMarketApiMultipart({
   required String shopName,
   required String shopDesc,
   required String openTime,
+  required String address,
+  required String phone,
   required String closeTime,
   required double latitude, // เพิ่ม parameter สำหรับ latitude
   required double longitude, // เพิ่ม parameter สำหรับ longitude
@@ -27,6 +29,8 @@ Future<Map<String, dynamic>> UpdateMarketApiMultipart({
   request.fields['close_time'] = closeTime;
   request.fields['latitude'] = latitude.toString(); // ส่งค่า latitude
   request.fields['longitude'] = longitude.toString(); // ส่งค่า longitude
+  request.fields['address'] = address;
+  request.fields['phone'] = phone;
 
   if (imageFile != null) {
     print('🔵 Adding image file: ${imageFile.path}');
