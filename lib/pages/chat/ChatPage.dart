@@ -89,7 +89,7 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
 
       // ✅ 1) ตรวจสอบ user info ก่อน
       await _chatController.initializeUserInfoIfNeeded();
-      
+
       if (_chatController.userId == null) {
         throw Exception('User not logged in');
       }
@@ -100,10 +100,13 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
       // รอให้ socket connect จริงๆ
       int attempts = 0;
       const maxAttempts = 15; // เพิ่มจำนวนครั้งที่รอ
-      while (!_chatController.chatService.isConnected && attempts < maxAttempts) {
+      while (!_chatController.chatService.isConnected &&
+          attempts < maxAttempts) {
         await Future.delayed(const Duration(milliseconds: 500));
         attempts++;
-        print('⏳ Waiting for socket connection... attempt $attempts/$maxAttempts');
+        print(
+          '⏳ Waiting for socket connection... attempt $attempts/$maxAttempts',
+        );
       }
 
       if (_chatController.chatService.isConnected) {
@@ -151,109 +154,119 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
     _connectionSubscription?.cancel();
 
     // ✅ Listen for new messages
-    _messageSubscription = _chatController.chatService.messageStream.listen((message) {
-      print('📩 [STREAM] New message from room ${message.roomId}');
-      print('📍 Current room: ${widget.roomId}');
-      print('📝 Message: ${message.messageText}');
-      print('👤 Sender: ${message.senderId} (${message.senderType})');
+    _messageSubscription = _chatController.chatService.messageStream.listen(
+      (message) {
+        print('📩 [STREAM] New message from room ${message.roomId}');
+        print('📍 Current room: ${widget.roomId}');
+        print('📝 Message: ${message.messageText}');
+        print('👤 Sender: ${message.senderId} (${message.senderType})');
 
-      // ✅ ตรวจสอบว่าเป็นข้อความของห้องนี้หรือไม่
-      if (message.roomId?.toString() == widget.roomId.toString()) {
-        
-        // ✅ ป้องกัน duplicate messages อย่างเข้มงวด
-        final isDuplicate = _messages.any(
-          (existingMessage) {
+        // ✅ ตรวจสอบว่าเป็นข้อความของห้องนี้หรือไม่
+        if (message.roomId?.toString() == widget.roomId.toString()) {
+          // ✅ ป้องกัน duplicate messages อย่างเข้มงวด
+          final isDuplicate = _messages.any((existingMessage) {
             // ตรวจสอบ message_id ก่อน
-            if (existingMessage.messageId == message.messageId && 
-                existingMessage.messageId != null && 
+            if (existingMessage.messageId == message.messageId &&
+                existingMessage.messageId != null &&
                 message.messageId != null) {
               return true;
             }
-            
+
             // ถ้าไม่มี message_id หรือไม่ตรงกัน ให้ตรวจสอบเนื้อหาและเวลา
             return existingMessage.messageText == message.messageText &&
-                   existingMessage.senderId == message.senderId &&
-                   existingMessage.senderType == message.senderType &&
-                   _isMessageTimeSimilar(existingMessage.createdAt, message.createdAt);
-          },
-        );
-
-        if (!isDuplicate && mounted) {
-          setState(() {
-            _messages.add(message);
+                existingMessage.senderId == message.senderId &&
+                existingMessage.senderType == message.senderType &&
+                _isMessageTimeSimilar(
+                  existingMessage.createdAt,
+                  message.createdAt,
+                );
           });
-          
-          // ✅ เลื่อนไปข้อความล่าสุด
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _scrollToBottom();
-          });
-          
-          print('✅ New message added to UI successfully');
 
-          // ✅ Mark as read ถ้าข้อความไม่ใช่ของเราเอง
-          if (!_isMyMessage(message)) {
-            _chatController.chatService.markAsRead();
-            _chatController.chatService.markMessagesAsReadAPI(widget.roomId);
+          if (!isDuplicate && mounted) {
+            setState(() {
+              _messages.add(message);
+            });
+
+            // ✅ เลื่อนไปข้อความล่าสุด
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _scrollToBottom();
+            });
+
+            print('✅ New message added to UI successfully');
+
+            // ✅ Mark as read ถ้าข้อความไม่ใช่ของเราเอง
+            if (!_isMyMessage(message)) {
+              _chatController.chatService.markAsRead();
+              _chatController.chatService.markMessagesAsReadAPI(widget.roomId);
+            }
+          } else if (isDuplicate) {
+            print('🔄 Duplicate message ignored');
           }
-        } else if (isDuplicate) {
-          print('🔄 Duplicate message ignored');
+        } else {
+          print('⚠️ [STREAM] Message ignored (not current room)');
         }
-      } else {
-        print('⚠️ [STREAM] Message ignored (not current room)');
-      }
-    }, onError: (error) {
-      print('❌ Message stream error: $error');
-    });
+      },
+      onError: (error) {
+        print('❌ Message stream error: $error');
+      },
+    );
 
     // ✅ Listen for typing status
-    _typingSubscription = _chatController.chatService.typingStream.listen((data) {
-      final roomId = data['roomId'];
-      final userId = data['userId'];
-      final isTyping = data['isTyping'] ?? false;
+    _typingSubscription = _chatController.chatService.typingStream.listen(
+      (data) {
+        final roomId = data['roomId'];
+        final userId = data['userId'];
+        final isTyping = data['isTyping'] ?? false;
 
-      print('⌨️ Typing event: room=$roomId, user=$userId, typing=$isTyping');
+        print('⌨️ Typing event: room=$roomId, user=$userId, typing=$isTyping');
 
-      if (roomId == widget.roomId &&
-          userId != _chatController.userId &&
-          mounted) {
-        setState(() {
-          _isTyping = isTyping;
-        });
-
-        // ✅ หยุด typing หลังจาก 3 วินาที (กันกรณี stop event หาย)
-        if (isTyping) {
-          Future.delayed(const Duration(seconds: 3), () {
-            if (mounted) {
-              setState(() {
-                _isTyping = false;
-              });
-            }
+        if (roomId == widget.roomId &&
+            userId != _chatController.userId &&
+            mounted) {
+          setState(() {
+            _isTyping = isTyping;
           });
+
+          // ✅ หยุด typing หลังจาก 3 วินาที (กันกรณี stop event หาย)
+          if (isTyping) {
+            Future.delayed(const Duration(seconds: 3), () {
+              if (mounted) {
+                setState(() {
+                  _isTyping = false;
+                });
+              }
+            });
+          }
         }
-      }
-    }, onError: (error) {
-      print('❌ Typing stream error: $error');
-    });
+      },
+      onError: (error) {
+        print('❌ Typing stream error: $error');
+      },
+    );
 
     // ✅ Listen for connection status
-    _connectionSubscription = _chatController.chatService.connectionStream.listen((isConnected) {
-      print('🔌 Connection status changed: $isConnected');
-      if (mounted) {
-        setState(() {
-          // Force rebuild to show connection status
-        });
-      }
-    }, onError: (error) {
-      print('❌ Connection stream error: $error');
-    });
+    _connectionSubscription = _chatController.chatService.connectionStream
+        .listen(
+          (isConnected) {
+            print('🔌 Connection status changed: $isConnected');
+            if (mounted) {
+              setState(() {
+                // Force rebuild to show connection status
+              });
+            }
+          },
+          onError: (error) {
+            print('❌ Connection stream error: $error');
+          },
+        );
 
     print('✅ All realtime listeners setup completed');
   }
 
   // ✅ เพิ่มฟังก์ชันตรวจสอบว่าเป็นข้อความของเราหรือไม่
   bool _isMyMessage(ChatMessage message) {
-    return message.senderId == _chatController.userId && 
-           (message.senderType == 'customer' || message.senderType == 'member');
+    return message.senderId == _chatController.userId &&
+        (message.senderType == 'customer' || message.senderType == 'member');
   }
 
   bool _isMessageTimeSimilar(DateTime? time1, DateTime? time2) {
@@ -314,7 +327,7 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _scrollToBottom();
         });
-        
+
         print('💬 Messages loaded successfully: ${messages.length}');
       } else {
         print('❌ API response success=false or not mounted');
@@ -330,7 +343,7 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
   ChatMessage _parseMessage(dynamic messageData) {
     try {
       Map<String, dynamic> data;
-      
+
       if (messageData is Map) {
         data = Map<String, dynamic>.from(
           messageData.map((k, v) => MapEntry(k.toString(), v)),
@@ -346,20 +359,39 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
 
       // ✅ Map database fields to model fields - รองรับทั้ง snake_case และ camelCase
       final mappedData = {
-        'message_id': data['message_id']?.toString() ?? data['messageId']?.toString(),
-        'room_id': data['room_id']?.toString() ?? data['roomId']?.toString() ?? widget.roomId.toString(),
+        'message_id':
+            data['message_id']?.toString() ?? data['messageId']?.toString(),
+        'room_id':
+            data['room_id']?.toString() ??
+            data['roomId']?.toString() ??
+            widget.roomId.toString(),
         'sender_id': data['sender_id'] ?? data['senderId'],
-        'sender_type': data['sender_type']?.toString() ?? data['senderType']?.toString(),
-        'sender_name': data['sender_name']?.toString() ?? data['senderName']?.toString(),
-        'sender_photo': data['sender_photo']?.toString() ?? data['senderPhoto']?.toString(),
-        'message_text': data['message_text']?.toString() ?? data['messageText']?.toString(),
-        'message_type': data['message_type']?.toString() ?? data['messageType']?.toString() ?? 'text',
-        'image_url': data['image_url']?.toString() ?? data['imageUrl']?.toString(),
+        'sender_type':
+            data['sender_type']?.toString() ?? data['senderType']?.toString(),
+        'sender_name':
+            data['sender_name']?.toString() ?? data['senderName']?.toString(),
+        'sender_photo':
+            data['sender_photo']?.toString() ?? data['senderPhoto']?.toString(),
+        'message_text':
+            data['message_text']?.toString() ?? data['messageText']?.toString(),
+        'message_type':
+            data['message_type']?.toString() ??
+            data['messageType']?.toString() ??
+            'text',
+        'image_url':
+            data['image_url']?.toString() ?? data['imageUrl']?.toString(),
         'latitude': data['latitude']?.toString(),
         'longitude': data['longitude']?.toString(),
         'is_read': data['is_read'] ?? data['isRead'] ?? false,
-        'created_at': data['created_at']?.toString() ?? data['createdAt']?.toString() ?? DateTime.now().toIso8601String(),
-        'updated_at': data['updated_at']?.toString() ?? data['updatedAt']?.toString() ?? data['created_at']?.toString() ?? data['createdAt']?.toString(),
+        'created_at':
+            data['created_at']?.toString() ??
+            data['createdAt']?.toString() ??
+            DateTime.now().toIso8601String(),
+        'updated_at':
+            data['updated_at']?.toString() ??
+            data['updatedAt']?.toString() ??
+            data['created_at']?.toString() ??
+            data['createdAt']?.toString(),
       };
 
       return ChatMessage.fromJson(mappedData);
@@ -386,7 +418,7 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
       if (response['success'] && mounted) {
         final List<dynamic> messagesJson = response['messages'] ?? [];
         final newMessages = <ChatMessage>[];
-        
+
         for (var json in messagesJson) {
           try {
             final message = _parseMessage(json);
@@ -426,7 +458,7 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
 
     try {
       print('📤 Sending message: $text');
-      
+
       // ✅ Clear input และ stop typing ทันที
       final messageToSend = text;
       _messageController.clear();
@@ -443,7 +475,6 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
       // ✅ ส่งข้อความ - service จะจัดการ HTTP + Socket
       await _chatController.chatService.sendMessage(request);
       print('✅ Message sent successfully');
-      
     } catch (e, stackTrace) {
       debugPrint('❌ Error sending message: $e');
       debugPrint('Stack trace: $stackTrace');
@@ -456,11 +487,12 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
     }
   }
 
-  Future<void> _sendImage() async {
+  // ปรับ _sendImage ให้รับ source เป็น parameter
+  Future<void> _sendImage(ImageSource source) async {
     try {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
-        source: ImageSource.gallery,
+        source: source,
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 80,
@@ -491,7 +523,9 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
 
       try {
         // Upload image
-        final imageUrl = await _chatController.chatService.uploadImage(image.path);
+        final imageUrl = await _chatController.chatService.uploadImage(
+          image.path,
+        );
 
         // Close loading dialog
         if (mounted && Navigator.canPop(context)) {
@@ -509,7 +543,6 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
 
         await _chatController.chatService.sendMessage(request);
         print('✅ Image message sent successfully');
-        
       } catch (e) {
         // Close loading dialog
         if (mounted && Navigator.canPop(context)) {
@@ -576,17 +609,17 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
   void dispose() {
     // ✅ Cancel all subscriptions
     _messageSubscription?.cancel();
-    _typingSubscription?.cancel(); 
+    _typingSubscription?.cancel();
     _connectionSubscription?.cancel();
-    
+
     // ✅ Dispose controllers
     _messageController.dispose();
     _scrollController.dispose();
-    
+
     // ✅ Clean up chat service
     _chatController.chatService.stopTyping();
     _chatController.chatService.leaveRoom();
-    
+
     super.dispose();
   }
 
@@ -658,7 +691,9 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
                   Consumer<CustomerChatController>(
                     builder: (context, controller, child) {
                       return Text(
-                        controller.isConnected ? 'ออนไลน์' : 'กำลังเชื่อมต่อ...',
+                        controller.isConnected
+                            ? 'ออนไลน์'
+                            : 'กำลังเชื่อมต่อ...',
                         style: TextStyle(
                           color: controller.isConnected
                               ? Colors.green
@@ -787,9 +822,16 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
             ),
             child: Row(
               children: [
+                // กล้องอยู่ซ้ายสุด
                 IconButton(
                   icon: Icon(Icons.camera_alt, color: Colors.grey[600]),
-                  onPressed: _sendImage,
+                  onPressed: () => _sendImage(ImageSource.camera),
+                  tooltip: 'ถ่ายภาพ',
+                ),
+                IconButton(
+                  icon: Icon(Icons.photo_library, color: Colors.grey[600]),
+                  onPressed: () => _sendImage(ImageSource.gallery),
+                  tooltip: 'เลือกจากแกลเลอรี่',
                 ),
                 Expanded(
                   child: Container(
@@ -835,53 +877,146 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
   Widget _buildMessageBubble(ChatMessage message, bool isMe) {
     final messageText = message.messageText ?? '';
     final isImage = message.messageType == 'image';
-    final safeImageUrl = message.imageUrl?.isNotEmpty == true ? message.imageUrl! : '';
+    final safeImageUrl = message.imageUrl?.isNotEmpty == true
+        ? message.imageUrl!
+        : '';
+
+    // เฉพาะฝั่งไรเดอร์เท่านั้นที่แสดงโปรไฟล์
+    final showRiderAvatar = !isMe;
+    final photoUrl = showRiderAvatar && message.senderPhoto?.isNotEmpty == true
+        ? message.senderPhoto!
+        : null;
+
+    Widget avatar = showRiderAvatar
+        ? Container(
+            margin: EdgeInsets.only(
+              bottom: 0,
+              right: 0,
+            ), // ขยับขึ้นขนานกับกล่องข้อความ
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: Colors.grey[300],
+              backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+              child: photoUrl == null
+                  ? Icon(Icons.person, color: Colors.white, size: 20)
+                  : null,
+            ),
+          )
+        : SizedBox(width: 0);
 
     return Container(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Column(
-        crossAxisAlignment: isMe
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.start,
-        children: [
-          Container(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.75,
-            ),
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isMe ? Color(0xFF4CAF50) : Colors.grey[200],
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-                bottomLeft: isMe ? Radius.circular(16) : Radius.circular(4),
-                bottomRight: isMe ? Radius.circular(4) : Radius.circular(16),
-              ),
-            ),
-            child: isImage
-                ? (safeImageUrl.isNotEmpty
-                      ? _buildImageMessage(safeImageUrl)
-                      : Text(
-                          'ไม่พบรูปภาพ',
-                          style: TextStyle(
-                            color: isMe ? Colors.white : Colors.black54,
-                            fontStyle: FontStyle.italic,
+      child: Row(
+        mainAxisAlignment: isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center, // ขนานกับกล่องข้อความ
+        children: isMe
+            ? [
+                // ฝั่งเรา: ไม่มี avatar
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width * 0.65,
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Color(0xFF4CAF50),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(16),
+                            topRight: Radius.circular(16),
+                            bottomLeft: Radius.circular(16),
+                            bottomRight: Radius.circular(4),
                           ),
-                        ))
-                : Text(
-                    messageText.isNotEmpty ? messageText : '(ไม่มีข้อความ)',
-                    style: TextStyle(
-                      color: isMe ? Colors.white : Colors.black87,
-                      fontSize: 15,
-                    ),
+                        ),
+                        child: isImage
+                            ? (safeImageUrl.isNotEmpty
+                                  ? _buildImageMessage(safeImageUrl)
+                                  : Text(
+                                      'ไม่พบรูปภาพ',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ))
+                            : Text(
+                                messageText.isNotEmpty
+                                    ? messageText
+                                    : '(ไม่มีข้อความ)',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                ),
+                              ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        _formatMessageTime(message.createdAt),
+                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                      ),
+                    ],
                   ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            _formatMessageTime(message.createdAt),
-            style: TextStyle(color: Colors.grey[500], fontSize: 12),
-          ),
-        ],
+                ),
+              ]
+            : [
+                avatar,
+                SizedBox(width: 8),
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width * 0.65,
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(16),
+                            topRight: Radius.circular(16),
+                            bottomLeft: Radius.circular(4),
+                            bottomRight: Radius.circular(16),
+                          ),
+                        ),
+                        child: isImage
+                            ? (safeImageUrl.isNotEmpty
+                                  ? _buildImageMessage(safeImageUrl)
+                                  : Text(
+                                      'ไม่พบรูปภาพ',
+                                      style: TextStyle(
+                                        color: Colors.black54,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ))
+                            : Text(
+                                messageText.isNotEmpty
+                                    ? messageText
+                                    : '(ไม่มีข้อความ)',
+                                style: TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: 15,
+                                ),
+                              ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        _formatMessageTime(message.createdAt),
+                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
       ),
     );
   }
