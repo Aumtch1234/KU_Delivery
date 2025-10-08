@@ -17,7 +17,6 @@ import 'package:delivery/pages/bottom/shopPage1/AllMenuListPage.dart';
 import 'package:delivery/pages/bottom/shopPage1/FoodListByCategoryPage.dart';
 import 'package:delivery/APIs/api_config.dart'; // ✅ เพิ่ม import ด้านบนไฟล์
 
-
 class ShopPage extends StatefulWidget {
   const ShopPage({super.key});
 
@@ -32,7 +31,10 @@ class _ShopPageState extends State<ShopPage> {
   List<dynamic> allFoods = [];
   List<dynamic> allMarkets = [];
 
-  bool isLoading = true;
+  TextEditingController searchController = TextEditingController();
+  List<dynamic> searchResults = [];
+  bool isLoading = false;
+  bool isSearching = false;
 
   @override
   void initState() {
@@ -91,11 +93,186 @@ class _ShopPageState extends State<ShopPage> {
     }
   }
 
+  /// ✅ ฟังก์ชันค้นหาอาหาร
+  Future<void> searchFoods(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        searchResults = [];
+        isSearching = false;
+      });
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+      isSearching = true;
+    });
+
+    // เรียก API /client/categories/search?q=
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl.replaceAll("/client", "")}/client/categories/search?q=$query',
+    );
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          searchResults = data['data'] ?? [];
+        });
+      } else {
+        setState(() {
+          searchResults = [];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error searching: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isTablet = size.width >= 600;
     final isLargeTablet = size.width >= 900;
+
+    // ✅ หน้า Search อยู่ใน ShopPage.dart เดียวกัน
+    if (isSearching) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          leadingWidth: 40,
+          titleSpacing: 0,
+          title: Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 4),
+                ],
+              ),
+              child: TextField(
+                controller: searchController,
+                autofocus: true,
+                onChanged: (value) => searchFoods(value),
+                decoration: InputDecoration(
+                  hintText: 'ค้นหาเมนูอาหารที่คุณต้องการ...',
+                  prefixIcon: const Icon(Icons.search, color: Colors.green),
+                  suffixIcon: searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            searchController.clear();
+                            setState(() {
+                              searchResults = [];
+                              isSearching = false;
+                            });
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+              ),
+            ),
+          ),
+          backgroundColor: Colors.green,
+          toolbarHeight: 60,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () {
+              setState(() {
+                isSearching = false;
+                searchController.clear();
+                searchResults = [];
+              });
+            },
+          ),
+        ),
+        body: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : searchResults.isEmpty
+            ? const Center(child: Text('ไม่พบเมนูที่ค้นหา'))
+            : ListView.builder(
+                itemCount: searchResults.length,
+                itemBuilder: (context, index) {
+                  final food = searchResults[index];
+                  final name = food['food_name'] ?? 'ไม่ระบุชื่อ';
+                  final shopName = food['shop_name'] ?? 'ร้านไม่ระบุชื่อ';
+                  final image =
+                      food['image_url'] ?? 'https://via.placeholder.com/150';
+                  final price = food['sell_price'] ?? food['price'] ?? 0;
+                  final rating =
+                      double.tryParse(food['rating']?.toString() ?? '') ?? 0.0;
+                  final foodId = food['food_id'];
+
+                  return ListTile(
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        image,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.broken_image, color: Colors.grey),
+                      ),
+                    ),
+                    title: Text(
+                      name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          shopName,
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.star,
+                              size: 16,
+                              color: rating > 0 ? Colors.amber : Colors.grey,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              rating > 0 ? rating.toStringAsFixed(1) : "ใหม่",
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    trailing: Text(
+                      '$price ฿',
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => OrderFoodPage(foodId: foodId),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.green.shade400,
@@ -186,6 +363,15 @@ class _ShopPageState extends State<ShopPage> {
                                 ],
                               ),
                               child: TextField(
+                                controller: searchController,
+                                readOnly: true, // ต้องใส่ readOnly: true
+                                onTap: () {
+                                  setState(() {
+                                    isSearching = true;
+                                    searchController.clear();
+                                    searchResults = [];
+                                  });
+                                },
                                 decoration: InputDecoration(
                                   prefixIcon: Padding(
                                     padding: EdgeInsets.all(isTablet ? 16 : 12),
@@ -440,9 +626,7 @@ class _ShopPageState extends State<ShopPage> {
               } else if (title == 'ร้านค้าที่เข้าร่วม') {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => MarketListPage(),
-                  ),
+                  MaterialPageRoute(builder: (context) => MarketListPage()),
                 );
               } else if (title == 'เมนูแนะนำ') {
                 Navigator.push(
@@ -454,9 +638,7 @@ class _ShopPageState extends State<ShopPage> {
               } else if (title == 'เมนูทั้งหมด') {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => AllMenuListPage(),
-                  ),
+                  MaterialPageRoute(builder: (context) => AllMenuListPage()),
                 );
               }
               // ...สามารถเพิ่มเงื่อนไขสำหรับ section อื่นๆ ได้ที่นี่...
@@ -507,7 +689,9 @@ class _ShopPageState extends State<ShopPage> {
             child: Center(child: CircularProgressIndicator()),
           );
         }
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.statusCode != 200) {
+        if (snapshot.hasError ||
+            !snapshot.hasData ||
+            snapshot.data!.statusCode != 200) {
           return SizedBox(
             height: isTablet ? 140 : size.width * 0.28,
             child: Center(child: Text('ไม่พบหมวดหมู่')),
@@ -569,7 +753,11 @@ class _ShopPageState extends State<ShopPage> {
                                   width: isTablet ? 36 : size.width * 0.08,
                                   fit: BoxFit.contain,
                                   errorBuilder: (context, error, stackTrace) =>
-                                      Icon(Icons.broken_image, size: 32, color: Colors.grey),
+                                      Icon(
+                                        Icons.broken_image,
+                                        size: 32,
+                                        color: Colors.grey,
+                                      ),
                                 )
                               : Image.asset(
                                   'assets/menus/fast1.png',
@@ -887,7 +1075,7 @@ class _ShopPageState extends State<ShopPage> {
                           child: CircularProgressIndicator(
                             value: loadingProgress.expectedTotalBytes != null
                                 ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
+                                      loadingProgress.expectedTotalBytes!
                                 : null,
                           ),
                         );
@@ -984,7 +1172,7 @@ class _ShopPageState extends State<ShopPage> {
             ],
           ),
         ),
-      ),    );
+      ),
+    );
   }
 }
-        
