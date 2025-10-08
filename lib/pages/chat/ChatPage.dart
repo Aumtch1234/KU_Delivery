@@ -171,6 +171,7 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
         print(
           '📨 [STREAM] Received message: ${message.messageText} (${message.roomId})',
         );
+
         print('📍 Current room: ${widget.roomId}');
         print('📝 Message: ${message.messageText}');
         print('👤 Sender: ${message.senderId} (${message.senderType})');
@@ -264,7 +265,6 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
       },
     );
 
-    // ✅ Listen for connection status
     // ✅ Listen for connection status
     _connectionSubscription = _chatController.chatService.connectionStream
         .listen(
@@ -542,11 +542,12 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
     }
   }
 
-  Future<void> _sendImage() async {
+  // ปรับ _sendImage ให้รับ source เป็น parameter
+  Future<void> _sendImage(ImageSource source) async {
     try {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
-        source: ImageSource.gallery,
+        source: source,
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 80,
@@ -876,9 +877,16 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
             ),
             child: Row(
               children: [
+                // กล้องอยู่ซ้ายสุด
                 IconButton(
                   icon: Icon(Icons.camera_alt, color: Colors.grey[600]),
-                  onPressed: _sendImage,
+                  onPressed: () => _sendImage(ImageSource.camera),
+                  tooltip: 'ถ่ายภาพ',
+                ),
+                IconButton(
+                  icon: Icon(Icons.photo_library, color: Colors.grey[600]),
+                  onPressed: () => _sendImage(ImageSource.gallery),
+                  tooltip: 'เลือกจากแกลเลอรี่',
                 ),
                 Expanded(
                   child: Container(
@@ -928,51 +936,142 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
         ? message.imageUrl!
         : '';
 
+    // เฉพาะฝั่งไรเดอร์เท่านั้นที่แสดงโปรไฟล์
+    final showRiderAvatar = !isMe;
+    final photoUrl = showRiderAvatar && message.senderPhoto?.isNotEmpty == true
+        ? message.senderPhoto!
+        : null;
+
+    Widget avatar = showRiderAvatar
+        ? Container(
+            margin: EdgeInsets.only(
+              bottom: 0,
+              right: 0,
+            ), // ขยับขึ้นขนานกับกล่องข้อความ
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: Colors.grey[300],
+              backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+              child: photoUrl == null
+                  ? Icon(Icons.person, color: Colors.white, size: 20)
+                  : null,
+            ),
+          )
+        : SizedBox(width: 0);
+
     return Container(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Column(
-        crossAxisAlignment: isMe
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.start,
-        children: [
-          Container(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.75,
-            ),
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isMe ? Color(0xFF4CAF50) : Colors.grey[200],
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-                bottomLeft: isMe ? Radius.circular(16) : Radius.circular(4),
-                bottomRight: isMe ? Radius.circular(4) : Radius.circular(16),
-              ),
-            ),
-            child: isImage
-                ? (safeImageUrl.isNotEmpty
-                      ? _buildImageMessage(safeImageUrl)
-                      : Text(
-                          'ไม่พบรูปภาพ',
-                          style: TextStyle(
-                            color: isMe ? Colors.white : Colors.black54,
-                            fontStyle: FontStyle.italic,
+      child: Row(
+        mainAxisAlignment: isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center, // ขนานกับกล่องข้อความ
+        children: isMe
+            ? [
+                // ฝั่งเรา: ไม่มี avatar
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width * 0.65,
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Color(0xFF4CAF50),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(16),
+                            topRight: Radius.circular(16),
+                            bottomLeft: Radius.circular(16),
+                            bottomRight: Radius.circular(4),
                           ),
-                        ))
-                : Text(
-                    messageText.isNotEmpty ? messageText : '(ไม่มีข้อความ)',
-                    style: TextStyle(
-                      color: isMe ? Colors.white : Colors.black87,
-                      fontSize: 15,
-                    ),
+                        ),
+                        child: isImage
+                            ? (safeImageUrl.isNotEmpty
+                                  ? _buildImageMessage(safeImageUrl)
+                                  : Text(
+                                      'ไม่พบรูปภาพ',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ))
+                            : Text(
+                                messageText.isNotEmpty
+                                    ? messageText
+                                    : '(ไม่มีข้อความ)',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                ),
+                              ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        _formatMessageTime(message.createdAt),
+                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                      ),
+                    ],
                   ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            _formatMessageTime(message.createdAt),
-            style: TextStyle(color: Colors.grey[500], fontSize: 12),
-          ),
-        ],
+                ),
+              ]
+            : [
+                avatar,
+                SizedBox(width: 8),
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width * 0.65,
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(16),
+                            topRight: Radius.circular(16),
+                            bottomLeft: Radius.circular(4),
+                            bottomRight: Radius.circular(16),
+                          ),
+                        ),
+                        child: isImage
+                            ? (safeImageUrl.isNotEmpty
+                                  ? _buildImageMessage(safeImageUrl)
+                                  : Text(
+                                      'ไม่พบรูปภาพ',
+                                      style: TextStyle(
+                                        color: Colors.black54,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ))
+                            : Text(
+                                messageText.isNotEmpty
+                                    ? messageText
+                                    : '(ไม่มีข้อความ)',
+                                style: TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: 15,
+                                ),
+                              ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        _formatMessageTime(message.createdAt),
+                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
       ),
     );
   }
