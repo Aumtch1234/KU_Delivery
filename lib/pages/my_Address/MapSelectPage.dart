@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:delivery/APIs/api_config.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -30,7 +31,7 @@ class _MapSelectionPageState extends State<MapSelectionPage>
   final DraggableScrollableController _bottomSheetController = DraggableScrollableController();
 
   // TODO: อย่าลืมเปลี่ยนเป็น API Key ของคุณ
-  final String apiKey = "";
+  final String apiKey = ApiConfig.GoogleKeyAPI;
 
   // Map Variables
   LatLng _currentPosition = LatLng(17.1614, 104.1475); // เชียงเครือ สกลนคร

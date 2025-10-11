@@ -9,12 +9,13 @@ Future<void> uploadFood({
   required double price,
   required File image,
   required List<Map<String, dynamic>> options,
+  required int categoryId, // ✅ รับ categoryId
 }) async {
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('token');
 
   if (token == null) {
-    print('ไม่พบ Token');
+    print('❌ ไม่พบ Token');
     return;
   }
 
@@ -22,13 +23,21 @@ Future<void> uploadFood({
 
   var request = http.MultipartRequest('POST', uri);
 
+  // ✅ เพิ่มข้อมูลทั้งหมด
   request.fields['food_name'] = foodName;
   request.fields['price'] = price.toString();
+  request.fields['category_id'] = categoryId.toString(); // ✅ เพิ่มบรรทัดนี้
   request.fields['options'] = jsonEncode(options);
 
   request.files.add(await http.MultipartFile.fromPath('image', image.path));
 
   request.headers['Authorization'] = 'Bearer $token';
+
+  print('🔵 Adding food...');
+  print('Food Name: $foodName');
+  print('Price: $price');
+  print('Category ID: $categoryId'); // ✅ เพิ่ม log
+  print('Options: ${jsonEncode(options)}');
 
   var response = await request.send();
 
