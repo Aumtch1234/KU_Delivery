@@ -12,6 +12,8 @@ import 'package:delivery/pages/bottom/DashboardPage.dart';
 import 'package:delivery/pages/bottom/MainNavigation.dart';
 import 'package:delivery/pages/bottom/ShopPage.dart';
 import 'package:delivery/pages/WellcomePage.dart';
+
+import 'package:delivery/pages/bottom/shopPage1/appeal/ComplaintFormPage.dart';
 import 'package:delivery/pages/myMarket/AddFoodPage.dart';
 import 'package:delivery/pages/myMarket/Dashboard_salesPage.dart';
 import 'package:delivery/pages/myMarket/EditFoodPage.dart';
@@ -113,6 +115,7 @@ class MyApp extends StatelessWidget {
           child: DeliveryAddressForm(),
           routeName: '/add-address',
         ),
+        '/complaint': (context) => const ComplaintFormPage(),
         '/dashboard-sales': (context) {
           // รับ marketId จาก arguments
           final args =
