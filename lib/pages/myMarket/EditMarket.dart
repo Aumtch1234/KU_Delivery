@@ -186,7 +186,8 @@ class _EditShopPageState extends State<EditShopPage> {
         marketId: _marketId!,
         shopName: _nameController.text.trim(),
         shopDesc: _descController.text.trim(),
-        // address: _addressController.text.trim(),
+        address: _addressController.text.trim(),
+        phone: _phoneController.text.trim(),     // ✅ ส่ง phone
         openTime:
             '${openTime!.hour.toString().padLeft(2, '0')}:${openTime!.minute.toString().padLeft(2, '0')}',
         closeTime:

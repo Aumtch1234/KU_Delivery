@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:delivery/APIs/Orders/OrdersSocket.dart';
 import 'package:delivery/pages/order/models/order_model.dart';
 import 'package:flutter/material.dart';
@@ -43,9 +45,27 @@ class _OrdersListPageState extends State<OrdersListPage>
   @override
   void initState() {
     super.initState();
-
     _tabController = TabController(length: _statusTabs.length, vsync: this);
     _initializeData();
+
+    // 🔁 เริ่มจับตา socket ทุก ๆ 10 วินาที
+    _startAutoReconnect();
+  }
+
+  Timer? _reconnectTimer;
+
+  void _startAutoReconnect() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer.periodic(const Duration(seconds: 10), (
+      timer,
+    ) async {
+      final controller = context.read<OrderController>();
+      if (!controller.isSocketConnected) {
+        print('⚠️ Socket disconnected. Trying to reconnect...');
+        await controller.reconnectSocket();
+        await controller.fetchOrdersByMarket(marketId: widget.marketId!);
+      }
+    });
   }
 
   Future<void> _initializeData() async {
@@ -83,6 +103,7 @@ class _OrdersListPageState extends State<OrdersListPage>
   @override
   void dispose() {
     _tabController.dispose();
+    _reconnectTimer?.cancel();
     super.dispose();
   }
 
@@ -126,7 +147,7 @@ class _OrdersListPageState extends State<OrdersListPage>
                   userType == 'shop' ? 'ออเดอร์ร้านอาหาร' : 'ออเดอร์ของฉัน',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

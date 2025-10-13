@@ -9,6 +9,7 @@ class SocketService {
 
   IO.Socket? _socket;
   bool _isConnected = false;
+  int? _lastUserId;
 
   // Server configuration
   static const String serverUrl =
@@ -29,7 +30,11 @@ class SocketService {
         serverUrl,
         IO.OptionBuilder()
             .setTransports(['websocket'])
-            .disableAutoConnect()
+            .enableReconnection() // ✅ เปิด auto reconnect
+            .setReconnectionDelay(2000) // ✅ ดีเลย์ 2 วิ ก่อน retry
+            .setReconnectionAttempts(
+              100,
+            ) // ✅ พยายามใหม่สูงสุด 100 ครั้ง (0 = ไม่จำกัด)
             .setExtraHeaders({'Connection': 'upgrade'})
             .build(),
       );
@@ -37,6 +42,25 @@ class SocketService {
       _socket!.onConnect((data) {
         print('✅ Socket connected: ${_socket!.id}');
         _isConnected = true;
+        startAutoReconnectLoop(); // ✅ เพิ่มบรรทัดนี้
+      });
+
+      _socket!.onReconnect((_) {
+        print('🔁 Socket reconnected, trying to re-register user...');
+        _isConnected = true;
+
+        // ✅ Re-register user ถ้ารู้ userId ล่าสุด
+        if (_lastUserId != null) {
+          registerUser(_lastUserId!);
+        }
+      });
+
+      _socket!.onReconnectAttempt((attempt) {
+        print('🔄 Reconnect attempt #$attempt...');
+      });
+
+      _socket!.onReconnectFailed((_) {
+        print('❌ Reconnect failed after maximum attempts');
       });
 
       _socket!.onDisconnect((data) {
@@ -68,6 +92,19 @@ class SocketService {
     }
   }
 
+  void startAutoReconnectLoop() {
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(seconds: 5));
+      if (_socket == null) return false; // ✅ หยุด loop ถ้าปิดไปแล้ว
+
+      if (!isConnected) {
+        print('⚠️ Socket disconnected — trying manual reconnect...');
+        reconnect();
+      }
+      return true;
+    });
+  }
+
   void disconnect() {
     if (_socket != null) {
       _socket!.disconnect();
@@ -86,6 +123,8 @@ class SocketService {
 
   // Register user with socket
   void registerUser(int userId) {
+    _lastUserId = userId; // ✅ เก็บไว้ใช้ตอน reconnect
+
     if (isConnected) {
       _socket!.emit('register_user', {'userId': userId});
       print('👤 User $userId registered with socket');
@@ -95,13 +134,10 @@ class SocketService {
   }
 
   // Watch order for real-time updates
-  void watchOrder(int orderId) {
+  void watchOrder(int orderId, {String role = 'customer'}) {
     if (isConnected) {
-      String event = '';
-      switch (()) {
-        case 'customer':
-          event = 'customer:watchOrder';
-          break;
+      String event;
+      switch (role) {
         case 'shop':
           event = 'shop:watchOrder';
           break;
@@ -113,7 +149,7 @@ class SocketService {
       }
 
       _socket!.emit(event, orderId);
-      print('👁️ Watching order $orderId');
+      print('👁️ Watching order $orderId as $role');
     } else {
       print('❌ Cannot watch order: Socket not connected');
     }

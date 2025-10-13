@@ -1006,19 +1006,42 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                   ),
                 ),
                 if (item.selectedOptions.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    'ตัวเลือก: ${item.selectedOptions.join(", ")}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: item.selectedOptions.map((option) {
+                      final label = option['label'] ?? '';
+                      final extraPrice = option['extraPrice'] ?? 0;
+
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: primaryColor.withOpacity(0.2),
+                            width: 0.5,
+                          ),
+                        ),
+                        child: Text(
+                          extraPrice > 0 ? '$label | +$extraPrice฿' : label,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: primaryColor.withOpacity(0.9),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ],
                 // แสดง additionalDetailsNote ถ้ามี
                 if (item.additionalDetailsNote.isNotEmpty) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -1039,11 +1062,11 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            'เพิ่มเติม: ${item.additionalDetailsNote}',
+                            item.additionalDetailsNote,
                             style: TextStyle(
                               color: Colors.orange.shade700,
                               fontSize: 11,
-                              // fontStyle: FontStyle.italic,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),

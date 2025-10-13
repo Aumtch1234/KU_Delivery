@@ -130,7 +130,6 @@ class _StoreMenuPageState extends State<StoreMenuPage> {
     );
   }
 
-  // ✅ Header ใช้รูปจาก API
   Widget _buildStoreHeader(String logoUrl) {
     return Stack(
       children: [
@@ -161,7 +160,6 @@ class _StoreMenuPageState extends State<StoreMenuPage> {
     );
   }
 
-  // ✅ Market Info
   Widget _buildStoreInfo(BuildContext context, Food marketInfo) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -172,34 +170,41 @@ class _StoreMenuPageState extends State<StoreMenuPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => RouteWrapper(
-                      child: StoreDetailPage(marketID: widget.marketID),
-                      routeName: '/store_detail',
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      marketInfo.shopName,
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RouteWrapper(
+                        child: StoreDetailPage(marketID: widget.marketID),
+                        routeName: '/store_detail',
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    const Icon(
-                      Icons.arrow_forward_ios,
-                      size: 20,
-                      color: Colors.grey,
-                    ),
-                  ],
+                  ),
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          marketInfo.shopName,
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.arrow_forward_ios,
+                        size: 20,
+                        color: Colors.grey,
+                      ),
+                    ],
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
+              // ✅ FIXED: Removed duplicate container
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
@@ -211,27 +216,11 @@ class _StoreMenuPageState extends State<StoreMenuPage> {
                       : Colors.red.shade100,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: marketInfo.isOpen
-                        ? Colors
-                              .green
-                              .shade100 // ถ้าเปิด = เขียว
-                        : Colors.red.shade100, // ถ้าปิด = แดง
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    marketInfo.isOpen
-                        ? 'เปิดอยู่'
-                        : 'ปิดแล้ว', // แสดงข้อความตามสถานะ
-                    style: TextStyle(
-                      color: marketInfo.isOpen ? Colors.green : Colors.red,
-                      fontWeight: FontWeight.bold,
-                    ),
+                child: Text(
+                  marketInfo.isOpen ? 'เปิดอยู่' : 'ปิดแล้ว',
+                  style: TextStyle(
+                    color: marketInfo.isOpen ? Colors.green : Colors.red,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
@@ -251,7 +240,7 @@ class _StoreMenuPageState extends State<StoreMenuPage> {
               ),
               const Text(' • ', style: TextStyle(fontSize: 16)),
               const Text(
-                '15-20 นาที', // เดี๋ยวตรงนี้ถ้า API มีเวลาจริง เราจะดึงมาแทน
+                '15-20 นาที',
                 style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
             ],
@@ -267,7 +256,6 @@ class _StoreMenuPageState extends State<StoreMenuPage> {
     );
   }
 
-  // ✅ Menu Items
   Widget _buildMenuItems(List<Food> foods) {
     return ListView.builder(
       shrinkWrap: true,
