@@ -9,6 +9,7 @@ Future<bool> updateFood({
   required int foodId,
   required String foodName,
   required double price,
+  required int categoryId,
   String? options,
   File? imageFile,
 }) async {
@@ -25,6 +26,8 @@ Future<bool> updateFood({
 
   request.fields['food_name'] = foodName;
   request.fields['price'] = price.toString();
+  request.fields['category_id'] = categoryId.toString(); // ✅ เพิ่มบรรทัดนี้
+  
   if (options != null) {
     request.fields['options'] = options;
   }
@@ -41,9 +44,17 @@ Future<bool> updateFood({
     );
   }
 
+  print('🔵 Updating food...');
+  print('Food ID: $foodId');
+  print('Food Name: $foodName');
+  print('Price: $price');
+  print('Category ID: $categoryId'); // ✅ เพิ่ม log
+  print('Has Image: ${imageFile != null}');
+
   final response = await request.send();
 
   if (response.statusCode == 200) {
+    print('✅ อัปเดตเมนูสำเร็จ');
     return true;
   } else {
     print('❌ Failed to update food. Status code: ${response.statusCode}');

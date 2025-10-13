@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:delivery/APIs/api_config.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:delivery/pages/bottom/shopPage1/FoodListByCategoryPage.dart';
@@ -26,7 +27,7 @@ class FoodCategory {
 
 // ✅ ดึงข้อมูลจาก API
 Future<List<FoodCategory>> fetchFoodCategories() async {
-  final url = Uri.parse('http://192.168.1.113:4000/client/categories');
+  final url = Uri.parse('${ApiConfig.baseUrl}/categories');
   final response = await http.get(url);
 
   if (response.statusCode == 200) {

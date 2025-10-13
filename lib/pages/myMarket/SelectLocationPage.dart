@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:delivery/APIs/api_config.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -25,7 +26,7 @@ class _SelectLocationPageState extends State<SelectLocationPage> {
   static const LatLng _defaultInitialPosition = LatLng(13.7563, 100.5018);
 
   // TODO: อย่าลืมเปลี่ยนเป็น API Key ของคุณ
-  final String apiKey = "";
+  final String apiKey = ApiConfig.GoogleKeyAPI;
 
   // ใช้เพื่อแสดง Marker ของตำแหน่งปัจจุบัน
   final Set<Marker> _markers = {};

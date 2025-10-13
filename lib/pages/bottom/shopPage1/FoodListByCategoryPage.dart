@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:delivery/pages/store/OrderFoodPage.dart'; // ✅ ใช้หน้า OrderFoodPage ที่มีอยู่แล้ว
+import 'package:delivery/pages/store/OrderFoodPage.dart';
 import 'package:delivery/APIs/api_config.dart';
 
 class FoodListByCategoryPage extends StatefulWidget {
@@ -71,7 +71,7 @@ class _FoodListByCategoryPageState extends State<FoodListByCategoryPage> {
                     crossAxisCount: isTablet ? 3 : 2,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
-                    childAspectRatio: isTablet ? 0.9 : 0.8,
+                    childAspectRatio: isTablet ? 0.9 : 0.75, // ✅ ปรับให้สูงขึ้น
                   ),
                   itemCount: foods.length,
                   itemBuilder: (context, index) {
@@ -86,11 +86,10 @@ class _FoodListByCategoryPageState extends State<FoodListByCategoryPage> {
                     final rating =
                         double.tryParse(food['rating']?.toString() ?? '0') ?? 0;
                     final storeName =
-                        food['shop_name'] ?? 'ร้านค้าไม่ระบุ'; // ✅ แสดงชื่อร้าน
+                        food['shop_name'] ?? 'ร้านค้าไม่ระบุ';
 
                     return GestureDetector(
                       onTap: () {
-                        // ✅ เปิดหน้า OrderFoodPage พร้อมดึง API แสดงรายละเอียด
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -121,42 +120,43 @@ class _FoodListByCategoryPageState extends State<FoodListByCategoryPage> {
                               ),
                               child: Image.network(
                                 image,
-                                height: 130,
+                                height: 120, // ✅ ลดขนาดจาก 130 เป็น 120
                                 width: double.infinity,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) =>
                                     Container(
-                                  height: 130,
+                                  height: 120,
                                   color: Colors.grey[200],
                                   child: const Icon(Icons.broken_image,
-                                      size: 60, color: Colors.grey),
+                                      size: 50, color: Colors.grey),
                                 ),
                               ),
                             ),
 
-                            // ✅ ชื่อเมนู
+                            // ✅ ชื่อเมนู (ลด padding)
                             Padding(
-                              padding: const EdgeInsets.all(8.0),
+                              padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
                               child: Text(
                                 name,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                  fontSize: 14, // ✅ ลดขนาดจาก 16 เป็น 14
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
 
-                            // ✅ ชื่อร้าน (เหมือนหน้า ShopPage)
+                            // ✅ ชื่อร้าน (ลด padding)
                             Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8.0),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8.0,
+                              ),
                               child: Text(
                                 storeName,
                                 style: const TextStyle(
                                   color: Colors.grey,
-                                  fontSize: 14,
+                                  fontSize: 12, // ✅ ลดขนาดจาก 14 เป็น 12
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -165,20 +165,22 @@ class _FoodListByCategoryPageState extends State<FoodListByCategoryPage> {
 
                             const Spacer(),
 
-                            // ✅ ราคาและเรตติ้ง
+                            // ✅ ราคาและเรตติ้ง (ลด padding)
                             Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8.0),
+                              padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
                               child: Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    '${price.toStringAsFixed(0)} ฿',
-                                    style: const TextStyle(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                                  Expanded(
+                                    child: Text(
+                                      '${price.toStringAsFixed(0)} ฿',
+                                      style: const TextStyle(
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14, // ✅ ลดขนาดจาก 16 เป็น 14
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   Row(
@@ -186,13 +188,13 @@ class _FoodListByCategoryPageState extends State<FoodListByCategoryPage> {
                                       const Icon(
                                         Icons.star,
                                         color: Colors.amber,
-                                        size: 16,
+                                        size: 14, // ✅ ลดขนาดจาก 16 เป็น 14
                                       ),
                                       Text(
                                         rating.toStringAsFixed(1),
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 14,
+                                          fontSize: 12, // ✅ ลดขนาดจาก 14 เป็น 12
                                         ),
                                       ),
                                     ],
@@ -200,8 +202,6 @@ class _FoodListByCategoryPageState extends State<FoodListByCategoryPage> {
                                 ],
                               ),
                             ),
-
-                            const SizedBox(height: 8),
                           ],
                         ),
                       ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:delivery/APIs/Foods/FoodsMenuAPI.dart';
 import 'package:delivery/APIs/middleware/authService.dart';
-import 'package:delivery/pages/store/OrderFoodPage.dart'; // ✅ ใช้เหมือน ShopPage
+import 'package:delivery/pages/store/OrderFoodPage.dart';
 
 class AllMenuListPage extends StatefulWidget {
   const AllMenuListPage({Key? key}) : super(key: key);
@@ -59,7 +59,7 @@ class _AllMenuListPageState extends State<AllMenuListPage> {
                     crossAxisCount: isTablet ? 3 : 2,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
-                    childAspectRatio: isTablet ? 0.9 : 0.8,
+                    childAspectRatio: isTablet ? 0.9 : 0.75, // ✅ ปรับให้สูงขึ้น
                   ),
                   itemCount: foods.length,
                   itemBuilder: (context, index) {
@@ -104,34 +104,34 @@ class _AllMenuListPageState extends State<AllMenuListPage> {
                               child: Image.network(
                                 food['image_url'] ??
                                     'https://via.placeholder.com/150',
-                                height: 130,
+                                height: 120, // ✅ ลดจาก 130 เป็น 120
                                 width: double.infinity,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) =>
                                     Container(
-                                  height: 130,
+                                  height: 120,
                                   color: Colors.grey[200],
-                                  child:
-                                      const Icon(Icons.broken_image, size: 60),
+                                  child: const Icon(Icons.broken_image,
+                                      size: 50, color: Colors.grey),
                                 ),
                               ),
                             ),
 
-                            // ✅ ชื่อเมนู
+                            // ✅ ชื่อเมนู (ลด padding)
                             Padding(
-                              padding: const EdgeInsets.all(8.0),
+                              padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
                               child: Text(
                                 food['food_name'] ?? 'ชื่ออาหารไม่ระบุ',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                  fontSize: 14, // ✅ ลดจาก 16 เป็น 14
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
 
-                            // ✅ ชื่อร้าน
+                            // ✅ ชื่อร้าน (ลด padding)
                             Padding(
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 8.0),
@@ -139,7 +139,7 @@ class _AllMenuListPageState extends State<AllMenuListPage> {
                                 food['shop_name'] ?? 'ร้านค้าไม่ระบุ',
                                 style: const TextStyle(
                                   color: Colors.grey,
-                                  fontSize: 14,
+                                  fontSize: 12, // ✅ ลดจาก 14 เป็น 12
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -148,20 +148,23 @@ class _AllMenuListPageState extends State<AllMenuListPage> {
 
                             const Spacer(),
 
-                            // ✅ ราคา + เรตติ้ง
+                            // ✅ ราคา + เรตติ้ง (ลด padding)
                             Padding(
                               padding:
-                                  const EdgeInsets.symmetric(horizontal: 8.0),
+                                  const EdgeInsets.fromLTRB(8, 4, 8, 8),
                               child: Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    '${price.toStringAsFixed(0)}.-',
-                                    style: const TextStyle(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                                  Expanded(
+                                    child: Text(
+                                      '${price.toStringAsFixed(0)}.-',
+                                      style: const TextStyle(
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14, // ✅ ลดจาก 16 เป็น 14
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   Row(
@@ -169,12 +172,13 @@ class _AllMenuListPageState extends State<AllMenuListPage> {
                                       const Icon(
                                         Icons.star,
                                         color: Colors.amber,
-                                        size: 16,
+                                        size: 14, // ✅ ลดจาก 16 เป็น 14
                                       ),
                                       Text(
                                         rating.toStringAsFixed(1),
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
+                                          fontSize: 12, // ✅ ลดจาก 14 เป็น 12
                                         ),
                                       ),
                                     ],
@@ -182,7 +186,6 @@ class _AllMenuListPageState extends State<AllMenuListPage> {
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 8),
                           ],
                         ),
                       ),
