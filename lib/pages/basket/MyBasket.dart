@@ -1,3 +1,4 @@
+import 'package:delivery/APIs/Carts/Carts.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/basket_provider.dart';
@@ -203,7 +204,6 @@ class _MyBasketPageState extends State<MyBasketPage> {
     );
   }
 
-  // 🆕 แสดงสินค้าโดยจำแนกตามร้าน
   Widget _buildBasketItemsByStore(
     BuildContext context,
     BasketProvider basket,
@@ -230,15 +230,13 @@ class _MyBasketPageState extends State<MyBasketPage> {
                 isEdit,
               );
             }).toList(),
-            const SizedBox(height: 100), // พื้นที่สำหรับ bottom bar
+            const SizedBox(height: 100),
           ],
         ),
       ),
     );
   }
 
-  // 🆕 สร้างกลุ่มสินค้าของแต่ละร้าน
-  // 🆕 แสดงราคาสรุปร้าน
   Widget _buildStoreGroup(
     BuildContext context,
     BasketProvider basket,
@@ -270,7 +268,6 @@ class _MyBasketPageState extends State<MyBasketPage> {
       ),
       child: Column(
         children: [
-          // Header ร้าน
           Container(
             padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
             decoration: const BoxDecoration(
@@ -335,8 +332,6 @@ class _MyBasketPageState extends State<MyBasketPage> {
               ],
             ),
           ),
-
-          // รายการสินค้าของร้าน
           ...storeItems.asMap().entries.map((entry) {
             final itemIndex = basket.items.indexOf(entry.value);
             return _buildBasketItem(
@@ -347,8 +342,6 @@ class _MyBasketPageState extends State<MyBasketPage> {
               isEdit,
             );
           }).toList(),
-
-          // 🆕 แสดงราคาสรุปร้าน
           if (storeTotal > 0)
             Container(
               padding: EdgeInsets.symmetric(
@@ -392,15 +385,12 @@ class _MyBasketPageState extends State<MyBasketPage> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            // สามารถเพิ่ม onTap เพื่อดูรายละเอียดสินค้า
-          },
+          onTap: () {},
           child: Padding(
             padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Checkbox และรูปภาพ
                 Column(
                   children: [
                     Transform.scale(
@@ -460,15 +450,11 @@ class _MyBasketPageState extends State<MyBasketPage> {
                     ),
                   ],
                 ),
-
                 SizedBox(width: isSmallScreen ? 12 : 16),
-
-                // ข้อมูลสินค้า
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ชื่อสินค้า
                       Text(
                         item.foodName,
                         style: TextStyle(
@@ -480,8 +466,6 @@ class _MyBasketPageState extends State<MyBasketPage> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 6),
-
-                      // ตัวเลือก
                       if (item.optionsText.isNotEmpty) ...[
                         Text(
                           item.optionsText,
@@ -494,23 +478,18 @@ class _MyBasketPageState extends State<MyBasketPage> {
                         ),
                         const SizedBox(height: 4),
                       ],
-
-                      // เพิ่มเติมในสินค้านั้น
                       if (item.note.isNotEmpty) ...[
                         Text(
                           "เพิ่มเติม: ${item.note}",
                           style: TextStyle(
                             fontSize: _responsiveFontSize(context, 11),
                             color: Colors.orange[700],
-                            // fontStyle: FontStyle.italic,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 6),
                       ],
-
-                      // ราคา
                       Text(
                         '${item.sell_price.toStringAsFixed(0)} บาท',
                         style: TextStyle(
@@ -522,8 +501,6 @@ class _MyBasketPageState extends State<MyBasketPage> {
                     ],
                   ),
                 ),
-
-                // ปุ่มจำนวน
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -603,6 +580,7 @@ class _MyBasketPageState extends State<MyBasketPage> {
     );
   }
 
+  // ✅ ปุ่ม Bottom Bar พร้อมตรวจสอบสถานะร้าน (แก้ไข)
   Widget _buildBottomBar(
     BuildContext context,
     BasketProvider basket,
@@ -631,7 +609,6 @@ class _MyBasketPageState extends State<MyBasketPage> {
           ),
           child: Row(
             children: [
-              // Checkbox ทั้งหมด
               Transform.scale(
                 scale: isSmallScreen ? 0.9 : 1.0,
                 child: Checkbox(
@@ -643,7 +620,6 @@ class _MyBasketPageState extends State<MyBasketPage> {
                   onChanged: (v) => basket.toggleSelectAll(v ?? false),
                 ),
               ),
-
               Text(
                 'ทั้งหมด',
                 style: TextStyle(
@@ -651,10 +627,7 @@ class _MyBasketPageState extends State<MyBasketPage> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-
               SizedBox(width: isSmallScreen ? 8 : 16),
-
-              // ราคารวม
               Expanded(
                 flex: screenWidth < 360 ? 2 : 3,
                 child: Column(
@@ -679,41 +652,68 @@ class _MyBasketPageState extends State<MyBasketPage> {
                   ],
                 ),
               ),
-
               SizedBox(width: isSmallScreen ? 8 : 16),
-
-              // ปุ่มหลัก
               Expanded(
                 flex: screenWidth < 360 ? 3 : 4,
                 child: !isEdit
                     ? ElevatedButton(
                         onPressed: basket.selectedCount > 0
-                            ? () {
-                                // 🔹 Log ข้อมูลก่อนส่งไปหน้า Order
-                                final selectedItems = basket.items
-                                    .where((item) => item.selected)
-                                    .map(
-                                      (item) => {
-                                        'cartId': item.cartId,
-                                        'foodId': item.foodId,
-                                        'foodName': item.foodName,
-                                        'marketId': item.marketId,
-                                        'storeName': item.storeName,
-                                        'quantity': item.quantity,
-                                        'price': item.sell_price,
-                                        'options': item.optionsText,
-                                      },
-                                    )
-                                    .toList();
-                                debugPrint(
-                                  'Selected items for order: $selectedItems',
-                                );
-                                debugPrint(
-                                  'Total price: ${basket.totalSelectedPrice}',
+                            ? () async {
+                                // แสดง Loading
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (context) => const Center(
+                                    child: CircularProgressIndicator(
+                                      color: Color(0xFF34C759),
+                                    ),
+                                  ),
                                 );
 
-                                // ไปหน้า Order
-                                Navigator.pushNamed(context, '/order-now');
+                                // ดึง cart_id ของสินค้าที่เลือก
+                                final selectedCartIds = basket.items
+                                    .where((item) => item.selected)
+                                    .map((item) => item.cartId as int)
+                                    .toList();
+
+                                debugPrint(
+                                  '🔍 Checking stores for cart IDs: $selectedCartIds',
+                                );
+
+                                // ✅ ตรวจสอบสถานะร้านค้า
+                                final result = await CartAPI.checkStoresStatus(
+                                  selectedCartIds,
+                                );
+
+                                // ปิด Loading
+                                if (context.mounted) Navigator.pop(context);
+
+                                debugPrint('📦 Store check result: $result');
+
+                                // ถ้าร้านเปิดหรือกดไปได้ ให้ไปหน้าสั่งซื้อโดยไม่ alert
+                                if (result['success'] ||
+                                    result['error_type'] != 'STORE_CLOSED') {
+                                  if (context.mounted) {
+                                    Navigator.pushNamed(context, '/order-now');
+                                  }
+                                } else if (result['error_type'] ==
+                                    'STORE_CLOSED') {
+                                  // มีร้านที่ปิด ให้แสดง alert
+                                  if (context.mounted) {
+                                    CartAPI.showClosedStoresDialog(
+                                      context,
+                                      result['closed_stores'],
+                                    );
+                                  }
+                                } else {
+                                  // Error อื่นๆ
+                                  if (context.mounted) {
+                                    CartAPI.showErrorDialog(
+                                      context,
+                                      result['message'],
+                                    );
+                                  }
+                                }
                               }
                             : null,
                         style: ElevatedButton.styleFrom(

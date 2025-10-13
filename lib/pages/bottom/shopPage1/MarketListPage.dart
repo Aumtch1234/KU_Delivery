@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:delivery/APIs/Foods/MaketsAllAPI.dart';
 import 'package:delivery/APIs/middleware/authService.dart';
 import 'package:delivery/pages/store/StoreMenuPage.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MarketListPage extends StatefulWidget {
   const MarketListPage({Key? key}) : super(key: key);
@@ -39,85 +40,291 @@ class _MarketListPageState extends State<MarketListPage> {
     }
   }
 
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isTablet = size.width >= 600;
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ร้านค้าที่เข้าร่วม'),
+        title: const Text(
+          'ร้านค้าที่เข้าร่วม',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.green,
+        elevation: 0,
       ),
+      backgroundColor: Colors.grey[100],
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : markets.isEmpty
               ? const Center(child: Text('ไม่พบข้อมูลร้านค้า'))
-              : GridView.builder(
+              : ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: isTablet ? 3 : 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.9,
-                  ),
                   itemCount: markets.length,
                   itemBuilder: (context, index) {
                     final market = markets[index];
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => StoreMenuPage(
-                              marketID: market['market_id'],
+                    final isOpen = market['is_open'] ?? false;
+                    final rating = market['rating'];
+                    final phone = market['phone'] ?? '-';
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => StoreMenuPage(
+                                  marketID: market['market_id'],
+                                ),
+                              ),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(20),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // รูปร้าน
+                                Stack(
+                                  children: [
+                                    Hero(
+                                      tag: 'shop_${market['market_id']}',
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Image.network(
+                                          market['shop_logo_url'] ??
+                                              'https://via.placeholder.com/150',
+                                          width: 120,
+                                          height: 140,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  Container(
+                                            width: 120,
+                                            height: 140,
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey[200],
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                            ),
+                                            child: Icon(
+                                              Icons.store_rounded,
+                                              size: 50,
+                                              color: Colors.grey[400],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    // Status badge
+                                    Positioned(
+                                      top: 6,
+                                      right: 6,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isOpen
+                                              ? Colors.green
+                                              : Colors.red.shade400,
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: (isOpen
+                                                      ? Colors.green
+                                                      : Colors.red)
+                                                  .withOpacity(0.4),
+                                              blurRadius: 6,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Text(
+                                          isOpen ? 'เปิด' : 'ปิด',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(width: 16),
+
+                                // ข้อมูลร้าน
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // ชื่อร้านและดาว
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              market['shop_name'] ??
+                                                  'ชื่อร้านไม่ระบุ',
+                                              style: const TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                height: 1.3,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+
+                                      // เวลาเปิด-ปิด
+                                      if (market['open_time'] != null &&
+                                          market['close_time'] != null)
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.access_time_rounded,
+                                              size: 14,
+                                              color: isOpen
+                                                  ? Colors.green.shade700
+                                                  : Colors.grey.shade600,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              '${market['open_time']} - ${market['close_time']}',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                color: isOpen
+                                                    ? Colors.green.shade700
+                                                    : Colors.grey.shade600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      const SizedBox(height: 6),
+
+                                      // Rating
+                                      if (rating != null)
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.star_rounded,
+                                              size: 16,
+                                              color: Colors.amber.shade700,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              double.tryParse(rating.toString())
+                                                      ?.toStringAsFixed(1) ??
+                                                  '0.0',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.amber.shade900,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      if (rating != null)
+                                        const SizedBox(height: 6),
+
+                                      // คำอธิบายร้าน
+                                      if (market['shop_description'] != null &&
+                                          market['shop_description']
+                                              .toString()
+                                              .isNotEmpty)
+                                        Text(
+                                          market['shop_description'],
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.grey[600],
+                                            height: 1.4,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      const SizedBox(height: 10),
+
+                                      // เบอร์โทร
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.phone_rounded,
+                                            size: 16,
+                                            color: Colors.blue.shade700,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              phone,
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.blue.shade900,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          if (phone != '-')
+                                            const SizedBox(width: 8),
+                                          if (phone != '-')
+                                            Material(
+                                              color: Colors.green,
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              child: InkWell(
+                                                onTap: () =>
+                                                    _makePhoneCall(phone),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.all(8),
+                                                  child: const Icon(
+                                                    Icons.call_rounded,
+                                                    color: Colors.white,
+                                                    size: 20,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        );
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 6,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.network(
-                                market['shop_logo_url'] ??
-                                    'https://via.placeholder.com/150',
-                                height: isTablet ? 140 : 120,
-                                width: isTablet ? 140 : 120,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    const Icon(Icons.store, size: 80),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8.0),
-                              child: Text(
-                                market['shop_name'] ?? 'ชื่อร้านไม่ระบุ',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
                         ),
                       ),
                     );

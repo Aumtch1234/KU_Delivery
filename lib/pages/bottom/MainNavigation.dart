@@ -4,6 +4,7 @@ import 'package:delivery/pages/bottom/CustomerOrderPage.dart';
 import 'package:delivery/pages/bottom/DashboardPage.dart';
 import 'package:delivery/pages/bottom/ShopPage.dart';
 import 'package:delivery/pages/chat/ChatListPage.dart';
+import 'package:delivery/pages/historys/HistorysPage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 
@@ -79,6 +80,12 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
       color: Colors.green,
     ),
     BottomNavigationItem(
+      icon: Icons.history_edu_outlined,
+      activeIcon: Icons.chat_bubble,
+      label: 'ประวัติ',
+      color: Colors.green,
+    ),
+    BottomNavigationItem(
       icon: Icons.person_outline,
       activeIcon: Icons.person,
       label: 'โปรไฟล์',
@@ -92,6 +99,7 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
       ShopPage(),
       CustomerOrderPage(userId: userId),
       CustomerChatListScreen(),
+      OrderHistoryPage(),
       DashboardPage(),
     ];
 

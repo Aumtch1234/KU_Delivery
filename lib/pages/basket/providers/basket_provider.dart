@@ -4,10 +4,12 @@ import '../models/basket_item.dart';
 
 class BasketProvider extends ChangeNotifier {
   final List<BasketItem> _items = [];
-  int cartCount = 0; 
   bool isEditMode = false;
 
   List<BasketItem> get items => _items;
+
+  // ✅ แก้ไข: ใช้ getter แทนการเก็บค่า cartCount แยก
+  int get cartCount => _items.fold(0, (sum, item) => sum + item.quantity);
 
   void clear() {
     _items.clear();
@@ -87,7 +89,6 @@ class BasketProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 🆕 เพิ่มฟังก์ชันเลือกร้านทั้งหมด
   void toggleStoreSelected(String storeName, bool value) {
     for (var item in _items) {
       if (item.storeName == storeName) {
@@ -97,21 +98,18 @@ class BasketProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 🆕 ตรวจสอบว่าร้านนี้เลือกทั้งหมดหรือไม่
   bool isStoreFullySelected(String storeName) {
     final storeItems = _items.where((e) => e.storeName == storeName).toList();
     if (storeItems.isEmpty) return false;
     return storeItems.every((e) => e.selected);
   }
 
-  // 🆕 ตรวจสอบว่าร้านนี้เลือกบางส่วนหรือไม่
   bool isStorePartiallySelected(String storeName) {
     final storeItems = _items.where((e) => e.storeName == storeName).toList();
     if (storeItems.isEmpty) return false;
     return storeItems.any((e) => e.selected) && !storeItems.every((e) => e.selected);
   }
 
-  // 🆕 จำแนกสินค้าตามร้าน
   Map<String, List<BasketItem>> get itemsByStore {
     Map<String, List<BasketItem>> storeMap = {};
     for (var item in _items) {
@@ -123,7 +121,6 @@ class BasketProvider extends ChangeNotifier {
     return storeMap;
   }
 
-  // 🆕 รายชื่อร้าน
   List<String> get storeNames {
     return _items.map((e) => e.storeName).toSet().toList();
   }
@@ -157,7 +154,6 @@ class BasketProvider extends ChangeNotifier {
 
   bool get allSelected => _items.isNotEmpty && _items.every((e) => e.selected);
 
-  /// 🔄 โหลดข้อมูลจาก API /cart
   Future<void> loadCartFromAPI() async {
     try {
       final cartItems = await CartAPI.getCart();
@@ -170,7 +166,6 @@ class BasketProvider extends ChangeNotifier {
         );
 
         item.total = (item.sell_price + extra) * item.quantity;
-
         _items.add(item);
 
         print('🛒 LOAD ITEM: ${item.foodName}');

@@ -51,7 +51,11 @@ class _LoginPageState extends State<LoginPage> {
         btnOkColor: Colors.green,
       ).show();
 
-      Navigator.pushReplacementNamed(context, '/main');
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/main', // หน้าเป้าหมาย
+        (Route<dynamic> route) => false, // ❌ ลบทุกหน้าเก่าใน stack
+      );
     } else {
       AwesomeDialog(
         context: context,

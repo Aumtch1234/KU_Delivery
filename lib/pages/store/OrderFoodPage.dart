@@ -413,10 +413,9 @@ class _OrderFoodPageState extends State<OrderFoodPage> {
         selected.add(foodDetail!.options[i].label);
       }
     }
-    return selected.isEmpty ? 'ปกติ' : selected.join(', ');
+    return selected.isEmpty ? '-' : selected.join(', ');
   }
-
-  void _orderNow(BuildContext context) async {
+  Future<void> _addToBasket(BuildContext context) async {
     if (foodDetail == null) return;
 
     final selectedOpts = <Map<String, dynamic>>[];
@@ -429,6 +428,123 @@ class _OrderFoodPageState extends State<OrderFoodPage> {
       }
     }
 
+    // ✅ ตรวจสอบว่ามีเมนูซ้ำในตะกร้าหรือไม่
+    final basket = Provider.of<BasketProvider>(context, listen: false);
+    final hasDuplicate = basket.items.any((item) {
+      if (item.foodId != widget.foodId) return false;
+      
+      // ตรวจสอบตัวเลือกว่าตรงกันหรือไม่
+      if (item.selectedOptions.length != selectedOpts.length) return false;
+      
+      for (var opt in selectedOpts) {
+        bool found = item.selectedOptions.any((itemOpt) => 
+          itemOpt['label'] == opt['label']
+        );
+        if (!found) return false;
+      }
+      
+      // ตรวจสอบ note ว่าตรงกันหรือไม่
+      return (item.note ?? '') == noteController.text;
+    });
+
+    // ✅ ถ้าพบเมนูซ้ำ แสดง Dialog ให้เลือก
+    if (hasDuplicate) {
+      final shouldAdd = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange[700], size: 28),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'พบเมนูซ้ำในตะกร้า',
+                  style: TextStyle(fontSize: 18),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'คุณมี "${foodDetail!.foodName}" ที่มีตัวเลือกและหมายเหตุเหมือนกันในตะกร้าอยู่แล้ว\n\nต้องการเพิ่ม $quantity ชิ้นเป็นรายการใหม่หรือไม่?',
+                style: TextStyle(color: Colors.grey[700], height: 1.5),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.restaurant_menu, size: 16, color: Colors.green),
+                        const SizedBox(width: 8),
+                        Text(
+                          'ตัวเลือก: ${selectedOptionsText}',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ],
+                    ),
+                    if (noteController.text.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.note, size: 16, color: Colors.green),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'หมายเหตุ: ${noteController.text}',
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                'ยกเลิก',
+                style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w600),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.green[50],
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'เพิ่มเป็นรายการใหม่',
+                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldAdd != true) return; // ถ้ายกเลิก ไม่ต้องเพิ่ม
+    }
+
     final success = await CartAPI.addToCart(
       foodId: widget.foodId,
       quantity: quantity,
@@ -437,42 +553,41 @@ class _OrderFoodPageState extends State<OrderFoodPage> {
     );
 
     if (success) {
-      Navigator.pushNamed(context, '/order-now');
-    } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('สั่งไม่สำเร็จ')));
-    }
-  }
+      // ✅ โหลดข้อมูลตะกร้าใหม่ทันทีหลังเพิ่มสำเร็จ
+      if (mounted) {
+        await basket.loadCartFromAPI();
 
-  void _addToBasket(BuildContext context) async {
-    if (foodDetail == null) return;
+        print('🛒 Cart updated! Total items: ${basket.cartCount}');
 
-    final selectedOpts = <Map<String, dynamic>>[];
-    for (int i = 0; i < selectedOptions.length; i++) {
-      if (selectedOptions[i]) {
-        selectedOpts.add({
-          "label": foodDetail!.options[i].label,
-          "extraPrice": foodDetail!.options[i].extraPrice,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'เพิ่ม ${foodDetail!.foodName} x$quantity ลงตะกร้าแล้ว',
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // ✅ รีเซ็ตจำนวนและตัวเลือกหลังเพิ่มสำเร็จ
+        setState(() {
+          quantity = 1;
+          selectedOptions = List.generate(
+            foodDetail!.options.length,
+            (index) => false,
+          );
+          noteController.clear();
         });
       }
-    }
-
-    final success = await CartAPI.addToCart(
-      foodId: widget.foodId,
-      quantity: quantity,
-      selectedOptions: selectedOpts,
-      note: noteController.text,
-    );
-
-    if (success) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('เพิ่มลงตะกร้าแล้ว')));
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('เพิ่มตะกร้าไม่สำเร็จ')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('เพิ่มตะกร้าไม่สำเร็จ'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
