@@ -514,12 +514,20 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
               _buildDivider(),
               _buildMenuTile(
+                text: 'ส่งคำร้องเรียน',
+                icon: Icons.report_problem_rounded,
+                iconColor: Colors.orange,
+                onPressed: () => Navigator.pushNamed(context, '/complaint'),
+              ),
+              _buildDivider(),
+              _buildMenuTile(
                 text: 'ออกจากระบบ',
                 icon: Icons.logout_rounded,
                 iconColor: Colors.redAccent,
                 textColor: Colors.redAccent,
                 onPressed: () => _showLogoutDialog(),
                 isLast: true,
+                
               ),
             ],
           ),
