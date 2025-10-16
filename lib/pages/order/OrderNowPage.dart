@@ -330,21 +330,6 @@ class _OrderNowPageState extends State<OrderNowPage> {
                           ),
                         ),
                       const SizedBox(height: 6),
-                      // แสดงระยะทางถ้ามีค่า
-                      if (distanceInKm != null)
-                        Text(
-                          "ระยะทางจากร้าน: ${distanceInKm!.toStringAsFixed(2)} กม.",
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.green,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        )
-                      else
-                        const Text(
-                          "ระยะทางจากร้าน: ไม่สามารถคำนวณได้",
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
                     ],
                   ),
                 ),

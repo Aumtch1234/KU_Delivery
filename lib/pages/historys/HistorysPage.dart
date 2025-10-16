@@ -17,9 +17,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
   bool _loading = true;
   List _orders = [];
   late TabController _tabController;
-  List get _reviewableOrders => _orders
-      .where((o) => o['status'] == 'completed' && o['is_reviewed'] != true)
-      .toList();
+  List get _reviewableOrders =>
+      _orders.where((o) => o['status'] == 'completed').toList();
   List get _cancelledOrders =>
       _orders.where((o) => o['status'] == 'cancelled').toList();
 
@@ -159,8 +158,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
               btnOkColor: const Color(0xFF34C759),
               btnOkText: 'ตกลง',
               btnOkOnPress: () {
-                // ✅ รีเฟรชข้อมูลโดยเรียกฟังก์ชันใน state
-                _loadHistory();
+                setState(() {
+                  order['has_unreviewed_market'] = false;
+                });
+                _loadHistory(); // ถ้าจะรีเฟรชจาก backend ด้วยก็ยังคงไว้
               },
             ).show();
           } catch (e) {
@@ -547,25 +548,25 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                       // 🏪 ปุ่มรีวิวร้านค้า
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: (order['has_unreviewed_market'] == true)
+                          onPressed: (order['has_unreviewed_market'] == false)
                               ? null // ❌ ปิดปุ่มถ้ารีวิวแล้ว
                               : () {
                                   _openMarketReviewDialog(order);
                                 },
                           icon: Icon(
-                            order['has_unreviewed_market'] == true
+                            order['has_unreviewed_market'] == false
                                 ? Icons.check_circle_outline
                                 : Icons.storefront_outlined,
                             size: 18,
                           ),
                           label: Text(
-                            order['has_unreviewed_market'] == true
+                            order['has_unreviewed_market'] == false
                                 ? 'รีวิวร้านค้าแล้ว'
                                 : 'รีวิวร้านค้า',
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
-                                order['has_unreviewed_market'] == true
+                                order['has_unreviewed_market'] == false
                                 ? Colors.grey.shade400
                                 : Colors.orange.shade400,
                             foregroundColor: Colors.white,
@@ -582,25 +583,25 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                       // 🛵 ปุ่มรีวิวไรเดอร์
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: (order['has_unreviewed_rider'] == true)
+                          onPressed: (order['has_unreviewed_rider'] == false)
                               ? null
                               : () {
                                   _openRiderReviewDialog(order);
                                 },
                           icon: Icon(
-                            order['has_unreviewed_rider'] == true
+                            order['has_unreviewed_rider'] == false
                                 ? Icons.check_circle_outline
                                 : Icons.pedal_bike_outlined,
                             size: 18,
                           ),
                           label: Text(
-                            order['has_unreviewed_rider'] == true
+                            order['has_unreviewed_rider'] == false
                                 ? 'รีวิวไรเดอร์แล้ว'
                                 : 'รีวิวไรเดอร์',
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
-                                order['has_unreviewed_rider'] == true
+                                order['has_unreviewed_rider'] == false
                                 ? Colors.grey.shade400
                                 : Colors.blue.shade500,
                             foregroundColor: Colors.white,

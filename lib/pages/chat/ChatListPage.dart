@@ -527,46 +527,69 @@ class ChatRoomItem extends StatelessWidget {
               ),
           ],
         ),
-        title: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Text(
-                room.riderName ?? 'ไรเดอร์',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  color: Colors.black87,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
+        title: Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    // 🧾 แสดงหมายเลขคำสั่งซื้อด้านบน
+    Text(
+      'คำสั่งซื้อ #${room.orderId ?? "-"}',
+      style: const TextStyle(
+        fontWeight: FontWeight.w700,
+        fontSize: 15,
+        color: Colors.black87,
+      ),
+      overflow: TextOverflow.visible, // ✅ ไม่ให้โดนตัด
+    ),
+
+    const SizedBox(height: 4),
+
+    // 🧍‍♂️ ชื่อไรเดอร์ด้านล่าง
+    Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Text(
+            room.riderName ?? 'ไรเดอร์',
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+              color: Colors.grey,
             ),
-            if (room.orderStatus != null)
-              Flexible(
-                child: Container(
-                  margin: EdgeInsets.only(left: 8),
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: controller
-                        .getOrderStatusColor(room.orderStatus)
-                        .withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    controller.getOrderStatusText(room.orderStatus),
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                      color: controller.getOrderStatusColor(room.orderStatus),
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ),
-              ),
-          ],
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
         ),
+
+        // ✅ แสดงสถานะคำสั่งซื้อข้างขวา (เช่น “สำเร็จ”, “กำลังจัดส่ง”)
+        if (room.orderStatus != null)
+          Container(
+            margin: const EdgeInsets.only(left: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: controller
+                  .getOrderStatusColor(room.orderStatus)
+                  .withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              controller.getOrderStatusText(room.orderStatus),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: controller.getOrderStatusColor(room.orderStatus),
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+      ],
+    ),
+  ],
+),
+
+
+
         subtitle: Padding(
           padding: EdgeInsets.only(top: 4),
           child: Column(

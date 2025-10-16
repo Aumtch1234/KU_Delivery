@@ -238,13 +238,30 @@ class _StoreMenuPageState extends State<StoreMenuPage> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const Text(' • ', style: TextStyle(fontSize: 16)),
-              const Text(
-                '15-20 นาที',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+
+              // const Text(' • ', style: TextStyle(fontSize: 16)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(width: 4),
+              Expanded(
+                // ✅ แก้ overflow
+                child: Text(
+                  marketInfo.shopDes,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  softWrap: true, // ✅ ให้ตัดบรรทัด
+                  overflow: TextOverflow.fade, // ✅ ถ้าอยากให้ค่อยๆ หาย
+                ),
               ),
             ],
           ),
+
           const SizedBox(height: 24),
           const Text(
             'เมนูทั้งหมด',

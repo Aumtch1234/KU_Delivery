@@ -16,6 +16,7 @@ class Mymarketpage extends StatefulWidget {
 
 class _MymarketpageState extends State<Mymarketpage> {
   List<dynamic> foodList = [];
+  List<dynamic> filteredFoodList = [];
   String marketId = '';
   String storeName = '';
   String imageStoreURL = '';
@@ -25,12 +26,23 @@ class _MymarketpageState extends State<Mymarketpage> {
   bool isLoading = true;
   bool isManualOverride = false;
   bool isOpen = true;
+  bool is_visible = true;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // ตัวแปรสำหรับ Filter และ Search
+  String selectedFilter = 'ทั้งหมด'; // ทั้งหมด, พร้อมขาย, ไม่พร้อมขาย
+  TextEditingController searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     loadMarket();
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
   }
 
   Future<void> loadMarket() async {
@@ -41,6 +53,13 @@ class _MymarketpageState extends State<Mymarketpage> {
       final fetchedFoods = await FetchFoodsForMarket();
       print('✅ foods: $fetchedFoods');
 
+      // 🧩 Log ค่า is_visible ของแต่ละเมนู
+      if (fetchedFoods != null) {
+        for (var f in fetchedFoods) {
+          print('🍽️ ${f['food_name']} | is_visible = ${f['is_visible']}');
+        }
+      }
+
       setState(() {
         if (market != null && fetchedFoods != null) {
           marketId = market['market_id'].toString();
@@ -50,12 +69,15 @@ class _MymarketpageState extends State<Mymarketpage> {
           opened = market['open_time'] ?? 'ไม่ได้ตั้งเวลาเปิดร้าน';
           closed = market['close_time'] ?? 'ไม่ได้ตั้งเวลาปิดร้าน';
           isOpen = market['is_open'] ?? true;
-          isManualOverride = market['is_manual_override'] ?? false; // ✅
+          isManualOverride = market['is_manual_override'] ?? false;
           foodList = fetchedFoods;
+          is_visible = market['is_visible'] ?? true;
+          _filterFoodList(); // กรองข้อมูลหลังโหลด
         } else {
           storeName = 'ไม่พบข้อมูลร้านค้า';
           storeDescription = '';
           foodList = [];
+          filteredFoodList = [];
         }
         isLoading = false;
       });
@@ -65,9 +87,35 @@ class _MymarketpageState extends State<Mymarketpage> {
         storeName = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
         storeDescription = '';
         foodList = [];
+        filteredFoodList = [];
         isLoading = false;
       });
     }
+  }
+
+  // ฟังก์ชันกรองข้อมูล
+  void _filterFoodList() {
+    List<dynamic> result = foodList.where((food) {
+      // กรองตามหมวดหมู่
+      bool matchesCategory = true;
+      if (selectedFilter == 'พร้อมขาย') {
+        matchesCategory = food['is_visible'] == true;
+      } else if (selectedFilter == 'ไม่พร้อมขาย') {
+        matchesCategory = food['is_visible'] == false;
+      }
+
+      // กรองตามชื่อเมนู
+      bool matchesSearch = true;
+      if (searchController.text.isNotEmpty) {
+        String foodName = (food['food_name'] ?? '').toString().toLowerCase();
+        String searchText = searchController.text.toLowerCase();
+        matchesSearch = foodName.contains(searchText);
+      }
+
+      return matchesCategory && matchesSearch;
+    }).toList();
+
+    filteredFoodList = result;
   }
 
   @override
@@ -274,35 +322,165 @@ class _MymarketpageState extends State<Mymarketpage> {
                         const SizedBox(height: 16),
                         const Divider(),
                         const SizedBox(height: 16),
-                        const Text(
-                          'เมนูทั้งหมด',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+
+                        // 🔍 ช่องค้นหา
+                        TextField(
+                          controller: searchController,
+                          onChanged: (value) {
+                            setState(() {
+                              _filterFoodList(); // กรองทันทีเมื่อพิมพ์
+                            });
+                          },
+                          decoration: InputDecoration(
+                            hintText: 'ค้นหาชื่อเมนู...',
+                            prefixIcon: const Icon(Icons.search),
+                            suffixIcon: searchController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear),
+                                    onPressed: () {
+                                      setState(() {
+                                        searchController.clear();
+                                        _filterFoodList(); // กรองใหม่หลังลบ
+                                      });
+                                    },
+                                  )
+                                : null,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // 🏷️ ปุ่มหมวดหมู่
+                        Row(
+                          children: [
+                            _buildCategoryChip('ทั้งหมด', foodList.length),
+                            const SizedBox(width: 8),
+                            _buildCategoryChip(
+                              'พร้อมขาย',
+                              foodList.where((f) => f['is_visible'] == true).length,
+                            ),
+                            const SizedBox(width: 8),
+                            _buildCategoryChip(
+                              'ไม่พร้อมขาย',
+                              foodList.where((f) => f['is_visible'] == false).length,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // แสดงจำนวนผลลัพธ์
+                        Text(
+                          'พบ ${filteredFoodList.length} เมนู',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey,
                           ),
                         ),
                         const SizedBox(height: 8),
-                        GridView.count(
-                          crossAxisCount: isTablet ? 3 : 2,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: 0.75,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          children: foodList.map((food) {
-                            return _buildFoodCard(
-                              context,
-                              foodData: food,
-                              storeName: storeName,
-                            );
-                          }).toList(),
-                        ),
+
+                        // Grid แสดงเมนู
+                        filteredFoodList.isEmpty
+                            ? Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(32.0),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.search_off,
+                                        size: 64,
+                                        color: Colors.grey.shade300,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'ไม่พบเมนูที่ค้นหา',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : GridView.count(
+                                crossAxisCount: isTablet ? 3 : 2,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                                childAspectRatio: 0.75,
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                children: filteredFoodList.map((food) {
+                                  return _buildFoodCard(
+                                    context,
+                                    foodData: food,
+                                    storeName: storeName,
+                                  );
+                                }).toList(),
+                              ),
                       ],
                     ),
                   ),
                 ],
               ),
             ),
+    );
+  }
+
+  // Widget สำหรับปุ่มหมวดหมู่
+  Widget _buildCategoryChip(String label, int count) {
+    bool isSelected = selectedFilter == label;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            selectedFilter = label;
+            _filterFoodList();
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF34C759) : Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF34C759).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [],
+          ),
+          child: Column(
+            children: [
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.black87,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '($count)',
+                style: TextStyle(
+                  color: isSelected ? Colors.white70 : Colors.grey,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -343,7 +521,7 @@ class _MymarketpageState extends State<Mymarketpage> {
                     arguments: {'marketId': int.tryParse(marketId) ?? 0},
                   );
                   if (result == true) {
-                    await loadMarket(); // รีโหลดข้อมูลหลังกลับมาหน้านี้
+                    await loadMarket();
                   }
                 },
               ),
@@ -382,7 +560,7 @@ class _MymarketpageState extends State<Mymarketpage> {
                     '/myMarket/edit',
                   );
                   if (result == true) {
-                    await loadMarket(); // รีโหลดข้อมูลหลังกลับมาหน้านี้
+                    await loadMarket();
                   }
                 },
               ),
@@ -405,7 +583,7 @@ class _MymarketpageState extends State<Mymarketpage> {
                     ),
                   );
                   if (result == true) {
-                    await loadMarket(); // รีโหลดข้อมูลหลังกลับมาหน้านี้
+                    await loadMarket();
                   }
                 },
               ),
@@ -417,7 +595,7 @@ class _MymarketpageState extends State<Mymarketpage> {
                 value: isManualOverride,
                 activeColor: Colors.white,
                 onChanged: (bool value) async {
-                  setState(() => isLoading = true); // แสดง loading ขณะอัปเดต
+                  setState(() => isLoading = true);
                   bool success = await updateManualOverrideAPI(
                     marketId,
                     value,
@@ -428,7 +606,7 @@ class _MymarketpageState extends State<Mymarketpage> {
                     setState(() {
                       isManualOverride = value;
                     });
-                    await loadMarket(); // โหลดข้อมูลร้านใหม่ให้ล่าสุด
+                    await loadMarket();
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -448,13 +626,12 @@ class _MymarketpageState extends State<Mymarketpage> {
                   style: TextStyle(color: Colors.white),
                 ),
                 onTap: () {
-                  // และลบหน้าอื่นๆ ทั้งหมดใน stack
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(
                       builder: (context) => MainNavigation(),
-                    ), // เปลี่ยนไปหน้า Dashboard
-                    (Route<dynamic> route) => false, // ลบทุกหน้าใน Stack
+                    ),
+                    (Route<dynamic> route) => false,
                   );
                 },
               ),
@@ -478,6 +655,10 @@ class _MymarketpageState extends State<Mymarketpage> {
     required Map<String, dynamic> foodData,
     required String storeName,
   }) {
+    print(
+      '🧾 สร้างการ์ด: ${foodData['food_name']} | is_visible = ${foodData['is_visible']}',
+    );
+
     final size = MediaQuery.of(context).size;
     final isTablet = size.width > 600;
     final price = double.tryParse(foodData['price'].toString()) ?? 0;
@@ -488,13 +669,12 @@ class _MymarketpageState extends State<Mymarketpage> {
           onValue,
         ) {
           if (onValue == true) {
-            // รีโหลดข้อมูลร้านและเมนูล่าสุดจาก API
             setState(() {
-              isLoading = true; // แสดง loading ระหว่างโหลด
+              isLoading = true;
             });
             loadMarket().then((_) {
               setState(() {
-                isLoading = false; // ซ่อน loading
+                isLoading = false;
               });
             });
           }
@@ -518,16 +698,46 @@ class _MymarketpageState extends State<Mymarketpage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                foodData['image_url'] ?? 'https://via.placeholder.com/150',
-                height: 120,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    const Icon(Icons.error),
-              ),
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    foodData['image_url'] ?? 'https://via.placeholder.com/150',
+                    height: 120,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.error),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: (foodData['is_visible'] == true)
+                          ? Colors.green.withOpacity(0.8)
+                          : Colors.red.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      (foodData['is_visible'] == true)
+                          ? 'พร้อมขาย'
+                          : 'ไม่พร้อมขาย',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Text(
@@ -549,11 +759,20 @@ class _MymarketpageState extends State<Mymarketpage> {
             const Spacer(),
             Row(
               children: [
-                const Icon(Icons.timer, size: 16, color: Colors.grey),
+                Icon(Icons.star, size: 16, color: Colors.amber.shade600),
                 const SizedBox(width: 4),
-                const Text(
-                  '20 นาที',
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                Text(
+                  (() {
+                    final rating =
+                        double.tryParse(
+                          foodData['rating_avg']?.toString() ?? '0',
+                        ) ??
+                        0;
+                    return rating > 0
+                        ? rating.toStringAsFixed(1)
+                        : 'ยังไม่มีรีวิว';
+                  })(),
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
                 ),
                 const Spacer(),
                 Text(

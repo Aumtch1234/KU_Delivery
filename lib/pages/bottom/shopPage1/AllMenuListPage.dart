@@ -68,7 +68,7 @@ class _AllMenuListPageState extends State<AllMenuListPage> {
                             food['sell_price']?.toString() ?? '0') ??
                         0.0;
                     final rating = double.tryParse(
-                            food['rating']?.toString() ?? '0') ??
+                            food['rating_avg']?.toString() ?? '0') ??
                         0.0;
 
                     return GestureDetector(

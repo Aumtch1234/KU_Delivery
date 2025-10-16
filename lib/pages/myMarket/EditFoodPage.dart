@@ -24,6 +24,7 @@ class _EditFoodPageState extends State<EditFoodPage> {
   File? newImage;
   String? currentImageUrl;
   bool _isLoading = false;
+  bool isVisible = true; // ✅ ค่าเริ่มต้น
 
   int? selectedCategoryId;
   String? selectedCategoryName;
@@ -72,7 +73,8 @@ class _EditFoodPageState extends State<EditFoodPage> {
         // ✅ ดึงหมวดหมู่ (Backend ต้องส่ง category_name มา)
         selectedCategoryId = args['category_id'];
         selectedCategoryName = args['category_name'] ?? 'ไม่ระบุหมวดหมู่';
-
+        isVisible = args['is_visible'] ?? true;
+        print('✅ สถานะพร้อมขาย: $isVisible');
         print('✅ category_id: $selectedCategoryId');
         print('✅ category_name: $selectedCategoryName');
 
@@ -171,6 +173,7 @@ class _EditFoodPageState extends State<EditFoodPage> {
         imageFile: newImage,
         options: optionsJson,
         categoryId: selectedCategoryId ?? 0, // ✅ ส่งหมวดหมู่ที่เลือกไปด้วย
+        isVisible: isVisible, // ✅ เพิ่มบรรทัดนี้
       );
 
       setState(() {
@@ -262,7 +265,9 @@ class _EditFoodPageState extends State<EditFoodPage> {
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _foodNameController,
-                        decoration: _inputDecoration('เช่น ข้าวกะเพราไก่ไข่ดาว'),
+                        decoration: _inputDecoration(
+                          'เช่น ข้าวกะเพราไก่ไข่ดาว',
+                        ),
                         validator: (val) =>
                             val == null || val.isEmpty ? 'กรอกชื่อเมนู' : null,
                       ),
@@ -275,24 +280,29 @@ class _EditFoodPageState extends State<EditFoodPage> {
                         decoration: BoxDecoration(
                           color: Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: primaryColor,
-                            width: 2,
-                          ),
+                          border: Border.all(color: primaryColor, width: 2),
                         ),
                         child: DropdownButton<int>(
                           isExpanded: true,
                           underline: const SizedBox(),
                           value: selectedCategoryId,
-                          items: categories.map<DropdownMenuItem<int>>((category) {
-                            final catId = category['id'] ?? category['category_id'];
-                            final catName = category['name'] ?? category['category_name'] ?? 'ไม่ระบุ';
+                          items: categories.map<DropdownMenuItem<int>>((
+                            category,
+                          ) {
+                            final catId =
+                                category['id'] ?? category['category_id'];
+                            final catName =
+                                category['name'] ??
+                                category['category_name'] ??
+                                'ไม่ระบุ';
                             final catImage = category['cate_image_url'] ?? '';
-                            
+
                             return DropdownMenuItem<int>(
                               value: catId,
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8.0,
+                                ),
                                 child: Row(
                                   children: [
                                     // ✅ รูปหมวดหมู่
@@ -304,14 +314,17 @@ class _EditFoodPageState extends State<EditFoodPage> {
                                           width: 36,
                                           height: 36,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) =>
-                                              Container(
-                                            width: 36,
-                                            height: 36,
-                                            color: Colors.grey.shade300,
-                                            child: const Icon(Icons.image,
-                                                size: 18),
-                                          ),
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  Container(
+                                                    width: 36,
+                                                    height: 36,
+                                                    color: Colors.grey.shade300,
+                                                    child: const Icon(
+                                                      Icons.image,
+                                                      size: 18,
+                                                    ),
+                                                  ),
                                         ),
                                       )
                                     else
@@ -320,11 +333,15 @@ class _EditFoodPageState extends State<EditFoodPage> {
                                         height: 36,
                                         decoration: BoxDecoration(
                                           color: primaryColor,
-                                          borderRadius: BorderRadius.circular(6),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
                                         ),
-                                        child: const Icon(Icons.category,
-                                            size: 18,
-                                            color: Colors.white),
+                                        child: const Icon(
+                                          Icons.category,
+                                          size: 18,
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     const SizedBox(width: 16),
                                     Expanded(
@@ -344,10 +361,14 @@ class _EditFoodPageState extends State<EditFoodPage> {
                               setState(() {
                                 selectedCategoryId = value;
                                 final category = categories.firstWhere(
-                                  (cat) => (cat['id'] ?? cat['category_id']) == value,
+                                  (cat) =>
+                                      (cat['id'] ?? cat['category_id']) ==
+                                      value,
                                   orElse: () => {},
                                 );
-                                selectedCategoryName = category['name'] ?? category['category_name'];
+                                selectedCategoryName =
+                                    category['name'] ??
+                                    category['category_name'];
                               });
                             }
                           },
@@ -391,20 +412,21 @@ class _EditFoodPageState extends State<EditFoodPage> {
                                       fit: BoxFit.cover,
                                     )
                                   : currentImageUrl != null
-                                      ? DecorationImage(
-                                          image: NetworkImage(currentImageUrl!),
-                                          fit: BoxFit.cover,
-                                        )
-                                      : null,
+                                  ? DecorationImage(
+                                      image: NetworkImage(currentImageUrl!),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
                             ),
                             child: (newImage == null && currentImageUrl == null)
                                 ? Column(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.photo_library,
-                                          size: 48,
-                                          color: Colors.grey.shade400),
+                                      Icon(
+                                        Icons.photo_library,
+                                        size: 48,
+                                        color: Colors.grey.shade400,
+                                      ),
                                       const SizedBox(height: 8),
                                       Text(
                                         "แตะเพื่อเลือกรูปเมนู",
@@ -435,15 +457,12 @@ class _EditFoodPageState extends State<EditFoodPage> {
                                 flex: 3,
                                 child: TextFormField(
                                   initialValue: option['name'],
-                                  decoration: _inputDecoration(
-                                    'เช่น เผ็ดมาก',
-                                  ),
+                                  decoration: _inputDecoration('เช่น เผ็ดมาก'),
                                   onChanged: (val) =>
                                       optionsList[index]['name'] = val,
-                                  validator: (val) =>
-                                      val == null || val.isEmpty
-                                          ? 'กรอกชื่อ'
-                                          : null,
+                                  validator: (val) => val == null || val.isEmpty
+                                      ? 'กรอกชื่อ'
+                                      : null,
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -455,18 +474,18 @@ class _EditFoodPageState extends State<EditFoodPage> {
                                   decoration: _inputDecoration('เพิ่ม (฿)'),
                                   onChanged: (val) {
                                     final parsed = double.tryParse(val);
-                                    optionsList[index]['price'] =
-                                        parsed ?? 0.0;
+                                    optionsList[index]['price'] = parsed ?? 0.0;
                                   },
-                                  validator: (val) =>
-                                      val == null || val.isEmpty
-                                          ? 'กรอกราคา'
-                                          : null,
+                                  validator: (val) => val == null || val.isEmpty
+                                      ? 'กรอกราคา'
+                                      : null,
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete,
-                                    color: Colors.red),
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                ),
                                 onPressed: () => _removeOption(index),
                               ),
                             ],
@@ -485,7 +504,28 @@ class _EditFoodPageState extends State<EditFoodPage> {
                         ),
                       ),
                       const SizedBox(height: 30),
-
+                      // ✅ สวิตช์สถานะพร้อมขาย
+                      _buildSectionTitle('สถานะการขาย'),
+                      const SizedBox(height: 8),
+                      SwitchListTile(
+                        title: Text(
+                          isVisible ? 'พร้อมขาย' : 'ไม่พร้อมขาย',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isVisible ? Colors.green : Colors.red,
+                          ),
+                        ),
+                        value: isVisible,
+                        onChanged: (value) {
+                          setState(() {
+                            isVisible = value;
+                          });
+                        },
+                        activeColor: Colors.green,
+                        inactiveThumbColor: Colors.red,
+                        inactiveTrackColor: Colors.red.shade200,
+                      ),
+                      const SizedBox(height: 20),
                       // ✅ ปุ่มบันทึก
                       Center(
                         child: ElevatedButton(
@@ -501,6 +541,7 @@ class _EditFoodPageState extends State<EditFoodPage> {
                             ),
                             elevation: 4,
                           ),
+
                           child: const Text(
                             'บันทึกการเปลี่ยนแปลง',
                             style: TextStyle(

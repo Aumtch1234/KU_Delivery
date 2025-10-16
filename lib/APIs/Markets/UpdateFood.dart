@@ -12,6 +12,7 @@ Future<bool> updateFood({
   required int categoryId,
   String? options,
   File? imageFile,
+  bool? isVisible, // ✅ เพิ่ม
 }) async {
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('token');
@@ -24,14 +25,22 @@ Future<bool> updateFood({
     request.headers['Authorization'] = 'Bearer $token';
   }
 
+  // ✅ ข้อมูลหลัก
   request.fields['food_name'] = foodName;
   request.fields['price'] = price.toString();
-  request.fields['category_id'] = categoryId.toString(); // ✅ เพิ่มบรรทัดนี้
-  
+  request.fields['category_id'] = categoryId.toString();
+
+  // ✅ แนบ options (ถ้ามี)
   if (options != null) {
     request.fields['options'] = options;
   }
 
+  // ✅ แนบสถานะพร้อมขาย (ถ้ามี)
+  if (isVisible != null) {
+    request.fields['is_visible'] = isVisible.toString();
+  }
+
+  // ✅ แนบรูปภาพ (ถ้ามี)
   if (imageFile != null) {
     final mimeType = lookupMimeType(imageFile.path) ?? 'image/jpeg';
     final mimeSplit = mimeType.split('/');
@@ -48,9 +57,11 @@ Future<bool> updateFood({
   print('Food ID: $foodId');
   print('Food Name: $foodName');
   print('Price: $price');
-  print('Category ID: $categoryId'); // ✅ เพิ่ม log
+  print('Category ID: $categoryId');
+  print('Is Visible: $isVisible'); // ✅ log ใหม่
   print('Has Image: ${imageFile != null}');
 
+  // ✅ ส่งคำขอ
   final response = await request.send();
 
   if (response.statusCode == 200) {

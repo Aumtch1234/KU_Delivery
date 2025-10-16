@@ -15,6 +15,7 @@ dependencies:
   fl_chart: ^1.1.0
   dio: ^5.9.0
   url_launcher: ^6.3.2
+  flutter_launcher_icons: ^0.14.4
 
 
 dev_dependencies:
@@ -47,3 +48,9 @@ flutter:
       - assets/menus/
       - assets/avatars/
       - assets/status_img/
+      - assets/icons/logo.png
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/logo.png"

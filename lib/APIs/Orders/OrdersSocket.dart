@@ -39,6 +39,7 @@ class OrderController extends ChangeNotifier {
 
       await _socketService.connect();
       _setupSocketListeners();
+      await _refreshCurrentData(); // ⭐ เพิ่มบรรทัดนี้
 
       // Register user with comprehensive data
       Map<String, dynamic> registrationData = {};
@@ -141,9 +142,21 @@ class OrderController extends ChangeNotifier {
     _socketService.off('order_rider_update');
 
     // Connection status
-    _socketService.on('connect', (data) {
+    _socketService.on('connect', (data) async {
       print('✅ Socket connected successfully');
-      notifyListeners(); // ⭐ อัปเดต UI
+
+      // 🔁 Rejoin room หลัง reconnect
+      if (_currentUserId != null) {
+        _socketService.emit("join_room", {"room": "customer:$_currentUserId"});
+        print("📡 Rejoined customer room: customer:$_currentUserId");
+      }
+      if (_currentMarketId != null) {
+        _socketService.emit("join_room", {"room": "shop:$_currentMarketId"});
+        print("📡 Rejoined shop room: shop:$_currentMarketId");
+      }
+
+      await _refreshCurrentData();
+      notifyListeners();
     });
 
     _socketService.on('disconnect', (data) {
@@ -1198,7 +1211,9 @@ class OrderController extends ChangeNotifier {
 
   @override
   void dispose() {
-    _socketService.disconnect();
+    print("🧹 OrderController disposed (socket not disconnected)");
+
+    // _socketService.disconnect();
     super.dispose();
   }
 }

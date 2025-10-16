@@ -4,14 +4,14 @@ import 'package:delivery/APIs/middleware/authService.dart';
 import 'package:delivery/pages/store/StoreMenuPage.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class MarketListPage extends StatefulWidget {
-  const MarketListPage({Key? key}) : super(key: key);
+class AdminMarketListPage extends StatefulWidget {
+  const AdminMarketListPage({Key? key}) : super(key: key);
 
   @override
-  State<MarketListPage> createState() => _MarketListPageState();
+  State<AdminMarketListPage> createState() => _AdminMarketListPageState();
 }
 
-class _MarketListPageState extends State<MarketListPage> {
+class _AdminMarketListPageState extends State<AdminMarketListPage> {
   final MarketsApiService _marketApiService = MarketsApiService();
   bool isLoading = true;
   List<dynamic> markets = [];
@@ -29,7 +29,7 @@ class _MarketListPageState extends State<MarketListPage> {
       final token = await auth.getToken();
       if (token == null) return;
 
-      final data = await _marketApiService.getAllMarkets();
+      final data = await _marketApiService.getAllADMINMarkets();
       setState(() {
         markets = data;
         isLoading = false;
@@ -41,24 +41,27 @@ class _MarketListPageState extends State<MarketListPage> {
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
+  final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
 
-    if (!await launchUrl(
-      launchUri,
-      mode: LaunchMode.externalApplication, // ✅ บังคับเปิดแอปโทรศัพท์ภายนอก
-    )) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ไม่สามารถเปิดแอปโทรศัพท์ได้')),
-      );
+  try {
+    // ใช้ mode external เพื่อเปิดแอปโทรศัพท์โดยตรง
+    if (!await launchUrl(launchUri, mode: LaunchMode.externalApplication)) {
+      throw Exception('Could not launch dialer');
     }
+  } catch (e) {
+    print('❌ Error launching phone call: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('ไม่สามารถเปิดแอปโทรศัพท์ได้')),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'ร้านค้าที่เข้าร่วม',
+          'ร้านค้าแอดมิน',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.green,

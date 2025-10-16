@@ -120,6 +120,7 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
       });
     });
     _loadCustomerOrders();
+    
   }
 
   @override

@@ -7,6 +7,7 @@ class Food {
   final double? foodRating;
   final int marketId;
   final String shopName;
+  final String shopDes;
   final String shopLogoUrl;
   final double latitude;
   final double longitude;
@@ -24,6 +25,7 @@ class Food {
     this.foodRating,
     required this.marketId,
     required this.shopName,
+    required this.shopDes,
     required this.shopLogoUrl,
     required this.latitude,
     required this.longitude,
@@ -45,6 +47,7 @@ class Food {
           : null,
       marketId: json['market_id'],
       shopName: json['shop_name'] ?? '',
+      shopDes: json['shop_description'],
       shopLogoUrl: json['shop_logo_url'] ?? '',
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),

@@ -1077,32 +1077,85 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
   }
 
   Widget _buildImageMessage(String imageUrl) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.network(
-        imageUrl,
-        width: 200,
-        height: 150,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            width: 200,
-            height: 150,
-            color: Colors.grey[300],
-            child: Center(
-              child: CircularProgressIndicator(color: Color(0xFF4CAF50)),
+    return GestureDetector(
+      onTap: () {
+        // เปิด dialog ดูรูปเต็มจอ
+        showDialog(
+          context: context,
+          barrierColor: Colors.black.withOpacity(0.9),
+          builder: (context) => GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                InteractiveViewer(
+                  panEnabled: true,
+                  minScale: 0.8,
+                  maxScale: 3.0,
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    width: double.infinity,
+                    height: double.infinity,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF4CAF50),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Center(
+                        child: Icon(Icons.error, color: Colors.white, size: 48),
+                      );
+                    },
+                  ),
+                ),
+                Positioned(
+                  top: 40,
+                  right: 20,
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+              ],
             ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            width: 200,
-            height: 150,
-            color: Colors.grey[300],
-            child: Icon(Icons.error, color: Colors.grey[600]),
-          );
-        },
+          ),
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          imageUrl,
+          width: 200,
+          height: 150,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return Container(
+              width: 200,
+              height: 150,
+              color: Colors.grey[300],
+              child: Center(
+                child: CircularProgressIndicator(color: Color(0xFF4CAF50)),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              width: 200,
+              height: 150,
+              color: Colors.grey[300],
+              child: Icon(Icons.error, color: Colors.grey[600]),
+            );
+          },
+        ),
       ),
     );
   }
