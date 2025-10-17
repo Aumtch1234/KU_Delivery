@@ -138,10 +138,12 @@ class MonthlyDayPoint {
   final DateTime date;
   final int orders;
   final double revenue;
+  final double original_revenue;
   MonthlyDayPoint({
     required this.date,
     required this.orders,
     required this.revenue,
+    required this.original_revenue,
   });
 }
 
@@ -183,11 +185,16 @@ class MonthlySummary {
       totalOrders: orders,
       daily: days.map((x) {
         final m = Map<String, dynamic>.from(x);
+        // API uses 'd' field for date, not 'date'
+        final dateString = m['d']?.toString() ?? m['date']?.toString() ?? '';
+        final parsedDate = DateTime.tryParse(dateString);
         return MonthlyDayPoint(
           date:
-              DateTime.tryParse(m['date']?.toString() ?? '') ?? DateTime.now(),
+              parsedDate ??
+              DateTime(2025, 10, 1), // fallback to first day of month
           orders: _toInt(m['orders']),
           revenue: _toDouble(m['revenue']),
+          original_revenue: _toDouble(m['original_revenue']),
         );
       }).toList(),
     );
@@ -214,10 +221,12 @@ class YearlyMonthPoint {
   final int month; // 1..12
   final int orders;
   final double revenue;
+  final double original_revenue;
   YearlyMonthPoint({
     required this.month,
     required this.orders,
     required this.revenue,
+    required this.original_revenue,
   });
 }
 
@@ -275,6 +284,7 @@ class YearlySummary {
           month: _toInt(m['month']),
           orders: _toInt(m['orders']),
           revenue: _toDouble(m['revenue']),
+          original_revenue: _toDouble(m['original_revenue']),
         );
       }).toList(),
     );

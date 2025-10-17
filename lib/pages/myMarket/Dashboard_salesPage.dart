@@ -118,31 +118,19 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Summary Cards - ราคาขาย
+          // Summary Cards - ราคาต้นทุน
           Row(
             children: [
-              Expanded(
-                child: _SummaryCard(
-                  title: 'ยอดขาย (ราคาขายที่ + 15%)',
-                  value: '฿${nf.format(d.totalRevenue)}',
-                  icon: Icons.attach_money,
-                  color: Colors.green,
-                ),
-              ),
-              const SizedBox(width: 8),
               Expanded(
                 child: _SummaryCard(
                   title: 'ยอดขาย (ต้นทุน)',
                   value: '฿${nf.format(d.totalCostRevenue)}',
                   icon: Icons.monetization_on,
-                  color: Colors.orange,
+                  color: Colors.green,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
+              const SizedBox(width: 8),
+
               Expanded(
                 child: _SummaryCard(
                   title: 'จำนวนออเดอร์',
@@ -151,29 +139,11 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
                   color: Colors.blue,
                 ),
               ),
-              // const SizedBox(width: 8),
-              // Expanded(
-              //   child: _SummaryCard(
-              //     title: 'กำไร (ขาย-ต้นทุน)',
-              //     value: '฿${nf.format(d.totalRevenue - d.totalCostRevenue)}',
-              //     icon: Icons.trending_up,
-              //     color: Colors.red,
-              //   ),
-              // ),
             ],
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(
-                child: _SummaryCard(
-                  title: 'ค่าเฉลี่ย (ขาย)',
-                  value: '฿${nf.format(d.avgOrderValue)}',
-                  icon: Icons.analytics,
-                  color: Colors.purple,
-                ),
-              ),
-              const SizedBox(width: 8),
               Expanded(
                 child: _SummaryCard(
                   title: 'ค่าเฉลี่ย (ต้นทุน)',
@@ -212,29 +182,13 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
                           '${h.orders} ออเดอร์',
                           style: const TextStyle(fontWeight: FontWeight.w500),
                         ),
-                        subtitle: Text(
-                          'กำไร: ฿${nf.format(h.revenue - h.originalRevenue)}',
-                          style: TextStyle(color: Colors.red.shade700),
-                        ),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '฿${nf.format(h.revenue)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green,
-                              ),
-                            ),
-                            Text(
-                              'ต้นทุน: ฿${nf.format(h.originalRevenue)}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.orange.shade600,
-                              ),
-                            ),
-                          ],
+                        trailing: Text(
+                          '฿${nf.format(h.originalRevenue)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green[700],
+                            fontSize: 16,
+                          ),
                         ),
                       );
                     },
@@ -268,18 +222,14 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
                           leading: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: entry.key.contains('cash')
-                                  ? Colors.green.withOpacity(0.2)
-                                  : Colors.blue.withOpacity(0.2),
+                              color: Colors.green.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
                               entry.key.contains('cash')
                                   ? Icons.money
                                   : Icons.credit_card,
-                              color: entry.key.contains('cash')
-                                  ? Colors.green
-                                  : Colors.blue,
+                              color: Colors.green,
                             ),
                           ),
                           title: Text(
@@ -292,8 +242,10 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
                             children: [
                               Text(
                                 '฿${nf.format(entry.value)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
+                                  color: Colors.green[700],
+                                  fontSize: 16,
                                 ),
                               ),
                               Container(
@@ -374,7 +326,7 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
                                   child: Text(
                                     '#${index + 1}',
                                     style: const TextStyle(
-                                      color: Colors.white,
+                                      color: Colors.black,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
                                     ),
@@ -400,7 +352,8 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
                                   '${entry.value} ชิ้น',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: rankColor,
+                                    color: rankColor[900],
+                                    fontSize: 14,
                                   ),
                                 ),
                               ),
@@ -474,19 +427,10 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
             children: [
               Expanded(
                 child: _SummaryCard(
-                  title: 'ยอดขาย (ราคาขายที่ + 15%)',
-                  value: '฿${nf.format(m.totalRevenue)}',
-                  icon: Icons.attach_money,
-                  color: Colors.green,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _SummaryCard(
                   title: 'ยอดขาย (ต้นทุน)',
                   value: '฿${nf.format(m.totalCostRevenue)}',
                   icon: Icons.monetization_on,
-                  color: Colors.orange,
+                  color: Colors.green,
                 ),
               ),
             ],
@@ -502,15 +446,6 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
                   color: Colors.blue,
                 ),
               ),
-              // const SizedBox(width: 8),
-              // Expanded(
-              //   child: _SummaryCard(
-              //     title: 'กำไรรวม',
-              //     value: '฿${nf.format(m.totalRevenue - m.totalCostRevenue)}',
-              //     icon: Icons.trending_up,
-              //     color: Colors.red,
-              //   ),
-              // ),
             ],
           ),
           const SizedBox(height: 16),
@@ -528,8 +463,6 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
                     itemCount: m.daily.length,
                     itemBuilder: (context, index) {
                       final d = m.daily[index];
-                      final estimatedCost =
-                          d.revenue * 0.85; // ประมาณการต้นทุน 85%
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundColor: Colors.blue.shade100,
@@ -542,35 +475,14 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
                           DateFormat('dd/MM/yyyy').format(d.date),
                           style: const TextStyle(fontWeight: FontWeight.w500),
                         ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('${d.orders} ออเดอร์'),
-                            Text(
-                              'กำไร: ฿${nf.format(d.revenue - estimatedCost)}',
-                              style: TextStyle(color: Colors.red.shade700),
-                            ),
-                          ],
-                        ),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '฿${nf.format(d.revenue)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green,
-                              ),
-                            ),
-                            Text(
-                              'ต้นทุน: ฿${nf.format(estimatedCost)}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.orange.shade600,
-                              ),
-                            ),
-                          ],
+                        subtitle: Text('${d.orders} ออเดอร์'),
+                        trailing: Text(
+                          '฿${nf.format(d.original_revenue)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green[600],
+                            fontSize: 16,
+                          ),
                         ),
                       );
                     },
@@ -636,19 +548,10 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
             children: [
               Expanded(
                 child: _SummaryCard(
-                  title: 'ยอดขาย (ราคาขายที่ + 15%)',
-                  value: '฿${nf.format(y.totalRevenue)}',
-                  icon: Icons.attach_money,
-                  color: Colors.green,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _SummaryCard(
                   title: 'ยอดขาย (ต้นทุน)',
                   value: '฿${nf.format(y.totalCostRevenue)}',
                   icon: Icons.monetization_on,
-                  color: Colors.orange,
+                  color: Colors.green,
                 ),
               ),
             ],
@@ -664,15 +567,6 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
                   color: Colors.blue,
                 ),
               ),
-              // const SizedBox(width: 8),
-              // Expanded(
-              //   child: _SummaryCard(
-              //     title: 'กำไรรวม',
-              //     value: '฿${nf.format(y.totalRevenue - y.totalCostRevenue)}',
-              //     icon: Icons.trending_up,
-              //     color: Colors.red,
-              //   ),
-              // ),
             ],
           ),
           const SizedBox(height: 16),
@@ -690,8 +584,6 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
                     itemCount: y.monthlyData.length,
                     itemBuilder: (context, index) {
                       final m = y.monthlyData[index];
-                      final estimatedCost =
-                          m.revenue * 0.85; // ประมาณการต้นทุน 85%
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundColor: Colors.purple.shade100,
@@ -704,35 +596,14 @@ class _DashboardSalesPageState extends State<DashboardSalesPage>
                           'เดือน ${m.month}/${y.year}',
                           style: const TextStyle(fontWeight: FontWeight.w500),
                         ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('${m.orders} ออเดอร์'),
-                            Text(
-                              'กำไร: ฿${nf.format(m.revenue - estimatedCost)}',
-                              style: TextStyle(color: Colors.red.shade700),
-                            ),
-                          ],
-                        ),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '฿${nf.format(m.revenue)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green,
-                              ),
-                            ),
-                            Text(
-                              'ต้นทุน: ฿${nf.format(estimatedCost)}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.orange.shade600,
-                              ),
-                            ),
-                          ],
+                        subtitle: Text('${m.orders} ออเดอร์'),
+                        trailing: Text(
+                          '฿${nf.format(m.original_revenue)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green[700],
+                            fontSize: 16,
+                          ),
                         ),
                       );
                     },
