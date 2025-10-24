@@ -165,12 +165,14 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
     _connectionSubscription?.cancel();
 
     // ✅ Listen for new messages
+    // ✅ Listen for new messages
     _messageSubscription = _chatController.chatService.messageStream.listen(
       (message) {
         print('📩 [STREAM] New message from room ${message.roomId}');
         print(
           '📨 [STREAM] Received message: ${message.messageText} (${message.roomId})',
         );
+        print('⏰ [STREAM] Message time: ${message.createdAt}'); // ✅ เพิ่มดูเวลา
 
         print('📍 Current room: ${widget.roomId}');
         print('📝 Message: ${message.messageText}');
@@ -214,6 +216,9 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
             });
 
             print('✅ New message added to UI successfully');
+            print(
+              '⏰ Displayed time: ${_formatMessageTime(message.createdAt)}',
+            ); // ✅ ดูเวลาที่แสดง
 
             // ✅ Mark as read ถ้าข้อความไม่ใช่ของเราเอง
             if (!_isMyMessage(message)) {
@@ -1198,15 +1203,17 @@ class _CustomerChatDetailScreenState extends State<CustomerChatDetailScreen> {
   String _formatMessageTime(DateTime? dateTime) {
     if (dateTime == null) return '';
 
+    // ✅ แปลงเป็นเวลาท้องถิ่น (Local Time)
+    final localTime = dateTime.toLocal();
     final now = DateTime.now();
-    final diff = now.difference(dateTime);
+    final diff = now.difference(localTime);
 
     if (diff.inDays == 0) {
-      return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+      return '${localTime.hour.toString().padLeft(2, '0')}:${localTime.minute.toString().padLeft(2, '0')}';
     } else if (diff.inDays == 1) {
-      return 'เมื่อวาน ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+      return 'เมื่อวาน ${localTime.hour.toString().padLeft(2, '0')}:${localTime.minute.toString().padLeft(2, '0')}';
     } else {
-      return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+      return '${localTime.day}/${localTime.month}/${localTime.year}';
     }
   }
 }

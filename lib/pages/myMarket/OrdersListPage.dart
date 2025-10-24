@@ -290,15 +290,15 @@ class _OrdersListPageState extends State<OrdersListPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Text(
-                      //   'รายได้วันนี้',
-                      //   style: TextStyle(
-                      //     fontSize: 16,
-                      //     color: Colors.grey.shade700,
-                      //     fontWeight: FontWeight.w500,
-                      //   ),
-                      // ),
-                      // const SizedBox(height: 4),
+                      Text(
+                        'รายการงานฉัน',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
                       // Text(
                       //   '฿${todayEarnings.toStringAsFixed(2)}',
                       //   style: TextStyle(

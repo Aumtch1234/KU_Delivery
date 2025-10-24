@@ -160,18 +160,18 @@ class Review {
 
   // แปลงวันที่เป็นรูปแบบไทย เช่น "7 ต.ค. 68"
   String get formattedDate {
-    try {
-      final date = DateTime.parse(createdAt);
-      final thaiMonths = [
-        'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
-        'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
-      ];
-      final thaiYear = (date.year + 543).toString().substring(2);
-      return '${date.day} ${thaiMonths[date.month - 1]} $thaiYear';
-    } catch (e) {
-      return '';
-    }
+  try {
+    final date = DateTime.parse(createdAt).toLocal(); // ✅ เพิ่ม .toLocal()
+    final thaiMonths = [
+      'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+      'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+    ];
+    final thaiYear = (date.year + 543).toString().substring(2);
+    return '${date.day} ${thaiMonths[date.month - 1]} $thaiYear';
+  } catch (e) {
+    return '';
   }
+}
 }
 
 class Paging {

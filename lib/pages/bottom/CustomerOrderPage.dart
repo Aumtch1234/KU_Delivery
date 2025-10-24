@@ -82,9 +82,9 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
     'all': {'name': 'ทั้งหมด', 'icon': Icons.list_alt},
     'waiting': {'name': 'รอยืนยัน', 'icon': Icons.schedule},
     'confirmed': {'name': 'ยืนยันแล้ว', 'icon': Icons.check_circle},
+    'rider_assigned': {'name': 'มีไรเดอร์', 'icon': Icons.motorcycle},
     'preparing': {'name': 'กำลังทำ', 'icon': Icons.restaurant_menu},
     'ready_for_pickup': {'name': 'พร้อมส่ง', 'icon': Icons.shopping_bag},
-    'rider_assigned': {'name': 'มีไรเดอร์', 'icon': Icons.motorcycle},
     'going_to_shop': {'name': 'ไปร้าน', 'icon': Icons.directions},
     'arrived_at_shop': {'name': 'ถึงร้าน', 'icon': Icons.store},
     'picked_up': {'name': 'รับแล้ว', 'icon': Icons.takeout_dining},
@@ -120,7 +120,6 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
       });
     });
     _loadCustomerOrders();
-    
   }
 
   @override
@@ -836,40 +835,40 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
                   ],
 
                   // Estimated Time for Active Orders
-                  if (isActive) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            successColor.withOpacity(0.15),
-                            successColor.withOpacity(0.1),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: successColor.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.schedule, size: 20, color: successColor),
-                          const SizedBox(width: 10),
-                          Text(
-                            'เวลาโดยประมาณ: 25-30 นาที',
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: successColor,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  // if (isActive) ...[
+                  //   const SizedBox(height: 16),
+                  //   Container(
+                  //     width: double.infinity,
+                  //     padding: const EdgeInsets.all(16),
+                  //     decoration: BoxDecoration(
+                  //       gradient: LinearGradient(
+                  //         colors: [
+                  //           successColor.withOpacity(0.15),
+                  //           successColor.withOpacity(0.1),
+                  //         ],
+                  //       ),
+                  //       borderRadius: BorderRadius.circular(12),
+                  //       border: Border.all(
+                  //         color: successColor.withOpacity(0.3),
+                  //       ),
+                  //     ),
+                  //     child: Row(
+                  //       mainAxisAlignment: MainAxisAlignment.center,
+                  //       children: [
+                  //         Icon(Icons.schedule, size: 20, color: successColor),
+                  //         const SizedBox(width: 10),
+                  //         Text(
+                  //           'เวลาโดยประมาณ: 25-30 นาที',
+                  //           style: TextStyle(
+                  //             fontSize: 15,
+                  //             color: successColor,
+                  //             fontWeight: FontWeight.w700,
+                  //           ),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //   ),
+                  // ],
 
                   // Note if available
                   if (order.note != null && order.note!.isNotEmpty) ...[
@@ -1147,8 +1146,8 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
   Widget _buildProgressBar(String status) {
     final steps = [
       'waiting',
-      'rider_assigned',
       'confirmed',
+      'rider_assigned',
       'preparing',
       'ready_for_pickup',
       'going_to_shop',
@@ -1158,10 +1157,11 @@ class _CustomerOrderPageState extends State<CustomerOrderPage>
       'arrived_at_customer',
       'completed',
     ];
+
     final stepNames = [
       'รอยืนยัน',
-      'มีไรเดอร์',
       'ยืนยัน',
+      'มีไรเดอร์',
       'เตรียม',
       'พร้อม',
       'ไปร้าน',

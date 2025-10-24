@@ -80,11 +80,41 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
 
 
 Future<void> _makePhoneCall(String phoneNumber) async {
-  final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
-  if (await canLaunchUrl(phoneUri)) {
-    await launchUrl(phoneUri);
-  } else {
-    throw 'ไม่สามารถโทรออกได้: $phoneNumber';
+  // ทำความสะอาดเบอร์โทร (เอาช่องว่าง, ขีด ออก)
+  final cleaned = phoneNumber.replaceAll(RegExp(r'[^0-9+]'), '');
+  
+  if (cleaned.isEmpty) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('เบอร์โทรศัพท์ไม่ถูกต้อง')),
+      );
+    }
+    return;
+  }
+
+  final Uri url = Uri(scheme: 'tel', path: cleaned);
+
+  try {
+    final launched = await launchUrl(
+      url,
+      mode: LaunchMode.externalApplication, // ✅ เปิด dialer ภายนอกโดยตรง
+    );
+    
+    if (!launched) {
+      debugPrint('❌ ไม่สามารถเปิดแอพโทรศัพท์: $cleaned');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('ไม่สามารถเปิดแอพโทรศัพท์ได้')),
+        );
+      }
+    }
+  } catch (e) {
+    debugPrint('❌ Error launching dialer: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ไม่สามารถโทรออกได้ในอุปกรณ์นี้')),
+      );
+    }
   }
 }
 

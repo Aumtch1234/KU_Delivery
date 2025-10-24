@@ -26,15 +26,7 @@ class _RegisterPageState extends State<RegisterPage> {
       TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
 
-  String? _selectedImage; // สำหรับเก็บ URL หรือ Path ของรูป preset
-  File? _image;           // สำหรับเก็บไฟล์รูปที่อัปโหลดจากเครื่อง
-
-  final List<String> _imageOptions = [
-    'assets/avatars/avatar-1.png',
-    'assets/avatars/avatar-2.png',
-    'assets/avatars/avatar-3.png',
-    'assets/avatars/avatar-4.png',
-  ];
+  File? _image; // เก็บไฟล์รูปที่อัปโหลด
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -83,9 +75,14 @@ class _RegisterPageState extends State<RegisterPage> {
     if (picked != null) {
       setState(() {
         _image = File(picked.path);
-        _selectedImage = null; // ถ้าเลือกจากเครื่อง ให้ล้าง selected preset
       });
     }
+  }
+
+  void _removeImage() {
+    setState(() {
+      _image = null;
+    });
   }
 
   Future<void> _handleRegisterUser() async {
@@ -101,7 +98,7 @@ class _RegisterPageState extends State<RegisterPage> {
       showAwesomeDialog(context, 'ข้อผิดพลาด', 'กรุณาเลือกวันเกิด', DialogType.warning);
       return;
     }
-    if (_selectedImage == null && _image == null) {
+    if (_image == null) {
       showAwesomeDialog(context, 'ข้อผิดพลาด', 'กรุณาเลือกรูปโปรไฟล์', DialogType.warning);
       return;
     }
@@ -118,8 +115,6 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() => _isLoading = true);
 
     try {
-      // ถ้ามีรูปจากไฟล์ ให้ส่งไฟล์ _image
-      // ถ้าเลือกรูป preset ให้ส่งชื่อไฟล์ (_selectedImage)
       final result = await registerUserAPI(
         name: _nameController.text,
         email: _emailController.text,
@@ -171,80 +166,120 @@ class _RegisterPageState extends State<RegisterPage> {
           elevation: 0,
           title: const Text(
             'สมัครสมาชิก',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
+          centerTitle: true,
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(20.0),
           child: Form(
             key: _formKey,
             child: Column(
               children: [
                 const Text(
-                  'โปรดกรอกข้อมูลส่วนตัว',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  'กรอกข้อมูลเพื่อสมัครสมาชิก',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1C1C1E),
+                  ),
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  'โปรดกรอกข้อมูลให้ครบถ้วน',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                
+                // Profile Image Upload Section
+                _buildProfileImageSection(),
+                
                 const SizedBox(height: 24),
-                _buildAvatarSelector(),
+                
                 _buildLabel("ชื่อ - นามสกุล *"),
-                _buildTextField(_nameController, 'ชื่อ - นามสกุล'),
-                _buildLabel("อีเมลของคุณ *"),
-                _buildTextField(_emailController, 'อีเมลของคุณ',
-                    keyboardType: TextInputType.emailAddress),
-                _buildLabel("รหัสผ่านของคุณ"),
+                _buildTextField(_nameController, 'กรอกชื่อ - นามสกุล'),
+                
+                _buildLabel("อีเมล *"),
+                _buildTextField(
+                  _emailController,
+                  'กรอกอีเมลของคุณ',
+                  keyboardType: TextInputType.emailAddress,
+                  prefixIcon: Icons.email_outlined,
+                ),
+                
+                _buildLabel("รหัสผ่าน *"),
                 _buildTextField(
                   _passwordController,
-                  'รหัสผ่าน',
+                  'กรอกรหัสผ่าน',
                   obscureText: true,
+                  prefixIcon: Icons.lock_outline,
                 ),
-                _buildLabel("ยืนยันรหัสผ่านของคุณ"),
+                
+                _buildLabel("ยืนยันรหัสผ่าน *"),
                 _buildTextField(
                   _confirmPasswordController,
-                  'ยืนยันรหัสผ่าน',
+                  'กรอกรหัสผ่านอีกครั้ง',
                   obscureText: true,
+                  prefixIcon: Icons.lock_outline,
                 ),
-                _buildLabel('วัน เดือน ปีเกิด'),
+                
+                _buildLabel('วันเกิด *'),
                 _buildDateSelector(),
-                _buildLabel('เพศ'),
-                Row(
-                  children: [
-                    _buildGenderRadio(0, 'ชาย'),
-                    _buildGenderRadio(1, 'หญิง'),
-                    _buildGenderRadio(2, 'ไม่ระบุ'),
-                  ],
-                ),
-                _buildLabel("เบอร์โทรศัพท์มือถือ *"),
+                
+                _buildLabel('เพศ *'),
+                _buildGenderSelector(),
+                
+                _buildLabel("เบอร์โทรศัพท์ *"),
                 _buildTextField(
                   _phoneController,
-                  '** ใส่เบอร์ติดต่อจริง **',
+                  'กรอกเบอร์โทรศัพท์',
                   keyboardType: TextInputType.phone,
+                  prefixIcon: Icons.phone_outlined,
                 ),
+                
+                const SizedBox(height: 8),
+                
+                // Agreement Checkbox
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Checkbox(
                       value: _agree,
                       activeColor: const Color(0xFF34C759),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                       onChanged: (val) => setState(() => _agree = val ?? false),
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Padding(
-                        padding: EdgeInsets.only(top: 12.0),
+                        padding: const EdgeInsets.only(top: 12.0),
                         child: Text(
                           'ยินยอมให้เข้าถึงข้อมูลและเข้าใช้บริการบางส่วน',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[700],
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                
+                const SizedBox(height: 24),
+                
+                // Register Button
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF34C759),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    minimumSize: const Size.fromHeight(48),
+                    minimumSize: const Size.fromHeight(52),
+                    elevation: 2,
                   ),
                   onPressed: _handleRegisterUser,
                   child: const Text(
@@ -256,6 +291,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                   ),
                 ),
+                
+                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -264,186 +301,213 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _buildAvatarSelector() {
-  // ตรวจสอบว่ารูปที่เลือกเป็น URL หรือ preset asset
-  final isUrlSelected = _selectedImage != null && _selectedImage!.startsWith('http');
-
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _buildLabel("เลือกรูปโปรไฟล์ของคุณ"),
-      SizedBox(
-        height: 100,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          children: [
-            // รูปจาก URL (รูปเก่าที่โหลดมา)
-            if (isUrlSelected)
-              GestureDetector(
-                onTap: () => setState(() {
-                  _selectedImage = _selectedImage; // เลือก URL รูปนี้
-                  _image = null; // ล้างไฟล์รูปถ้าเคยอัปโหลด
-                }),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isUrlSelected ? Color(0xFF34C759) : Colors.grey.shade300,
-                      width: isUrlSelected ? 4 : 2,
-                    ),
-                    boxShadow: isUrlSelected
-                        ? [
-                            BoxShadow(
-                              color: Color(0xFF34C759).withOpacity(0.5),
-                              blurRadius: 12,
-                              spreadRadius: 2,
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      CircleAvatar(
-                        backgroundImage: NetworkImage(_selectedImage!),
-                        radius: 40,
-                      ),
-                      if (isUrlSelected)
-                        const Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: CircleAvatar(
-                            radius: 12,
-                            backgroundColor: Colors.white,
-                            child: Icon(
-                              Icons.check_circle,
-                              color: Color(0xFF34C759),
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-
-            // รูป preset asset
-            ..._imageOptions.map((imagePath) {
-              final isSelected = _selectedImage == imagePath;
-
-              return GestureDetector(
-                onTap: () => setState(() {
-                  _selectedImage = imagePath;
-                  _image = null; // ล้างไฟล์รูปถ้าเลือก preset
-                }),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSelected ? Color(0xFF34C759) : Colors.grey.shade300,
-                      width: isSelected ? 4 : 2,
-                    ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: Color(0xFF34C759).withOpacity(0.5),
-                              blurRadius: 12,
-                              spreadRadius: 2,
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      CircleAvatar(
-                        backgroundImage: AssetImage(imagePath),
-                        radius: 40,
-                      ),
-                      if (isSelected)
-                        const Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: CircleAvatar(
-                            radius: 12,
-                            backgroundColor: Colors.white,
-                            child: Icon(
-                              Icons.check_circle,
-                              color: Color(0xFF34C759),
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ],
-        ),
+  Widget _buildProfileImageSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-
-      const SizedBox(height: 12),
-
-      // ปุ่มอัปโหลดรูปจากเครื่อง
-      Center(
-        child: OutlinedButton.icon(
-          onPressed: _pickImage,
-          icon: const Icon(Icons.upload_file),
-          label: const Text("อัปโหลดรูปจากเครื่อง"),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Color(0xFF34C759),
-            side: BorderSide(color: Color(0xFF34C759)),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
+      child: Column(
+        children: [
+          Text(
+            'รูปโปรไฟล์',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
             ),
           ),
-        ),
-      ),
-
-      const SizedBox(height: 16),
-
-      // แสดงรูปที่เลือกจากเครื่อง (ถ้ามี)
-      if (_image != null)
-        Center(
-          child: Column(
-            children: [
-              const Text("รูปที่เลือก"),
-              const SizedBox(height: 8),
-              CircleAvatar(radius: 50, backgroundImage: FileImage(_image!)),
-            ],
+          const SizedBox(height: 16),
+          
+          // Image Preview or Placeholder
+          _image != null
+              ? Stack(
+                  children: [
+                    Container(
+                      width: 140,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF34C759),
+                          width: 3,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF34C759).withOpacity(0.3),
+                            blurRadius: 12,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: Image.file(
+                          _image!,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: GestureDetector(
+                        onTap: _removeImage,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.grey[300]!,
+                      width: 2,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.person_outline,
+                    size: 60,
+                    color: Colors.grey[400],
+                  ),
+                ),
+          
+          const SizedBox(height: 16),
+          
+          // Upload Button
+          ElevatedButton.icon(
+            onPressed: _pickImage,
+            icon: Icon(_image != null ? Icons.edit : Icons.upload_file),
+            label: Text(_image != null ? 'เปลี่ยนรูป' : 'อัปโหลดรูป'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF34C759),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              elevation: 0,
+            ),
           ),
-        ),
-    ],
-  );
-}
-
+        ],
+      ),
+    );
+  }
 
   Widget _buildDateSelector() {
     return InkWell(
       onTap: () => _selectDate(context),
       child: Container(
         margin: const EdgeInsets.only(top: 8, bottom: 16),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
           border: Border.all(color: const Color(0xFFE5E5EA)),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           color: Colors.white,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.calendar_today,
+                  color: _selectedDate == null ? Colors.grey : const Color(0xFF34C759),
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  _selectedDate == null
+                      ? 'เลือกวันเกิด'
+                      : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                  style: TextStyle(
+                    color: _selectedDate == null ? Colors.grey : Colors.black,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+            const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGenderSelector() {
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 16),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E5EA)),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _buildGenderOption(0, 'ชาย', Icons.male)),
+          Expanded(child: _buildGenderOption(1, 'หญิง', Icons.female)),
+          Expanded(child: _buildGenderOption(2, 'ไม่ระบุ', Icons.person)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGenderOption(int value, String label, IconData icon) {
+    final isSelected = _gender == value;
+    return GestureDetector(
+      onTap: () => setState(() => _gender = value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF34C759) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Colors.white : Colors.grey,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
             Text(
-              _selectedDate == null
-                  ? 'วัน เดือน ปีเกิด'
-                  : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+              label,
               style: TextStyle(
-                color: _selectedDate == null ? Colors.grey : Colors.black,
+                color: isSelected ? Colors.white : Colors.grey[700],
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
-            const Icon(Icons.calendar_today, color: Colors.grey),
           ],
         ),
       ),
@@ -451,10 +515,17 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildLabel(String text) => Padding(
-        padding: const EdgeInsets.only(top: 12, bottom: 8),
+        padding: const EdgeInsets.only(top: 16, bottom: 8),
         child: Align(
-          alignment: const Alignment(-0.95, 0.0),
-          child: Text(text, style: const TextStyle(fontSize: 14)),
+          alignment: Alignment.centerLeft,
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1C1C1E),
+            ),
+          ),
         ),
       );
 
@@ -463,6 +534,7 @@ class _RegisterPageState extends State<RegisterPage> {
     String label, {
     bool obscureText = false,
     TextInputType keyboardType = TextInputType.text,
+    IconData? prefixIcon,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -471,40 +543,36 @@ class _RegisterPageState extends State<RegisterPage> {
         obscureText: obscureText,
         keyboardType: keyboardType,
         decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(color: Colors.black),
+          hintText: label,
+          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+          prefixIcon: prefixIcon != null
+              ? Icon(prefixIcon, color: Colors.grey[600], size: 20)
+              : null,
           filled: true,
           fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           enabledBorder: OutlineInputBorder(
             borderSide: const BorderSide(color: Color(0xFFE5E5EA)),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
           ),
           focusedBorder: OutlineInputBorder(
             borderSide: const BorderSide(color: Color(0xFF34C759), width: 2),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderSide: const BorderSide(color: Colors.red),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderSide: const BorderSide(color: Colors.red, width: 2),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
         validator: (value) {
-          if (value == null || value.isEmpty) return 'กรุณากรอก $label';
+          if (value == null || value.isEmpty) return 'กรุณากรอกข้อมูล';
           return null;
         },
       ),
-    );
-  }
-
-  Widget _buildGenderRadio(int value, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Radio<int>(
-          value: value,
-          groupValue: _gender,
-          activeColor: const Color(0xFF34C759),
-          onChanged: (val) => setState(() => _gender = val),
-        ),
-        Text(label),
-        const SizedBox(width: 10),
-      ],
     );
   }
 

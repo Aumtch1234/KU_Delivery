@@ -472,29 +472,31 @@ class _OrderNowPageState extends State<OrderNowPage> {
           const SizedBox(height: 20),
 
           // Note Input
-          TextField(
-            controller: noteController,
-            maxLines: 3,
-            decoration: InputDecoration(
-              hintText:
-                  'รายละเอียดเพิ่มเติม... (เช่น ห้องเลขที่ หรือชื่อผู้รับ)',
-              hintStyle: TextStyle(color: Colors.grey[400]),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: Colors.grey[300]!),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(
-                  color: Color(0xFF34C759),
-                  width: 2,
+          // ✅ แสดงกล่องพิมพ์เฉพาะเมื่อเลือก "แบบ/วางไว้จุดที่ระบุ"
+          if (deliveryType == 'แบบ/วางไว้จุดที่ระบุ')
+            TextField(
+              controller: noteController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText:
+                    'รายละเอียดเพิ่มเติม... (เช่น ห้องเลขที่ หรือชื่อผู้รับ)',
+                hintStyle: TextStyle(color: Colors.grey[400]),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
                 ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF34C759),
+                    width: 2,
+                  ),
+                ),
+                filled: true,
+                fillColor: Colors.grey[50],
+                contentPadding: const EdgeInsets.all(18),
               ),
-              filled: true,
-              fillColor: Colors.grey[50],
-              contentPadding: const EdgeInsets.all(18),
             ),
-          ),
 
           const SizedBox(height: 20),
 

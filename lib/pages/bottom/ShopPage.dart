@@ -340,12 +340,20 @@ class _ShopPageState extends State<ShopPage> {
   }
 
   Widget _buildMainContent(Size size, bool isTablet) {
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
-      slivers: [
-        _buildHeader(size, isTablet),
-        _buildContentSection(size, isTablet),
-      ],
+    return RefreshIndicator(
+      color: const Color(0xFF34C759), // ✅ สีวงกลมตอนรีเฟรช
+      onRefresh: () async {
+        await _fetchAllData(); // ✅ โหลดข้อมูลใหม่
+      },
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(), // ✅ ให้เลื่อนเพื่อรีเฟรชได้
+        ),
+        slivers: [
+          _buildHeader(size, isTablet),
+          _buildContentSection(size, isTablet),
+        ],
+      ),
     );
   }
 
